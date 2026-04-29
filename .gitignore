@@ -1,0 +1,21 @@
+node_modules
+dist
+coverage
+.DS_Store
+*.log
+*.tsbuildinfo
+.vite
+.idea
+.vscode
+generated
+
+# Local agent and scratch files
+AGENTS.md
+CLAUDE.md
+docs/agents/
+.scratch/
+
+# Environment files
+.env
+.env.*
+!.env.example

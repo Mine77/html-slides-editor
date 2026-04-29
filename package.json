@@ -1,0 +1,11 @@
+{
+  "name": "html-slides-editor",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @html-slides-editor/core --filter @html-slides-editor/react --filter @html-slides-editor/stage --filter web dev",
+    "build": "pnpm -r build",
+    "generate:slides": "node skills/html-slides-generator/generate-slides.mjs"
+  }
+}

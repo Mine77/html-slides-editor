@@ -1,0 +1,32 @@
+{
+  "name": "@html-slides-editor/stage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": {
+      "default": "./dist/index.css"
+    }
+  },
+  "scripts": {
+    "dev": "tsup src/index.tsx --format esm --dts --watch",
+    "build": "tsup src/index.tsx --format esm --dts"
+  },
+  "dependencies": {
+    "@html-slides-editor/core": "workspace:*",
+    "@html-slides-editor/react": "workspace:*",
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.8.3"
+  }
+}

@@ -48,7 +48,15 @@ HTML Slides Editor is aimed at that gap.
 
 ## Project Status
 
-The project is currently in the idea stage. The current focus is on refining product direction, editing primitives, and implementation strategy.
+The project now has an initial workspace scaffold for the three core parts:
+
+- `skills/html-slides-generator`: generation-side skill spec, prompt template, and example outputs
+- `packages/core`: parser, slide contract, and HTML update primitives
+- `packages/react`: React-facing hooks and bindings
+- `packages/stage`: the actual editor stage UI built on top of `core` and `react`
+- `apps/web`: Vite + React example app that mounts the stage package
+
+The current focus is still on refining the editing primitives and implementation strategy, but the repo is no longer doc-only.
 
 
 ## Roadmap Direction
@@ -60,6 +68,101 @@ The current direction includes:
 - a data model that can support selection, movement, text editing, history, and export
 
 The full breakdown lives in the idea docs rather than being duplicated here.
+
+## Workspace Layout
+
+```text
+apps/
+  web/                         React + Vite example app
+packages/
+  core/                        Headless slide model and parser
+  react/                       React bindings
+  stage/                       Editor stage UI
+skills/
+  html-slides-generator/       Prompt spec, rules, and examples
+```
+
+## Local Development
+
+```bash
+pnpm install
+pnpm dev
+```
+
+`pnpm dev` now runs the workspace in linked watch mode:
+
+- `packages/core` watch build
+- `packages/react` watch build
+- `packages/stage` watch build
+- `apps/web` Vite dev server
+
+So changes in the packages can flow into the app without manually re-running a full build.
+
+Useful commands:
+
+```bash
+pnpm build
+pnpm generate:slides -- --topic "HTML Slides Editor"
+```
+
+## Run The Skill
+
+The current skill is a local slide generator. It produces standalone HTML slides with the required `data-editable` markers, then syncs the result into the web app so the app can load that deck by default.
+
+Generated slides must follow this boundary contract:
+
+- exactly one slide root container marked with `data-slide-root="true"`
+- that root must include `data-slide-width="1920"` and `data-slide-height="1080"`
+- user-editable content inside the root must use `data-editable="text"`, `data-editable="image"`, or `data-editable="block"`
+
+Example:
+
+```html
+<div
+  class="slide-container"
+  data-slide-root="true"
+  data-slide-width="1920"
+  data-slide-height="1080"
+>
+  <h1 data-editable="text">Slide title</h1>
+  <p data-editable="text">Slide body</p>
+</div>
+```
+
+1. Install dependencies:
+
+```bash
+pnpm install
+```
+
+2. Run the skill:
+
+```bash
+pnpm generate:slides -- --topic "Your topic"
+```
+
+Optional arguments:
+
+```bash
+pnpm generate:slides -- \
+  --topic "HTML Slides Editor" \
+  --summary "A starter deck with editable HTML markers." \
+  --points "Problem|Approach|First milestone"
+```
+
+What this does:
+
+- writes the generated deck to `generated/<topic-slug>/`
+- writes a `manifest.json` alongside the HTML files
+- syncs the latest deck to `apps/web/public/generated/current/`
+
+3. Start the app:
+
+```bash
+pnpm dev
+```
+
+When the app starts, it will first try to load `apps/web/public/generated/current/manifest.json`. If that generated deck exists, the app uses it automatically. If not, it falls back to the built-in sample slides.
 
 ## Contributing
 
