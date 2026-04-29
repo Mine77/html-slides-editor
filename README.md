@@ -14,14 +14,20 @@
 
 ## Overview
 
-HTML Slides Editor is a project built around a simple belief: if modern presentation tools increasingly render slides as HTML, then HTML itself should be a first-class format for creation and editing.
+HTML Slides Editor is a project built around a simple belief: if modern presentation tools increasingly render slides as HTML, with the help of AI, then HTML itself should be a first-class format for creation and editing.
 
 The project is centered on a two-part workflow:
 
-- generate structured HTML slides with explicit editable markers
+- Generate a beautiful slides with AI agents
 - edit those slides visually without converting them into a proprietary document model
+- (futuer) present the slides
 
-This repository stays intentionally high-level. The detailed direction, architecture, and implementation thinking live in the idea documents.
+### Design Principles
+
+- HTML stays the source of truth
+- editing should be visual, but not format-locking
+- output should remain portable and inspectable
+- the system should work well with AI generation, not against it
 
 ## Why It Exists
 
@@ -34,18 +40,8 @@ Most existing slide editors fall into one of two camps:
 
 HTML Slides Editor is aimed at that gap.
 
+
 ## Core Idea
-
-The working model is straightforward:
-
-- AI generates slide HTML with `data-editable` markers
-- an editor renders the original HTML inside an `iframe`
-- a `Konva` interaction layer sits above it for selection, drag, resize, and editing controls
-- changes are written back to the HTML instead of being trapped in a separate opaque format
-
-This keeps the source portable, inspectable, and naturally aligned with the web platform.
-
-## Documentation
 
 - English idea doc: [idea.en.md](./idea.en.md)
 - Chinese idea doc: [idea.zh.md](./idea.zh.md)
@@ -54,12 +50,6 @@ This keeps the source portable, inspectable, and naturally aligned with the web 
 
 The project is currently in the idea stage. The current focus is on refining product direction, editing primitives, and implementation strategy.
 
-## Design Principles
-
-- HTML stays the source of truth
-- editing should be visual, but not format-locking
-- output should remain portable and inspectable
-- the system should work well with AI generation, not against it
 
 ## Roadmap Direction
 
