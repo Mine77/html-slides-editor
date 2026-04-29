@@ -1,0 +1,32 @@
+# ADR Index
+
+This directory records architecture decisions for the editor.
+
+## When to update ADRs
+
+Update this directory whenever a change affects:
+
+- editor interaction architecture
+- HTML write-back or persistence
+- history, undo/redo, or versioning
+- collaboration model
+- package boundaries or major module responsibilities
+
+## Workflow
+
+1. Read relevant ADRs before making a new architectural proposal.
+2. Add a new ADR for new decisions.
+3. Mark older ADRs as superseded when needed.
+4. Keep this index in sync with the files in this directory.
+
+## Status legend
+
+- `accepted`: current decision
+- `superseded`: replaced by a newer ADR
+- `proposed`: drafted but not yet adopted
+
+## ADRs
+
+| ADR | Title | Status |
+| --- | --- | --- |
+| [0001](./0001-editing-pipeline-and-versioning.md) | Editing pipeline and versioning strategy | accepted |
