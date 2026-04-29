@@ -1,9 +1,9 @@
 import {
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
-  elementRectToStageRect,
   type SlideModel,
-  type StageRect
+  type StageRect,
+  elementRectToStageRect,
 } from "@html-slides-editor/core";
 import { useSlidesData } from "@html-slides-editor/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -43,7 +43,7 @@ const INSPECTED_CSS_PROPERTIES = [
   "box-shadow",
   "opacity",
   "transform",
-  "text-align"
+  "text-align",
 ] as const;
 
 function collectCssProperties(element: HTMLElement): CssPropertyRow[] {
@@ -51,7 +51,7 @@ function collectCssProperties(element: HTMLElement): CssPropertyRow[] {
 
   return INSPECTED_CSS_PROPERTIES.map((name) => ({
     name,
-    value: styles.getPropertyValue(name).trim()
+    value: styles.getPropertyValue(name).trim(),
   })).filter((row) => row.value.length > 0);
 }
 
@@ -77,13 +77,11 @@ function SlidesEditorStage() {
     [activeSlideId, slides]
   );
 
-  const selectedElement = activeSlide?.elements.find(
-    (element) => element.id === selectedElementId
-  );
+  const selectedElement = activeSlide?.elements.find((element) => element.id === selectedElementId);
 
   useEffect(() => {
     setSelectedElementId(activeSlide?.elements[0]?.id ?? null);
-  }, [activeSlideId, activeSlide?.elements]);
+  }, [activeSlide?.elements]);
 
   useEffect(() => {
     const viewport = stageViewportRef.current;
@@ -152,10 +150,8 @@ function SlidesEditorStage() {
       }
     };
 
-    const nodes = Array.from(
-      doc.querySelectorAll<HTMLElement>("[data-editable][data-editor-id]")
-    );
-    nodes.forEach((node) => {
+    const nodes = Array.from(doc.querySelectorAll<HTMLElement>("[data-editable][data-editor-id]"));
+    for (const node of nodes) {
       node.style.cursor = "pointer";
       node.onclick = (event) => {
         event.stopPropagation();
@@ -164,7 +160,7 @@ function SlidesEditorStage() {
           setSelectedElementId(id);
         }
       };
-    });
+    }
   }, [activeSlide]);
 
   useEffect(() => {
@@ -211,8 +207,8 @@ function SlidesEditorStage() {
         offsetX,
         offsetY,
         slideWidth,
-        slideHeight
-      })
+        slideHeight,
+      }),
     });
   }, [
     activeSlide,
@@ -222,18 +218,19 @@ function SlidesEditorStage() {
     offsetX,
     offsetY,
     slideWidth,
-    slideHeight
+    slideHeight,
   ]);
 
   return (
     <div className="hse-shell">
       <aside className="hse-sidebar">
-
         <div className="hse-slide-list">
           {slides.map((slide, index) => (
             <button
               key={slide.id}
-              className={slide.id === activeSlide.id ? "hse-slide-card is-active" : "hse-slide-card"}
+              className={
+                slide.id === activeSlide.id ? "hse-slide-card is-active" : "hse-slide-card"
+              }
               onClick={() => setActiveSlideId(slide.id)}
               type="button"
               aria-label={`Slide ${index + 1}`}
@@ -244,7 +241,7 @@ function SlidesEditorStage() {
                   style={{
                     width: `${slide.width || DEFAULT_SLIDE_WIDTH}px`,
                     height: `${slide.height || DEFAULT_SLIDE_HEIGHT}px`,
-                    transform: `scale(${160 / (slide.width || DEFAULT_SLIDE_WIDTH)})`
+                    transform: `scale(${160 / (slide.width || DEFAULT_SLIDE_WIDTH)})`,
                   }}
                 >
                   <iframe
@@ -271,7 +268,7 @@ function SlidesEditorStage() {
               height: `${slideHeight}px`,
               left: `${offsetX}px`,
               top: `${offsetY}px`,
-              transform: `scale(${safeScale})`
+              transform: `scale(${safeScale})`,
             }}
           >
             <iframe ref={iframeRef} title={activeSlide.title} className="hse-slide-iframe" />
@@ -283,7 +280,7 @@ function SlidesEditorStage() {
                 left: `${selectionOverlay.x}px`,
                 top: `${selectionOverlay.y}px`,
                 width: `${selectionOverlay.width}px`,
-                height: `${selectionOverlay.height}px`
+                height: `${selectionOverlay.height}px`,
               }}
             >
               <div className="hse-selection-label">{selectedElement?.type || "element"}</div>

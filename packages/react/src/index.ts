@@ -1,5 +1,5 @@
+import { type SlideModel, parseSlide, sampleSlides } from "@html-slides-editor/core";
 import { useEffect, useState } from "react";
-import { parseSlide, sampleSlides, type SlideModel } from "@html-slides-editor/core";
 
 export function useSlidesData() {
   const [slides, setSlides] = useState<SlideModel[]>(sampleSlides);
@@ -11,7 +11,7 @@ export function useSlidesData() {
     async function loadGeneratedSlides() {
       try {
         const manifestResponse = await fetch("/generated/current/manifest.json", {
-          cache: "no-store"
+          cache: "no-store",
         });
         if (!manifestResponse.ok) {
           return;
@@ -29,14 +29,14 @@ export function useSlidesData() {
         const resolvedSlides = await Promise.all(
           manifest.slides.map(async (slide, index) => {
             const slideResponse = await fetch(`/generated/current/${slide.file}`, {
-              cache: "no-store"
+              cache: "no-store",
             });
             const html = await slideResponse.text();
             const parsed = parseSlide(html, `generated-slide-${index + 1}`);
 
             return {
               ...parsed,
-              title: slide.title || parsed.title
+              title: slide.title || parsed.title,
             };
           })
         );

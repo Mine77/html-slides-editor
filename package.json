@@ -6,6 +6,12 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @html-slides-editor/core --filter @html-slides-editor/react --filter @html-slides-editor/stage --filter web dev",
     "build": "pnpm -r build",
-    "generate:slides": "node skills/html-slides-generator/generate-slides.mjs"
+    "generate:slides": "node skills/html-slides-generator/generate-slides.mjs",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4"
   }
 }

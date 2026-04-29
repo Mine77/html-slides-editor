@@ -46,11 +46,13 @@ export const DEFAULT_SLIDE_WIDTH = 1920;
 export const DEFAULT_SLIDE_HEIGHT = 1080;
 
 function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "slide";
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "slide"
+  );
 }
 
 function createElementId(index: number, type: EditableType): string {
@@ -122,7 +124,7 @@ export function parseSlide(html: string, slideId = "slide-1"): SlideModel {
       rootSelector: `[${SLIDE_ROOT_ATTR}]`,
       width: DEFAULT_SLIDE_WIDTH,
       height: DEFAULT_SLIDE_HEIGHT,
-      elements: []
+      elements: [],
     };
   }
 
@@ -149,7 +151,7 @@ export function parseSlide(html: string, slideId = "slide-1"): SlideModel {
       selector: `[${SELECTOR_ATTR}="${selectorValue}"]`,
       type,
       content: node instanceof HTMLImageElement ? node.src : (node.textContent || "").trim(),
-      tagName: node.tagName.toLowerCase()
+      tagName: node.tagName.toLowerCase(),
     };
   });
 
@@ -163,7 +165,7 @@ export function parseSlide(html: string, slideId = "slide-1"): SlideModel {
     rootSelector,
     width,
     height,
-    elements
+    elements,
   };
 }
 
@@ -191,7 +193,7 @@ function parseTranslate(transformValue: string): { x: number; y: number } {
 
   return {
     x: Number.parseFloat(match[1] || "0") || 0,
-    y: Number.parseFloat(match[2] || "0") || 0
+    y: Number.parseFloat(match[2] || "0") || 0,
   };
 }
 
@@ -204,7 +206,7 @@ export function elementRectToStageRect(
     x: geometry.offsetX + (elementRect.left - rootRect.left) * geometry.scale,
     y: geometry.offsetY + (elementRect.top - rootRect.top) * geometry.scale,
     width: elementRect.width * geometry.scale,
-    height: elementRect.height * geometry.scale
+    height: elementRect.height * geometry.scale,
   };
 }
 
@@ -215,7 +217,7 @@ export function stageDeltaToSlideDelta(
 ): { x: number; y: number } {
   return {
     x: deltaX / geometry.scale,
-    y: deltaY / geometry.scale
+    y: deltaY / geometry.scale,
   };
 }
 
@@ -400,5 +402,5 @@ export const sampleSlides = [
   </body>
 </html>`,
     "slide-2"
-  )
+  ),
 ];

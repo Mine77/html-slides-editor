@@ -11,11 +11,13 @@ function getArg(name, fallback = "") {
 }
 
 function slugify(value) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "slides";
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "slides"
+  );
 }
 
 function escapeHtml(value) {
@@ -292,15 +294,9 @@ const summary = getArg(
   `A starter deck for ${topic} with editable text and block markers baked into the HTML.`
 );
 const points = splitPoints(
-  getArg(
-    "--points",
-    "What it is|Why it matters|What the first version proves"
-  )
+  getArg("--points", "What it is|Why it matters|What the first version proves")
 );
-const outputRoot = path.resolve(
-  process.cwd(),
-  getArg("--out-dir", `generated/${slugify(topic)}`)
-);
+const outputRoot = path.resolve(process.cwd(), getArg("--out-dir", `generated/${slugify(topic)}`));
 const appOutputRoot = path.resolve(
   process.cwd(),
   getArg("--app-out-dir", "apps/web/public/generated/current")
@@ -309,41 +305,41 @@ const appOutputRoot = path.resolve(
 const steps = [
   {
     title: "Improve design quality",
-    body: "Swap the starter layout for stronger visual systems once the generation pipeline is stable."
+    body: "Swap the starter layout for stronger visual systems once the generation pipeline is stable.",
   },
   {
     title: "Connect with the editor",
-    body: "Load these HTML files directly into the iframe workflow and map each editable node into the inspector."
+    body: "Load these HTML files directly into the iframe workflow and map each editable node into the inspector.",
   },
   {
     title: "Add richer element types",
-    body: "Expand from text and block markers into image, chart, and structured layout editing."
-  }
+    body: "Expand from text and block markers into image, chart, and structured layout editing.",
+  },
 ];
 
 const slides = [
   {
     file: "01-cover.html",
     title: `${topic} Cover`,
-    html: buildCoverSlide(topic, summary)
+    html: buildCoverSlide(topic, summary),
   },
   {
     file: "02-points.html",
     title: `${topic} Key Points`,
-    html: buildPointsSlide(topic, points)
+    html: buildPointsSlide(topic, points),
   },
   {
     file: "03-next-steps.html",
     title: `${topic} Next Steps`,
-    html: buildNextStepsSlide(topic, steps)
-  }
+    html: buildNextStepsSlide(topic, steps),
+  },
 ];
 
 fs.mkdirSync(outputRoot, { recursive: true });
 
-slides.forEach((slide) => {
+for (const slide of slides) {
   fs.writeFileSync(path.join(outputRoot, slide.file), slide.html, "utf8");
-});
+}
 
 fs.writeFileSync(
   path.join(outputRoot, "manifest.json"),
@@ -353,8 +349,8 @@ fs.writeFileSync(
       generatedAt: new Date().toISOString(),
       slides: slides.map((slide) => ({
         file: slide.file,
-        title: slide.title
-      }))
+        title: slide.title,
+      })),
     },
     null,
     2
@@ -365,7 +361,7 @@ fs.writeFileSync(
 copyDirectory(outputRoot, appOutputRoot);
 
 console.log(`Generated ${slides.length} slides in ${outputRoot}`);
-slides.forEach((slide) => {
+for (const slide of slides) {
   console.log(`- ${slide.file}`);
-});
+}
 console.log(`Synced slides to ${appOutputRoot}`);
