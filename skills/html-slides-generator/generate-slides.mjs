@@ -289,9 +289,7 @@ function buildAgendaSlide(topic, points) {
     .join("");
 
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(135deg, #f4efe7 0%, #edf5ff 58%, #fefcf8 100%)"
-    )}
+    `${baseStyles("linear-gradient(135deg, #f4efe7 0%, #edf5ff 58%, #fefcf8 100%)")}
     .layout {
       display: grid;
       grid-template-columns: 520px 1fr;
@@ -483,10 +481,7 @@ function buildProblemSlide() {
 
 function buildArchitectureSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(135deg, #0f172a 0%, #1e293b 52%, #163b58 100%)",
-      "#f8fafc"
-    )}
+    `${baseStyles("linear-gradient(135deg, #0f172a 0%, #1e293b 52%, #163b58 100%)", "#f8fafc")}
     .header {
       display: flex;
       justify-content: space-between;
@@ -609,9 +604,7 @@ function buildArchitectureSlide() {
 
 function buildTableSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(155deg, #fffdfa 0%, #f4f6fb 52%, #e8f1ff 100%)"
-    )}
+    `${baseStyles("linear-gradient(155deg, #fffdfa 0%, #f4f6fb 52%, #e8f1ff 100%)")}
     .top {
       display: flex;
       justify-content: space-between;
@@ -721,9 +714,7 @@ function buildTableSlide() {
 
 function buildChartSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(160deg, #f8fbff 0%, #eef2ff 42%, #ecfeff 100%)"
-    )}
+    `${baseStyles("linear-gradient(160deg, #f8fbff 0%, #eef2ff 42%, #ecfeff 100%)")}
     .layout {
       display: grid;
       grid-template-columns: 1.05fr 520px;
@@ -883,9 +874,7 @@ function buildChartSlide() {
 
 function buildImageSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(145deg, #f7f2ea 0%, #f4fbff 48%, #eff6ff 100%)"
-    )}
+    `${baseStyles("linear-gradient(145deg, #f7f2ea 0%, #f4fbff 48%, #eff6ff 100%)")}
     .header {
       margin-bottom: 28px;
     }
@@ -1050,9 +1039,7 @@ function buildImageSlide() {
 
 function buildTimelineSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(150deg, #fbfbff 0%, #f7f4ea 45%, #eef8ff 100%)"
-    )}
+    `${baseStyles("linear-gradient(150deg, #fbfbff 0%, #f7f4ea 45%, #eef8ff 100%)")}
     .header {
       display: flex;
       justify-content: space-between;
@@ -1183,9 +1170,7 @@ function buildTimelineSlide() {
 
 function buildComparisonSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(160deg, #fdfaf4 0%, #f0fdf4 52%, #eff6ff 100%)"
-    )}
+    `${baseStyles("linear-gradient(160deg, #fdfaf4 0%, #f0fdf4 52%, #eff6ff 100%)")}
     .header {
       margin-bottom: 34px;
     }
@@ -1286,10 +1271,7 @@ function buildComparisonSlide() {
 
 function buildCoverageSlide() {
   return wrapHtml(
-    `${baseStyles(
-      "linear-gradient(150deg, #0b1120 0%, #1e1b4b 45%, #1d4ed8 100%)",
-      "#f8fafc"
-    )}
+    `${baseStyles("linear-gradient(150deg, #0b1120 0%, #1e1b4b 45%, #1d4ed8 100%)", "#f8fafc")}
     .header {
       display: flex;
       justify-content: space-between;

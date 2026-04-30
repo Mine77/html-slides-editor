@@ -307,7 +307,8 @@ describe("generated slide contract", () => {
     const fetchImpl: typeof fetch = async (input, init) => {
       requests.push({ input, init });
 
-      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
       if (url.endsWith("/manifest.json")) {
         return new Response(

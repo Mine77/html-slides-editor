@@ -11,8 +11,10 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
+    "test": "pnpm -r --if-present test",
     "test:e2e:serve": "pnpm test:e2e:prepare && pnpm build && pnpm --filter web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify": "pnpm lint && pnpm test && pnpm build && pnpm test:e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
