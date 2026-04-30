@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("text editing commits and supports undo/redo", async ({ page }) => {
-  await page.goto("/?deck=sample");
+  await page.goto("/");
 
   const iframe = page.getByTestId("slide-iframe");
   const frame = page.frameLocator('[data-testid="slide-iframe"]');
@@ -10,8 +10,9 @@ test("text editing commits and supports undo/redo", async ({ page }) => {
   const redoButton = page.getByTestId("redo-button");
   const nextText = "Edited by Playwright";
 
+  await expect(page.getByText("Generated deck: E2E Regression Deck")).toBeVisible();
   await expect(iframe).toBeVisible();
-  await expect(editableHeading).toHaveText("HTML Slides Editor");
+  await expect(editableHeading).toHaveText("Generated Slide Deck");
 
   await editableHeading.dblclick();
   await expect(
@@ -30,7 +31,7 @@ test("text editing commits and supports undo/redo", async ({ page }) => {
   await expect(redoButton).toBeDisabled();
 
   await undoButton.click();
-  await expect(editableHeading).toHaveText("HTML Slides Editor");
+  await expect(editableHeading).toHaveText("Generated Slide Deck");
   await expect(redoButton).toBeEnabled();
 
   await redoButton.click();
@@ -38,7 +39,7 @@ test("text editing commits and supports undo/redo", async ({ page }) => {
 });
 
 test("double clicking a non-text element does not enter text editing", async ({ page }) => {
-  await page.goto("/?deck=sample");
+  await page.goto("/");
 
   const frame = page.frameLocator('[data-testid="slide-iframe"]');
   const blockCard = frame.locator('[data-editor-id="block-4"]');
@@ -58,14 +59,14 @@ test("double clicking a non-text element does not enter text editing", async ({ 
 });
 
 test("escape cancels text editing without creating undo history", async ({ page }) => {
-  await page.goto("/?deck=sample");
+  await page.goto("/");
 
   const frame = page.frameLocator('[data-testid="slide-iframe"]');
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
   const undoButton = page.getByTestId("undo-button");
   const redoButton = page.getByTestId("redo-button");
   const editingHint = page.getByText("Editing text. Press Enter to save or Escape to cancel.");
-  const originalText = "HTML Slides Editor";
+  const originalText = "Generated Slide Deck";
   const draftText = "Draft text that should be discarded";
 
   await editableHeading.dblclick();

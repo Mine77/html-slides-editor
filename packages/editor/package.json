@@ -1,5 +1,5 @@
 {
-  "name": "@html-slides-editor/stage",
+  "name": "@html-slides-editor/editor",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@html-slides-editor/core": "workspace:*",
-    "@html-slides-editor/react": "workspace:*",
     "html-to-image": "^1.11.11",
     "react": "^19.1.0"
   },

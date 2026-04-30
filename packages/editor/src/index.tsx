@@ -8,7 +8,6 @@ import {
   elementRectToStageRect,
   invertSlideOperation,
 } from "@html-slides-editor/core";
-import { useSlidesData } from "@html-slides-editor/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SlideSidebar } from "./components/slide-sidebar";
 import { StageCanvas } from "./components/stage-canvas";
@@ -23,8 +22,12 @@ interface TextEditingState {
   initialText: string;
 }
 
-function SlidesEditorStage() {
-  const { slides: loadedSlides, sourceLabel } = useSlidesData();
+export interface SlidesEditorProps {
+  slides: SlideModel[];
+  sourceLabel: string;
+}
+
+function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) {
   const [slides, setSlides] = useState<SlideModel[]>(loadedSlides);
   const [activeSlideId, setActiveSlideId] = useState(loadedSlides[0]?.id ?? "");
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
@@ -177,12 +180,8 @@ function SlidesEditorStage() {
     };
   }, []);
 
-  if (!activeSlide) {
-    return <div className="hse-empty">No slides loaded.</div>;
-  }
-
-  const slideWidth = activeSlide.width || DEFAULT_SLIDE_WIDTH;
-  const slideHeight = activeSlide.height || DEFAULT_SLIDE_HEIGHT;
+  const slideWidth = activeSlide?.width || DEFAULT_SLIDE_WIDTH;
+  const slideHeight = activeSlide?.height || DEFAULT_SLIDE_HEIGHT;
   const stageScale = Math.min(
     viewportSize.width > 0 ? viewportSize.width / slideWidth : 1,
     viewportSize.height > 0 ? viewportSize.height / slideHeight : 1
@@ -196,6 +195,10 @@ function SlidesEditorStage() {
   const isEditingText = textEditing?.slideId === activeSlide.id;
 
   useEffect(() => {
+    if (!activeSlide) {
+      return;
+    }
+
     const iframe = iframeRef.current;
     if (!iframe) {
       return;
@@ -275,7 +278,7 @@ function SlidesEditorStage() {
 
   useEffect(() => {
     const editing = textEditing;
-    if (!editing || editing.slideId !== activeSlide.id) {
+    if (!editing || !activeSlide || editing.slideId !== activeSlide.id) {
       return;
     }
 
@@ -325,7 +328,7 @@ function SlidesEditorStage() {
         commitNodeText();
       }
     };
-  }, [activeSlide.id, textEditing]);
+  }, [activeSlide, textEditing]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -361,6 +364,13 @@ function SlidesEditorStage() {
     const iframe = iframeRef.current;
     const doc = iframe?.contentDocument;
     if (!iframe || !doc) {
+      setSelectionOverlay(null);
+      setInspectedStyles([]);
+      setInspectedLabel("slide root");
+      return;
+    }
+
+    if (!activeSlide) {
       setSelectionOverlay(null);
       setInspectedStyles([]);
       setInspectedLabel("slide root");
@@ -414,6 +424,10 @@ function SlidesEditorStage() {
     slideHeight,
   ]);
 
+  if (!activeSlide) {
+    return <div className="hse-empty">No slides loaded.</div>;
+  }
+
   return (
     <div className="hse-shell">
       <SlideSidebar
@@ -454,4 +468,4 @@ function SlidesEditorStage() {
   );
 }
 
-export { SlidesEditorStage };
+export { SlidesEditor };

@@ -4,13 +4,14 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter @html-slides-editor/core --filter @html-slides-editor/react --filter @html-slides-editor/stage --filter web dev",
+    "dev": "pnpm --parallel --filter @html-slides-editor/core --filter @html-slides-editor/editor --filter web dev",
     "build": "pnpm -r build",
     "generate:slides": "node skills/html-slides-generator/generate-slides.mjs",
+    "test:e2e:prepare": "pnpm generate:slides -- --topic \"E2E Regression Deck\" --summary \"A generated deck used to verify the full editor pipeline from skill output through in-app editing.\" --points \"Generated input|Editor import|Round-trip text editing\"",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "test:e2e:serve": "pnpm build && pnpm --filter web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "test:e2e:serve": "pnpm test:e2e:prepare && pnpm build && pnpm --filter web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

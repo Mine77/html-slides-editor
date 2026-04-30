@@ -13,9 +13,8 @@ Idea docs:
 apps/
   web/                         React + Vite app
 packages/
-  core/                        Slide contract, parser, update helpers
-  react/                       React data bindings
-  stage/                       Editor stage UI
+  core/                        Slide contract, parser, import, update helpers
+  editor/                      Editor UI that applies core operations
 skills/
   html-slides-generator/       Local slide generator skill
 ```
@@ -27,7 +26,7 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` runs linked watch mode for `packages/core`, `packages/react`, `packages/stage`, and `apps/web`.
+`pnpm dev` runs linked watch mode for `packages/core`, `packages/editor`, and `apps/web`.
 
 Other useful commands:
 
@@ -38,6 +37,7 @@ pnpm test:e2e
 ```
 
 `pnpm test:e2e` runs the browser regression suite, including direct text editing coverage.
+It first generates a fresh deck with `skills/html-slides-generator`, syncs that output into the app, then runs the editor against the generated deck end to end.
 
 ## Generate Slides
 
@@ -62,7 +62,7 @@ This command:
 - writes `manifest.json` next to the slide files
 - syncs the latest output to `apps/web/public/generated/current/`
 
-The app loads `apps/web/public/generated/current/manifest.json` by default. If it does not exist, it falls back to sample slides.
+The app loads `apps/web/public/generated/current/manifest.json` through a core import helper. A generated deck is required for the app to render slides.
 
 ## Slide Contract
 

@@ -30,3 +30,4 @@ Update this directory whenever a change affects:
 | ADR | Title | Status |
 | --- | --- | --- |
 | [0001](./0001-editing-pipeline-and-versioning.md) | Editing pipeline and versioning strategy | accepted |
+| [0002](./0002-package-boundaries-for-core-editor-and-app.md) | Package boundaries for core, editor, and app | accepted |

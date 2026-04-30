@@ -32,6 +32,12 @@ Choose the narrowest useful test layer:
 - `packages/core` tests for parsing, operations, HTML write-back, and inversion logic
 - pure visual or copy-only changes do not require tests unless they touch a critical interaction
 
+Current browser regression policy:
+
+- `pnpm test:e2e` must generate a fresh deck with `skills/html-slides-generator`
+- the app must load that generated deck through the normal manifest import path
+- E2E coverage should prefer this generated-deck path over sample-slide-only shortcuts
+
 ## Core Domain
 
 The central object is `SlideModel` in `packages/core`:
@@ -71,14 +77,15 @@ For editing architecture changes, read [docs/adr/0001-editing-pipeline-and-versi
 
 The app prefers generated decks from `apps/web/public/generated/current/manifest.json`.
 
-If no generated deck exists, it falls back to built-in sample slides.
+`packages/core` provides import helpers for reading manifest-driven decks.
+
+The app does not maintain a sample-slide fallback. A generated deck is required.
 
 ## Package Boundaries
 
-- `packages/core`: parsing, normalization, HTML mutation, slide contract
-- `packages/react`: slide loading and React bindings
-- `packages/stage`: stage UI, overlays, inspector, thumbnails, editing interactions
-- `apps/web`: app composition only; keep editor logic out when possible
+- `packages/core`: parsing, normalization, HTML mutation, slide contract, reusable slide import helpers
+- `packages/editor`: editor UI, overlays, inspector, thumbnails, editing interactions; consumes core APIs
+- `apps/web`: app composition and generated-deck loading policy
 
 If a change redefines these responsibilities, update the ADRs.
 
@@ -90,7 +97,7 @@ Use these repo terms consistently:
 - `slide root`
 - `editable element`
 - `htmlSource`
-- `stage`
+- `editor`
 - `generated deck`
 
 ## ADR Triggers

@@ -29,6 +29,28 @@ export interface TextUpdateOperation {
 
 export type SlideOperation = TextUpdateOperation;
 
+export interface SlideDeckManifestEntry {
+  file: string;
+  title?: string;
+}
+
+export interface SlideDeckManifest {
+  topic?: string;
+  slides?: SlideDeckManifestEntry[];
+}
+
+export interface ImportedSlideDeck {
+  manifest: SlideDeckManifest;
+  slides: SlideModel[];
+}
+
+export interface LoadSlidesFromManifestOptions {
+  manifestUrl: string;
+  fetchImpl?: typeof fetch;
+  requestInit?: RequestInit;
+  slideIdPrefix?: string;
+}
+
 export interface RectLike {
   left: number;
   top: number;
@@ -288,155 +310,50 @@ export function updateSlideElementTransform(
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
 
-export const sampleSlides = [
-  parseSlide(
-    `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      :root { color-scheme: light; }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        width: 1920px;
-        height: 1080px;
-        overflow: hidden;
-        font-family: "Avenir Next", "Segoe UI", sans-serif;
-        background:
-          radial-gradient(circle at top right, rgba(255, 200, 120, 0.75), transparent 24%),
-          linear-gradient(135deg, #f7f1e8 0%, #f0e3d0 45%, #d5c0a8 100%);
-        color: #1f1912;
+export async function loadSlidesFromManifest({
+  manifestUrl,
+  fetchImpl,
+  requestInit,
+  slideIdPrefix = "slide-",
+}: LoadSlidesFromManifestOptions): Promise<ImportedSlideDeck | null> {
+  const activeFetch = fetchImpl ?? globalThis.fetch;
+  if (!activeFetch) {
+    throw new Error("loadSlidesFromManifest requires a fetch implementation.");
+  }
+
+  const manifestResponse = await activeFetch(manifestUrl, requestInit);
+  if (!manifestResponse.ok) {
+    return null;
+  }
+
+  const manifest = (await manifestResponse.json()) as SlideDeckManifest;
+  if (!manifest.slides?.length) {
+    return null;
+  }
+
+  const manifestBaseUrl = manifestResponse.url || manifestUrl;
+  const slides = await Promise.all(
+    manifest.slides.map(async (slide, index) => {
+      const slideResponse = await activeFetch(
+        new URL(slide.file, manifestBaseUrl).toString(),
+        requestInit
+      );
+      if (!slideResponse.ok) {
+        throw new Error(`Failed to load slide HTML: ${slide.file}`);
       }
-      .slide-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        padding: 120px 140px;
-      }
-      .eyebrow {
-        display: inline-block;
-        padding: 12px 20px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.55);
-        font-size: 32px;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-      }
-      h1 {
-        margin: 40px 0 20px;
-        font-size: 110px;
-        line-height: 0.94;
-        max-width: 1050px;
-      }
-      p {
-        margin: 0;
-        max-width: 900px;
-        font-size: 44px;
-        line-height: 1.35;
-        color: rgba(31, 25, 18, 0.82);
-      }
-      .card {
-        position: absolute;
-        right: 150px;
-        bottom: 150px;
-        width: 460px;
-        padding: 36px;
-        border-radius: 36px;
-        background: rgba(255, 255, 255, 0.72);
-        backdrop-filter: blur(14px);
-        box-shadow: 0 18px 60px rgba(88, 56, 24, 0.15);
-      }
-      .card strong {
-        display: block;
-        margin-bottom: 18px;
-        font-size: 28px;
-      }
-      .card span {
-        display: block;
-        font-size: 30px;
-        line-height: 1.4;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="slide-container" data-slide-root="true" data-slide-width="1920" data-slide-height="1080">
-      <div class="eyebrow" data-editable="text">HTML Slides Editor</div>
-      <h1 data-editable="text">Edit AI-generated slides without converting formats.</h1>
-      <p data-editable="text">A transparent interaction layer on top of raw HTML makes arbitrary slides editable while preserving their original rendering.</p>
-      <div class="card" data-editable="block">
-        <strong data-editable="text">Core idea</strong>
-        <span data-editable="text">iframe for rendering, overlay for selection, and a shared model for save-back.</span>
-      </div>
-    </div>
-  </body>
-</html>`,
-    "slide-1"
-  ),
-  parseSlide(
-    `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <style>
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        width: 1920px;
-        height: 1080px;
-        overflow: hidden;
-        font-family: Georgia, serif;
-        background:
-          linear-gradient(150deg, rgba(15, 37, 63, 0.92), rgba(33, 74, 98, 0.96)),
-          #0f253f;
-        color: #f6f5f1;
-      }
-      .slide-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        padding: 120px;
-      }
-      h1 {
-        margin: 0 0 24px;
-        font-size: 96px;
-        max-width: 900px;
-      }
-      p {
-        max-width: 760px;
-        margin: 0;
-        font-size: 42px;
-        line-height: 1.4;
-        color: rgba(246, 245, 241, 0.82);
-      }
-      .quote {
-        position: absolute;
-        right: 120px;
-        top: 160px;
-        width: 620px;
-        padding: 48px;
-        border: 1px solid rgba(246, 245, 241, 0.18);
-        border-radius: 32px;
-        background: rgba(255, 255, 255, 0.08);
-      }
-      .quote span {
-        display: block;
-        font-size: 34px;
-        line-height: 1.45;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="slide-container" data-slide-root="true" data-slide-width="1920" data-slide-height="1080">
-      <h1 data-editable="text">The editor needs to respect the source HTML.</h1>
-      <p data-editable="text">No private scene graph. No format conversion. The DOM stays the source of truth, and the editor writes back targeted updates.</p>
-      <div class="quote" data-editable="block">
-        <span data-editable="text">The first version only needs inspection, selection, and text editing to prove the model.</span>
-      </div>
-    </div>
-  </body>
-</html>`,
-    "slide-2"
-  ),
-];
+
+      const html = await slideResponse.text();
+      const parsedSlide = parseSlide(html, `${slideIdPrefix}${index + 1}`);
+
+      return {
+        ...parsedSlide,
+        title: slide.title || parsedSlide.title,
+      };
+    })
+  );
+
+  return {
+    manifest,
+    slides,
+  };
+}
