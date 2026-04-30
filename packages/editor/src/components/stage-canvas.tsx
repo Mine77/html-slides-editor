@@ -13,6 +13,7 @@ interface StageCanvasProps {
   selectionLabel: string;
   iframeRef: RefObject<HTMLIFrameElement | null>;
   stageViewportRef: RefObject<HTMLDivElement | null>;
+  onBackgroundClick: () => void;
 }
 
 function StageCanvas({
@@ -27,9 +28,19 @@ function StageCanvas({
   selectionLabel,
   iframeRef,
   stageViewportRef,
+  onBackgroundClick,
 }: StageCanvasProps) {
   return (
-    <section className="hse-stage-panel" data-testid="stage-panel" ref={stageViewportRef}>
+    <section
+      className="hse-stage-panel"
+      data-testid="stage-panel"
+      ref={stageViewportRef}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onBackgroundClick();
+        }
+      }}
+    >
       <h1 className="hse-stage-title">{sourceLabel}</h1>
       <div
         className="hse-stage-frame"

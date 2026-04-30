@@ -7,6 +7,7 @@
     "dev": "pnpm --parallel --filter @html-slides-editor/core --filter @html-slides-editor/editor --filter web dev",
     "build": "pnpm -r build",
     "generate:slides": "node skills/html-slides-generator/generate-slides.mjs",
+    "test": "pnpm --filter @html-slides-editor/core test",
     "test:e2e:prepare": "pnpm generate:slides -- --topic \"E2E Regression Deck\" --summary \"A generated deck used to verify the full editor pipeline from skill output through in-app editing.\" --points \"Generated input|Editor import|Round-trip text editing\"",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -16,6 +17,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
-    "@biomejs/biome": "^1.9.4"
+    "@biomejs/biome": "^1.9.4",
+    "jsdom": "^26.1.0",
+    "vitest": "^3.2.4"
   }
 }

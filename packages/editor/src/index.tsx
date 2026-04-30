@@ -354,9 +354,12 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
       }
     };
 
+    const iframeDocument = iframeRef.current?.contentDocument;
     window.addEventListener("keydown", onKeyDown);
+    iframeDocument?.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      iframeDocument?.removeEventListener("keydown", onKeyDown);
     };
   }, [redoStack.length, undoStack.length]);
 
@@ -453,6 +456,11 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
           selectionLabel={selectionLabel}
           iframeRef={iframeRef}
           stageViewportRef={stageViewportRef}
+          onBackgroundClick={() => {
+            if (!textEditingRef.current) {
+              setSelectedElementId(null);
+            }
+          }}
         />
         <StyleInspector
           inspectedLabel={inspectedLabel}

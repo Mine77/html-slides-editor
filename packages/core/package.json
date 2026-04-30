@@ -14,10 +14,12 @@
   },
   "scripts": {
     "dev": "tsup src/index.ts --format esm --dts --watch",
-    "build": "tsup src/index.ts --format esm --dts"
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run"
   },
   "devDependencies": {
     "tsup": "^8.5.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }
