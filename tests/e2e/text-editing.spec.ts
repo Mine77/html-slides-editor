@@ -248,6 +248,100 @@ test("clicking blank space clears the current selection", async ({ page }) => {
   await expect(selectionOverlay).toBeHidden();
 });
 
+test("sidebar scrolls with overflow and expands on hover without shifting the stage", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+
+  const sidebar = page.locator(".hse-sidebar").first();
+  const sidebarPanel = page.locator(".hse-sidebar-panel").first();
+  const slideList = page.locator(".hse-slide-list").first();
+  const stagePanel = page.getByTestId("stage-panel");
+
+  await expect(sidebar).toBeVisible();
+  await expect(sidebarPanel).toBeVisible();
+
+  const collapsedSidebarWidth = await sidebar.evaluate(
+    (node) => node.getBoundingClientRect().width
+  );
+  const collapsedPanelWidth = await sidebarPanel.evaluate(
+    (node) => node.getBoundingClientRect().width
+  );
+  const stageWidthBeforeHover = await stagePanel.evaluate(
+    (node) => node.getBoundingClientRect().width
+  );
+  const overflowState = await slideList.evaluate((node) => ({
+    clientHeight: node.clientHeight,
+    scrollHeight: node.scrollHeight,
+    overflowY: window.getComputedStyle(node).overflowY,
+  }));
+
+  expect(overflowState.overflowY).toBe("auto");
+
+  await sidebar.hover();
+
+  await expect
+    .poll(async () => {
+      return sidebar.evaluate((node) => node.getBoundingClientRect().width);
+    })
+    .toBeGreaterThan(collapsedSidebarWidth + 20);
+
+  const expandedSidebarWidth = await sidebar.evaluate((node) => node.getBoundingClientRect().width);
+  const expandedPanelWidth = await sidebarPanel.evaluate(
+    (node) => node.getBoundingClientRect().width
+  );
+  const stageWidthAfterHover = await stagePanel.evaluate(
+    (node) => node.getBoundingClientRect().width
+  );
+
+  expect(expandedSidebarWidth).toBeGreaterThan(collapsedSidebarWidth + 20);
+  expect(expandedPanelWidth).toBeGreaterThan(collapsedPanelWidth + 20);
+  expect(stageWidthAfterHover).toBeLessThan(stageWidthBeforeHover - 20);
+
+  const slideTwoButton = page.getByLabel("Slide 2");
+  await slideTwoButton.click();
+  await expect(slideTwoButton).toHaveClass(/is-active/);
+
+  const activeThumb = slideTwoButton.locator(".hse-slide-thumb");
+  await expect
+    .poll(async () => {
+      return activeThumb.evaluate((node) => {
+        const styles = window.getComputedStyle(node);
+        return {
+          borderTopWidth: styles.borderTopWidth,
+          borderTopColor: styles.borderTopColor,
+        };
+      });
+    })
+    .not.toEqual({
+      borderTopWidth: "2px",
+      borderTopColor: "rgba(0, 0, 0, 0)",
+    });
+
+  if (overflowState.scrollHeight > overflowState.clientHeight) {
+    await page.getByLabel("Slide 8").click();
+
+    const activeCardState = await page.getByLabel("Slide 8").evaluate((node) => {
+      const scrollParent = node.parentElement;
+
+      if (!(scrollParent instanceof HTMLElement)) {
+        throw new Error("Missing slide list container.");
+      }
+
+      const cardRect = node.getBoundingClientRect();
+      const listRect = scrollParent.getBoundingClientRect();
+
+      return {
+        scrollTop: scrollParent.scrollTop,
+        isFullyVisible: cardRect.top >= listRect.top && cardRect.bottom <= listRect.bottom,
+      };
+    });
+
+    expect(activeCardState.scrollTop).toBeGreaterThan(0);
+    expect(activeCardState.isFullyVisible).toBeTruthy();
+  }
+});
+
 test("double clicking a text child enters editing on the correct element", async ({ page }) => {
   await gotoEditor(page);
 
