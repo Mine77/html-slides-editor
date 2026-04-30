@@ -2,13 +2,12 @@ import {
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
   type SlideModel,
-  type SlideOperation,
   type TextUpdateOperation,
-  applySlideOperation,
+  createHistoryState,
   elementRectToStageRect,
-  invertSlideOperation,
+  reduceHistory,
 } from "@html-slides-editor/core";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { SlideSidebar } from "./components/slide-sidebar";
 import { StageCanvas } from "./components/stage-canvas";
 import { StyleInspector } from "./components/style-inspector";
@@ -28,7 +27,11 @@ export interface SlidesEditorProps {
 }
 
 function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) {
-  const [slides, setSlides] = useState<SlideModel[]>(loadedSlides);
+  const [historyState, dispatchHistory] = useReducer(
+    reduceHistory,
+    loadedSlides,
+    createHistoryState
+  );
   const [activeSlideId, setActiveSlideId] = useState(loadedSlides[0]?.id ?? "");
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [selectionOverlay, setSelectionOverlay] = useState<ReturnType<
@@ -37,8 +40,6 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
   const [inspectedStyles, setInspectedStyles] = useState<CssPropertyRow[]>([]);
   const [inspectedLabel, setInspectedLabel] = useState("slide root");
   const [textEditing, setTextEditing] = useState<TextEditingState | null>(null);
-  const [undoStack, setUndoStack] = useState<SlideOperation[]>([]);
-  const [redoStack, setRedoStack] = useState<SlideOperation[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageViewportRef = useRef<HTMLDivElement>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
@@ -47,13 +48,10 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
   const cancelTextEditRef = useRef<() => void>(() => {});
   const runUndoRef = useRef<() => void>(() => {});
   const runRedoRef = useRef<() => void>(() => {});
+  const slides = historyState.slides;
+  const undoStack = historyState.undoStack;
+  const redoStack = historyState.redoStack;
   const thumbnails = useSlideThumbnails(slides);
-
-  function updateSlidesWithOperation(operation: SlideOperation) {
-    setSlides((currentSlides) =>
-      currentSlides.map((slide) => applySlideOperation(slide, operation))
-    );
-  }
 
   function commitTextEdit(elementId: string, nextText: string) {
     const active = activeSlide;
@@ -80,9 +78,10 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
       timestamp: Date.now(),
     };
 
-    updateSlidesWithOperation(operation);
-    setUndoStack((current) => [...current, operation]);
-    setRedoStack([]);
+    dispatchHistory({
+      type: "history.commit",
+      operation,
+    });
   }
 
   function cancelTextEdit() {
@@ -104,41 +103,23 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
   }
 
   function runUndo() {
-    setUndoStack((currentUndo) => {
-      const operation = currentUndo[currentUndo.length - 1];
-      if (!operation) {
-        return currentUndo;
-      }
-
-      const inverse = invertSlideOperation(operation);
-      updateSlidesWithOperation(inverse);
-      setRedoStack((currentRedo) => [...currentRedo, operation]);
-      setTextEditing(null);
-      return currentUndo.slice(0, -1);
-    });
+    dispatchHistory({ type: "history.undo" });
+    setTextEditing(null);
   }
 
   function runRedo() {
-    setRedoStack((currentRedo) => {
-      const operation = currentRedo[currentRedo.length - 1];
-      if (!operation) {
-        return currentRedo;
-      }
-
-      updateSlidesWithOperation(operation);
-      setUndoStack((currentUndo) => [...currentUndo, operation]);
-      setTextEditing(null);
-      return currentRedo.slice(0, -1);
-    });
+    dispatchHistory({ type: "history.redo" });
+    setTextEditing(null);
   }
 
   useEffect(() => {
-    setSlides(loadedSlides);
+    dispatchHistory({
+      type: "history.reset",
+      slides: loadedSlides,
+    });
     setActiveSlideId(loadedSlides[0]?.id ?? "");
     setSelectedElementId(null);
     setTextEditing(null);
-    setUndoStack([]);
-    setRedoStack([]);
   }, [loadedSlides]);
 
   useEffect(() => {
@@ -332,6 +313,10 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+
       const isUndo =
         (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z";
       const isRedo =
@@ -344,12 +329,14 @@ function SlidesEditor({ slides: loadedSlides, sourceLabel }: SlidesEditorProps) 
 
       if (isUndo && undoStack.length > 0) {
         event.preventDefault();
+        event.stopPropagation();
         runUndoRef.current();
         return;
       }
 
       if (isRedo && redoStack.length > 0) {
         event.preventDefault();
+        event.stopPropagation();
         runRedoRef.current();
       }
     };

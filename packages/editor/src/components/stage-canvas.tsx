@@ -30,14 +30,26 @@ function StageCanvas({
   stageViewportRef,
   onBackgroundClick,
 }: StageCanvasProps) {
+  const clearSelectionIfBackground = (
+    target: EventTarget | null,
+    currentTarget: EventTarget | null
+  ) => {
+    if (target === currentTarget) {
+      onBackgroundClick();
+    }
+  };
+
   return (
     <section
       className="hse-stage-panel"
       data-testid="stage-panel"
       ref={stageViewportRef}
       onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onBackgroundClick();
+        clearSelectionIfBackground(event.target, event.currentTarget);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          clearSelectionIfBackground(event.target, event.currentTarget);
         }
       }}
     >

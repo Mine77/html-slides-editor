@@ -71,6 +71,8 @@ Per ADR-0001, editing follows this pipeline:
 3. updated state writes back into `htmlSource`
 4. history/versioning layers sit on top
 
+The shared document history model is part of `packages/core`, so user-driven UI edits and future agent-driven edits can use the same undo/redo semantics.
+
 For editing architecture changes, read [docs/adr/0001-editing-pipeline-and-versioning.md](/Users/haichao/code/html-slides-editor/docs/adr/0001-editing-pipeline-and-versioning.md) first.
 
 ## Content Sources
@@ -83,8 +85,8 @@ The app does not maintain a sample-slide fallback. A generated deck is required.
 
 ## Package Boundaries
 
-- `packages/core`: parsing, normalization, HTML mutation, slide contract, reusable slide import helpers
-- `packages/editor`: editor UI, overlays, inspector, thumbnails, editing interactions; consumes core APIs
+- `packages/core`: parsing, normalization, HTML mutation, slide contract, reusable slide import helpers, document operations, shared history state/reducer
+- `packages/editor`: editor UI, overlays, inspector, thumbnails, editing interactions, transient UI session state; consumes core APIs
 - `apps/web`: app composition and generated-deck loading policy
 
 If a change redefines these responsibilities, update the ADRs.

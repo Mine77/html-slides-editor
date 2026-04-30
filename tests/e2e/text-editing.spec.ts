@@ -1,4 +1,4 @@
-import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+import { type FrameLocator, type Page, expect, test } from "@playwright/test";
 
 const EDITING_HINT = "Editing text. Press Enter to save or Escape to cancel.";
 const MODIFIER = process.platform === "darwin" ? "Meta" : "Control";
@@ -48,7 +48,9 @@ test("plain click selects text only, and double click enters editing", async ({ 
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 });
 
-test("text editing commits on blur and keeps undo/redo disabled while editing", async ({ page }) => {
+test("text editing commits on blur and keeps undo/redo disabled while editing", async ({
+  page,
+}) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
@@ -145,6 +147,42 @@ test("keyboard shortcuts trigger undo and redo", async ({ page }) => {
   await expect(editableHeading).toHaveText("Generated Slide Deck");
   await page.keyboard.press(`${MODIFIER}+Y`);
   await expect(editableHeading).toHaveText(nextText);
+});
+
+test("keyboard undo and redo do not record themselves as new history entries", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const heading = frame.locator('[data-editor-id="text-2"]');
+  const summary = frame.locator('[data-editor-id="text-3"]');
+  const headingText = "Deck topic updated";
+  const summaryText = "Summary updated after heading";
+  const originalSummary =
+    "A generated deck used to verify the full editor pipeline from skill output through in-app editing.";
+
+  await heading.dblclick();
+  await selectAllAndFill(heading, headingText);
+  await heading.press("Enter");
+
+  await summary.dblclick();
+  await selectAllAndFill(summary, summaryText);
+  await summary.press("Enter");
+
+  await page.keyboard.press(`${MODIFIER}+Z`);
+  await expect(summary).toHaveText(originalSummary);
+  await expect(heading).toHaveText(headingText);
+
+  await page.keyboard.press(`${MODIFIER}+Shift+Z`);
+  await expect(summary).toHaveText(summaryText);
+  await expect(heading).toHaveText(headingText);
+
+  await page.keyboard.press(`${MODIFIER}+Z`);
+  await expect(summary).toHaveText(originalSummary);
+  await expect(heading).toHaveText(headingText);
+
+  await page.keyboard.press(`${MODIFIER}+Z`);
+  await expect(heading).toHaveText("E2E Regression Deck");
+  await expect(summary).toHaveText(originalSummary);
 });
 
 test("multiple edits maintain correct undo and redo stack order", async ({ page }) => {
