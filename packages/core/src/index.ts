@@ -27,7 +27,17 @@ export interface TextUpdateOperation {
   timestamp: number;
 }
 
-export type SlideOperation = TextUpdateOperation;
+export interface StyleUpdateOperation {
+  type: "style.update";
+  slideId: string;
+  elementId: string;
+  propertyName: string;
+  previousValue: string;
+  nextValue: string;
+  timestamp: number;
+}
+
+export type SlideOperation = TextUpdateOperation | StyleUpdateOperation;
 
 export interface HistoryState {
   slides: SlideModel[];
@@ -240,6 +250,37 @@ export function updateSlideText(html: string, elementId: string, value: string):
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
 
+export function updateSlideStyle(
+  html: string,
+  elementId: string,
+  propertyName: string,
+  value: string
+): string {
+  if (typeof DOMParser === "undefined") {
+    return html;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${elementId}"]`);
+
+  if (!node) {
+    return html;
+  }
+
+  if (value.trim().length === 0) {
+    node.style.removeProperty(propertyName);
+  } else {
+    node.style.setProperty(propertyName, value);
+  }
+
+  if (!node.getAttribute("style")) {
+    node.removeAttribute("style");
+  }
+
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
+
 export function applySlideOperation(slide: SlideModel, operation: SlideOperation): SlideModel {
   if (slide.id !== operation.slideId) {
     return slide;
@@ -249,6 +290,16 @@ export function applySlideOperation(slide: SlideModel, operation: SlideOperation
     case "text.update":
       return parseSlide(
         updateSlideText(slide.htmlSource, operation.elementId, operation.nextText),
+        slide.id
+      );
+    case "style.update":
+      return parseSlide(
+        updateSlideStyle(
+          slide.htmlSource,
+          operation.elementId,
+          operation.propertyName,
+          operation.nextValue
+        ),
         slide.id
       );
   }
@@ -261,6 +312,12 @@ export function invertSlideOperation(operation: SlideOperation): SlideOperation 
         ...operation,
         previousText: operation.nextText,
         nextText: operation.previousText,
+      };
+    case "style.update":
+      return {
+        ...operation,
+        previousValue: operation.nextValue,
+        nextValue: operation.previousValue,
       };
   }
 }

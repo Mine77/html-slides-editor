@@ -87,7 +87,11 @@ body,
 
 .hse-slide-card:focus-visible,
 .hse-element-card:focus-visible,
-.hse-history-button:focus-visible {
+.hse-inspector-tab:focus-visible,
+.hse-inspector-group-toggle:focus-visible,
+.hse-inspector-input:focus-visible,
+.hse-inspector-select:focus-visible,
+.hse-inspector-apply-button:focus-visible {
   outline: 2px solid var(--hse-accent-outline);
   outline-offset: 2px;
 }

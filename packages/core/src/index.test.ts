@@ -13,6 +13,7 @@ import {
   loadSlidesFromManifest,
   parseSlide,
   reduceHistory,
+  updateSlideStyle,
   updateSlideText,
 } from "./index";
 
@@ -99,6 +100,44 @@ describe("updateSlideText", () => {
     const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
 
     expect(doc.querySelector('[data-editor-id="text-1"]')?.textContent).toBe("  Updated body  ");
+  });
+});
+
+describe("updateSlideStyle", () => {
+  test("writes updated inline styles back into htmlSource using data-editor-id targeting", () => {
+    const html = ensureEditableSelectors(`<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text">Original heading</h1>
+    </div>
+  </body>
+</html>`);
+
+    const updatedHtml = updateSlideStyle(html, "text-1", "font-size", "64px");
+    const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
+
+    expect(doc.querySelector('[data-editor-id="text-1"]')?.style.getPropertyValue("font-size")).toBe(
+      "64px"
+    );
+  });
+
+  test("removes inline styles when the next value is empty", () => {
+    const html = ensureEditableSelectors(`<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text" style="font-size: 64px; color: red;">Original heading</h1>
+    </div>
+  </body>
+</html>`);
+
+    const updatedHtml = updateSlideStyle(html, "text-1", "font-size", "");
+    const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
+    const node = doc.querySelector('[data-editor-id="text-1"]');
+
+    expect(node?.style.getPropertyValue("font-size")).toBe("");
+    expect(node?.style.getPropertyValue("color")).toBe("red");
   });
 });
 
@@ -193,6 +232,68 @@ describe("slide operations", () => {
     expect(updatedSlide.elements.find((element) => element.id === "text-1")?.content).toBe(
       "  After  "
     );
+  });
+
+  test("applySlideOperation updates the matching slide inline styles", () => {
+    const originalSlide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text">Before</h1>
+    </div>
+  </body>
+</html>`,
+      "slide-a"
+    );
+
+    const updatedSlide = applySlideOperation(originalSlide, {
+      type: "style.update",
+      slideId: originalSlide.id,
+      elementId: "text-1",
+      propertyName: "font-size",
+      previousValue: "",
+      nextValue: "72px",
+      timestamp: 1,
+    });
+
+    expect(updatedSlide.htmlSource).toContain('style="font-size: 72px;"');
+  });
+
+  test("invertSlideOperation pairs correctly with style.update and reverses applySlideOperation", () => {
+    const originalSlide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text" style="font-size: 48px;">Before</h1>
+    </div>
+  </body>
+</html>`,
+      "slide-a"
+    );
+
+    const operation = {
+      type: "style.update" as const,
+      slideId: originalSlide.id,
+      elementId: "text-1",
+      propertyName: "font-size",
+      previousValue: "48px",
+      nextValue: "72px",
+      timestamp: 1,
+    };
+
+    const updatedSlide = applySlideOperation(originalSlide, operation);
+    const restoredSlide = applySlideOperation(updatedSlide, invertSlideOperation(operation));
+    const restoredDoc = new DOMParser().parseFromString(restoredSlide.htmlSource, "text/html");
+
+    expect(invertSlideOperation(operation)).toMatchObject({
+      previousValue: "72px",
+      nextValue: "48px",
+    });
+    expect(
+      restoredDoc.querySelector('[data-editor-id="text-1"]')?.style.getPropertyValue("font-size")
+    ).toBe("48px");
   });
 });
 
@@ -325,6 +426,40 @@ describe("history reducer", () => {
     expect(committedState.slides[0]?.elements[0]?.content).toBe("  Summary  ");
     expect(undoneState.slides[0]?.elements[0]?.content).toBe("Summary");
     expect(redoneState.slides[0]?.elements[0]?.content).toBe("  Summary  ");
+  });
+
+  test("undo and redo restore committed style edits", () => {
+    const initialSlide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text" style="font-size: 48px;">Title</h1>
+    </div>
+  </body>
+</html>`,
+      "slide-1"
+    );
+    const operation = {
+      type: "style.update" as const,
+      slideId: "slide-1",
+      elementId: "text-1",
+      propertyName: "font-size",
+      previousValue: "48px",
+      nextValue: "72px",
+      timestamp: 1,
+    };
+
+    const committedState = reduceHistory(createHistoryState([initialSlide]), {
+      type: "history.commit",
+      operation,
+    });
+    const undoneState = reduceHistory(committedState, { type: "history.undo" });
+    const redoneState = reduceHistory(undoneState, { type: "history.redo" });
+
+    expect(committedState.slides[0]?.htmlSource).toContain("72px");
+    expect(undoneState.slides[0]?.htmlSource).toContain("48px");
+    expect(redoneState.slides[0]?.htmlSource).toContain("72px");
   });
 
   test("reset replaces slides and clears both history stacks", () => {

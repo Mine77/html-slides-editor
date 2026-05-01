@@ -2,6 +2,7 @@ import {
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
   type SlideModel,
+  type StyleUpdateOperation,
 } from "@html-slides-editor/core";
 import { useRef, useState } from "react";
 import { EditorHeader } from "./components/editor-header";
@@ -19,6 +20,16 @@ export interface SlidesEditorProps {
   slides: SlideModel[];
   deckTitle?: string;
   sourceLabel: string;
+}
+
+function getInlineStyleValue(slide: SlideModel, elementId: string, propertyName: string) {
+  if (typeof DOMParser === "undefined") {
+    return "";
+  }
+
+  const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
+  const node = doc.querySelector<HTMLElement>(`[data-editor-id="${elementId}"]`);
+  return node?.style.getPropertyValue(propertyName).trim() || "";
 }
 
 function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEditorProps) {
@@ -70,6 +81,31 @@ function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEd
     slideHeight,
   });
 
+  function commitStyleChange(propertyName: string, nextValue: string) {
+    if (!activeSlide || !selectedElementId) {
+      return;
+    }
+
+    const previousValue = getInlineStyleValue(activeSlide, selectedElementId, propertyName);
+    const normalizedNextValue = nextValue.trim();
+
+    if (previousValue === normalizedNextValue) {
+      return;
+    }
+
+    const operation: StyleUpdateOperation = {
+      type: "style.update",
+      slideId: activeSlide.id,
+      elementId: selectedElementId,
+      propertyName,
+      previousValue,
+      nextValue: normalizedNextValue,
+      timestamp: Date.now(),
+    };
+
+    commitOperation(operation);
+  }
+
   if (!activeSlide) {
     return <div className="hse-empty">No slides loaded.</div>;
   }
@@ -113,12 +149,10 @@ function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEd
           <StyleInspector
             inspectedLabel={inspectedLabel}
             inspectedStyles={inspectedStyles}
-            canUndo={undoDepth > 0}
-            canRedo={redoDepth > 0}
             isEditingText={isEditingText}
             isOpen={isInspectorOpen}
-            onUndo={runUndo}
-            onRedo={runRedo}
+            selectedElementId={selectedElementId}
+            onStyleChange={commitStyleChange}
           />
         </main>
       </div>

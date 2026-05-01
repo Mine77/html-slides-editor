@@ -89,15 +89,16 @@
 
 .hse-selection-label {
   position: absolute;
-  top: -28px;
+  top: -22px;
   left: 0;
-  padding: 4px 8px;
+  padding: 2px 6px;
   border-radius: 999px;
   background: var(--hse-accent);
   color: white;
-  font-size: 11px;
+  font-size: 9px;
+  line-height: 1.2;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
   pointer-events: none;
 }

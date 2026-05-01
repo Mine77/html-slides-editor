@@ -3,39 +3,49 @@ export interface CssPropertyRow {
   value: string;
 }
 
-const INSPECTED_CSS_PROPERTIES = [
-  "position",
-  "display",
-  "width",
-  "height",
-  "top",
-  "right",
-  "bottom",
-  "left",
-  "margin",
-  "padding",
-  "font-size",
-  "font-weight",
-  "line-height",
-  "font-family",
-  "letter-spacing",
-  "text-transform",
-  "color",
-  "background",
-  "background-color",
-  "border",
-  "border-radius",
-  "box-shadow",
-  "opacity",
-  "transform",
-  "text-align",
-] as const;
+const CSS_PROPERTY_PREFIXES_TO_EXCLUDE = ["-webkit-", "-moz-", "-ms-"] as const;
+
+const CSS_PROPERTIES_TO_EXCLUDE = new Set([
+  "appearance",
+  "caret-color",
+  "color-interpolation",
+  "color-rendering",
+  "font-synthesis-small-caps",
+  "font-synthesis-style",
+  "font-synthesis-weight",
+  "math-depth",
+  "math-shift",
+  "print-color-adjust",
+  "ruby-align",
+  "ruby-position",
+  "speak",
+  "text-size-adjust",
+]);
+
+function isRelevantCssProperty(name: string) {
+  if (CSS_PROPERTY_PREFIXES_TO_EXCLUDE.some((prefix) => name.startsWith(prefix))) {
+    return false;
+  }
+
+  return !CSS_PROPERTIES_TO_EXCLUDE.has(name);
+}
 
 export function collectCssProperties(element: HTMLElement): CssPropertyRow[] {
   const styles = window.getComputedStyle(element);
+  const rows: CssPropertyRow[] = [];
 
-  return INSPECTED_CSS_PROPERTIES.map((name) => ({
-    name,
-    value: styles.getPropertyValue(name).trim(),
-  })).filter((row) => row.value.length > 0);
+  for (const name of Array.from(styles)) {
+    if (!isRelevantCssProperty(name)) {
+      continue;
+    }
+
+    const value = styles.getPropertyValue(name).trim();
+    if (value.length === 0) {
+      continue;
+    }
+
+    rows.push({ name, value });
+  }
+
+  return rows.sort((left, right) => left.name.localeCompare(right.name));
 }
