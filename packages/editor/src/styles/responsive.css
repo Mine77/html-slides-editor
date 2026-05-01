@@ -57,6 +57,33 @@
     width: 100%;
   }
 
+  .hse-floating-toolbar-shell {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .hse-floating-toolbar-strip {
+    min-width: 620px;
+  }
+
+  .hse-floating-toolbar-expand {
+    min-width: 42px;
+  }
+
+  .hse-floating-toolbar-menu {
+    max-width: none;
+  }
+
+  .hse-floating-toolbar-menu-options {
+    gap: 6px;
+  }
+
+  .hse-floating-toolbar-strip,
+  .hse-floating-toolbar-shell {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .hse-stage-meta {
     position: static;
     margin-bottom: 18px;

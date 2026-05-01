@@ -106,5 +106,5 @@
   min-width: 0;
   min-height: 0;
   gap: var(--hse-panel-gap);
-  overflow: hidden;
+  overflow: visible;
 }

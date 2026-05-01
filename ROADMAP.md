@@ -74,6 +74,38 @@ Completed work:
 - The editor package has started to adopt the layering direction in code by
   splitting large top-level editor logic into focused hooks and component-level
   styling files.
+- The shared editing pipeline now supports CSS-backed edits through a
+  `style.update` history operation in `packages/core`, including HTML
+  write-back and undo/redo support for inline style changes.
+- The right-side advanced editing panel now works as a real property editor
+  instead of a read-only inspector:
+  - `Edit` and `CSS` tabs exist in the panel
+  - grouped editing sections exist for typography, layout, spacing, fill, and
+    border
+  - a custom CSS entry path exists for arbitrary property/value edits
+  - basic form controls now commit CSS changes back into slide HTML
+- The `CSS` tab now shows a filtered computed-style snapshot rather than the
+  full noisy browser dump, excluding vendor-prefixed and other low-signal
+  properties that are not useful for slide editing.
+
+Current status inside Milestone 2:
+
+- Text editing:
+  - functionally complete for the current scope
+  - already backed by regression coverage
+- Advanced property editing panel:
+  - first usable version is implemented
+  - current focus should shift from more panel scaffolding to workflow
+    completion and verification
+- Floating toolbar:
+  - visual shell exists
+  - actions are still placeholder UI and are not yet wired into the shared
+    style-editing pipeline
+- Block/layout manipulation:
+  - not started as a full workflow yet
+- Style-editing verification:
+  - core history behavior exists
+  - dedicated E2E coverage for property editing is still missing
 
 Goal:
 
@@ -147,6 +179,10 @@ Features:
    - The advanced panel should provide a broader visual editor for CSS-backed
      properties, going beyond the minimal controls offered by the floating
      toolbar.
+   - Current implementation note:
+     - the advanced panel has reached a first functional milestone
+     - the next step is to wire the floating toolbar to the same property
+       editing pipeline and add regression coverage for style edits
 
 4. Layout assistance
    - Layout editing should eventually include assistance behaviors that make
@@ -168,3 +204,21 @@ Exit criteria:
   editor functionality.
 - Each feature slice is verified with the appropriate mix of unit tests and E2E
   regression tests.
+
+Recommended next slice:
+
+1. Wire the floating toolbar's common actions to the existing `style.update`
+   pipeline.
+   - This should cover the true "basic toolbar" subset such as text emphasis,
+     alignment, and common color or typography actions.
+   - The advanced panel should remain the superset and source of truth for the
+     editable property model.
+2. Add E2E coverage for style/property editing.
+   - Cover at least one select input, one numeric/text input, one custom CSS
+     edit, and undo/redo for style changes.
+   - This is the missing proof that the new property-editing path is actually
+     stable end to end.
+3. After toolbar parity and regression coverage are in place, move on to block
+   editing workflows.
+   - The first concrete block-editing slice should likely be direct
+     repositioning via drag, still committing through shared core operations.
