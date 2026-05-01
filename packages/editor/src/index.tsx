@@ -8,6 +8,7 @@ import { EditorHeader } from "./components/editor-header";
 import { SlideSidebar } from "./components/slide-sidebar";
 import { StageCanvas } from "./components/stage-canvas";
 import { StyleInspector } from "./components/style-inspector";
+import { useBlockManipulation } from "./hooks/use-block-manipulation";
 import { useIframeTextEditing } from "./hooks/use-iframe-text-editing";
 import { useSlideHistory } from "./hooks/use-slide-history";
 import { useSlideInspector } from "./hooks/use-slide-inspector";
@@ -19,9 +20,17 @@ export interface SlidesEditorProps {
   slides: SlideModel[];
   deckTitle?: string;
   sourceLabel: string;
+  isSaving?: boolean;
+  onSlidesChange?: (slides: SlideModel[]) => void;
 }
 
-function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEditorProps) {
+function SlidesEditor({
+  slides: loadedSlides,
+  deckTitle,
+  sourceLabel,
+  isSaving = false,
+  onSlidesChange,
+}: SlidesEditorProps) {
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const {
     slides,
@@ -33,11 +42,20 @@ function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEd
     commitOperation,
     runUndo,
     runRedo,
-  } = useSlideHistory(loadedSlides);
+  } = useSlideHistory(loadedSlides, {
+    onSlidesChange,
+  });
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageViewportRef = useRef<HTMLDivElement>(null);
+  const selectionOverlayRef = useRef<HTMLDivElement>(null);
   const thumbnails = useSlideThumbnails(slides);
-  const { selectedElementId, isEditingText, setSelectedElementId, clearSelection } =
+  const {
+    selectedElementId,
+    isEditingText,
+    setSelectedElementId,
+    beginTextEditing,
+    clearSelection,
+  } =
     useIframeTextEditing({
       activeSlide,
       iframeRef,
@@ -58,17 +76,46 @@ function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEd
     slideWidth,
     slideHeight,
   });
-  const { selectionOverlay, selectionLabel, inspectedLabel, inspectedStyles } = useSlideInspector({
-    iframeRef,
+  const { selectedStageRect, selectionOverlay, selectionLabel, inspectedLabel, inspectedStyles } =
+    useSlideInspector({
+      iframeRef,
+      activeSlide,
+      selectedElement,
+      selectedElementId,
+      scale,
+      offsetX,
+      offsetY,
+      slideWidth,
+      slideHeight,
+    });
+  const {
+    manipulationOverlay,
+    isManipulating,
+    suppressBackgroundClear,
+    beginMove,
+    beginResize,
+    beginRotate,
+  } = useBlockManipulation({
     activeSlide,
     selectedElement,
     selectedElementId,
-    scale,
-    offsetX,
-    offsetY,
-    slideWidth,
-    slideHeight,
+    selectedStageRect,
+    iframeRef,
+    stageGeometry: {
+      scale,
+      offsetX,
+      offsetY,
+      slideWidth,
+      slideHeight,
+    },
+    isEditingText,
+    onCommitOperation: commitOperation,
   });
+  const unifiedSelectionOverlay =
+    manipulationOverlay?.selectionBounds ?? selectionOverlay;
+  const unifiedSelectionLabel =
+    manipulationOverlay ? selectedElement?.type || selectionLabel : selectionLabel;
+  const isSelectionOverlayInteractive = Boolean(manipulationOverlay);
 
   if (!activeSlide) {
     return <div className="hse-empty">No slides loaded.</div>;
@@ -79,6 +126,7 @@ function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEd
       <EditorHeader
         deckTitle={resolvedDeckTitle}
         sourceLabel={sourceLabel}
+        isSaving={isSaving}
         isInspectorOpen={isInspectorOpen}
         onToggleInspector={() => {
           setIsInspectorOpen((currentValue) => !currentValue);
@@ -104,11 +152,48 @@ function SlidesEditor({ slides: loadedSlides, deckTitle, sourceLabel }: SlidesEd
             offsetX={offsetX}
             offsetY={offsetY}
             scale={scale}
-            selectionOverlay={selectionOverlay}
-            selectionLabel={selectionLabel}
+            selectionOverlay={unifiedSelectionOverlay}
+            selectionLabel={unifiedSelectionLabel}
+            isSelectionOverlayInteractive={isSelectionOverlayInteractive}
+            manipulationOverlay={manipulationOverlay}
             iframeRef={iframeRef}
             stageViewportRef={stageViewportRef}
-            onBackgroundClick={clearSelection}
+            selectionOverlayRef={selectionOverlayRef}
+            isManipulating={isManipulating}
+            onSelectionOverlayMouseDown={(event) => {
+              beginMove({
+                clientX: event.clientX,
+                clientY: event.clientY,
+                preventDefault: () => event.preventDefault(),
+                stopPropagation: () => event.stopPropagation(),
+              });
+            }}
+            onResizeHandleMouseDown={(corner, event) => {
+              beginResize(corner, {
+                clientX: event.clientX,
+                clientY: event.clientY,
+                preventDefault: () => event.preventDefault(),
+                stopPropagation: () => event.stopPropagation(),
+              });
+            }}
+            onRotateHandleMouseDown={(event) => {
+              beginRotate({
+                clientX: event.clientX,
+                clientY: event.clientY,
+                preventDefault: () => event.preventDefault(),
+                stopPropagation: () => event.stopPropagation(),
+              });
+            }}
+            onSelectionOverlayDoubleClick={() => {
+              if (selectedElement?.type === "text" && selectedElementId) {
+                beginTextEditing(selectedElementId);
+              }
+            }}
+            onBackgroundClick={() => {
+              if (!suppressBackgroundClear) {
+                clearSelection();
+              }
+            }}
           />
           <StyleInspector
             inspectedLabel={inspectedLabel}

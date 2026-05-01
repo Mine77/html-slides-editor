@@ -27,7 +27,32 @@ export interface TextUpdateOperation {
   timestamp: number;
 }
 
-export type SlideOperation = TextUpdateOperation;
+export const ELEMENT_LAYOUT_STYLE_KEYS = [
+  "position",
+  "left",
+  "top",
+  "width",
+  "height",
+  "transform",
+  "transformOrigin",
+  "margin",
+  "zIndex",
+] as const;
+
+export type ElementLayoutStyleKey = (typeof ELEMENT_LAYOUT_STYLE_KEYS)[number];
+
+export type ElementLayoutStyleSnapshot = Record<ElementLayoutStyleKey, string | null>;
+
+export interface ElementLayoutUpdateOperation {
+  type: "element.layout.update";
+  slideId: string;
+  elementId: string;
+  previousStyle: ElementLayoutStyleSnapshot;
+  nextStyle: ElementLayoutStyleSnapshot;
+  timestamp: number;
+}
+
+export type SlideOperation = TextUpdateOperation | ElementLayoutUpdateOperation;
 
 export interface HistoryState {
   slides: SlideModel[];
@@ -240,6 +265,80 @@ export function updateSlideText(html: string, elementId: string, value: string):
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
 
+export function createEmptyElementLayoutStyleSnapshot(): ElementLayoutStyleSnapshot {
+  return {
+    position: null,
+    left: null,
+    top: null,
+    width: null,
+    height: null,
+    transform: null,
+    transformOrigin: null,
+    margin: null,
+    zIndex: null,
+  };
+}
+
+export function captureElementLayoutStyleSnapshot(node: HTMLElement): ElementLayoutStyleSnapshot {
+  const snapshot = createEmptyElementLayoutStyleSnapshot();
+
+  for (const key of ELEMENT_LAYOUT_STYLE_KEYS) {
+    const value = node.style[key];
+    snapshot[key] = value ? value : null;
+  }
+
+  return snapshot;
+}
+
+export function normalizeElementLayoutStyleSnapshot(
+  snapshot: Partial<ElementLayoutStyleSnapshot>
+): ElementLayoutStyleSnapshot {
+  return {
+    ...createEmptyElementLayoutStyleSnapshot(),
+    ...snapshot,
+  };
+}
+
+function applyElementLayoutStyleSnapshot(
+  node: HTMLElement,
+  snapshot: ElementLayoutStyleSnapshot
+): void {
+  for (const key of ELEMENT_LAYOUT_STYLE_KEYS) {
+    const value = snapshot[key];
+    if (value === null) {
+      node.style[key] = "";
+      continue;
+    }
+
+    node.style[key] = value;
+  }
+
+  if (!node.getAttribute("style")?.trim()) {
+    node.removeAttribute("style");
+  }
+}
+
+export function updateSlideElementLayout(
+  html: string,
+  elementId: string,
+  snapshot: ElementLayoutStyleSnapshot
+): string {
+  if (typeof DOMParser === "undefined") {
+    return html;
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${elementId}"]`);
+
+  if (!node) {
+    return html;
+  }
+
+  applyElementLayoutStyleSnapshot(node, snapshot);
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+}
+
 export function applySlideOperation(slide: SlideModel, operation: SlideOperation): SlideModel {
   if (slide.id !== operation.slideId) {
     return slide;
@@ -249,6 +348,11 @@ export function applySlideOperation(slide: SlideModel, operation: SlideOperation
     case "text.update":
       return parseSlide(
         updateSlideText(slide.htmlSource, operation.elementId, operation.nextText),
+        slide.id
+      );
+    case "element.layout.update":
+      return parseSlide(
+        updateSlideElementLayout(slide.htmlSource, operation.elementId, operation.nextStyle),
         slide.id
       );
   }
@@ -261,6 +365,12 @@ export function invertSlideOperation(operation: SlideOperation): SlideOperation 
         ...operation,
         previousText: operation.nextText,
         nextText: operation.previousText,
+      };
+    case "element.layout.update":
+      return {
+        ...operation,
+        previousStyle: operation.nextStyle,
+        nextStyle: operation.previousStyle,
       };
   }
 }
