@@ -1,6 +1,6 @@
 import type { SlideModel, TextUpdateOperation } from "@html-slides-editor/core";
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface TextEditingState {
   slideId: string;
@@ -66,24 +66,30 @@ function useIframeTextEditing({
   const runUndoRef = useRef<() => void>(() => {});
   const runRedoRef = useRef<() => void>(() => {});
 
-  function beginTextEditing(elementId: string) {
-    if (!activeSlide) {
-      return;
-    }
+  const beginTextEditing = useCallback(
+    (elementId: string) => {
+      if (!activeSlide) {
+        return;
+      }
 
-    const doc = iframeRef.current?.contentDocument;
-    const node = doc?.querySelector<HTMLElement>(`[data-editor-id="${elementId}"]`);
-    if (!node || node.getAttribute("data-editable") !== "text") {
-      return;
-    }
+      const doc = iframeRef.current?.contentDocument;
+      const node = doc?.querySelector<HTMLElement>(`[data-editor-id="${elementId}"]`);
+      if (!node || node.getAttribute("data-editable") !== "text") {
+        return;
+      }
 
-    setSelectedElementId(elementId);
-    setTextEditing({
-      slideId: activeSlide.id,
-      elementId,
-      initialText: node.textContent || "",
-    });
-  }
+      const nextEditingState = {
+        slideId: activeSlide.id,
+        elementId,
+        initialText: node.textContent || "",
+      };
+
+      setSelectedElementId(elementId);
+      textEditingRef.current = nextEditingState;
+      setTextEditing(nextEditingState);
+    },
+    [activeSlide, iframeRef]
+  );
 
   function commitTextEdit(elementId: string, nextText: string) {
     const editing = textEditing;
@@ -93,11 +99,13 @@ function useIframeTextEditing({
       editing.slideId !== activeSlide.id ||
       editing.elementId !== elementId
     ) {
+      textEditingRef.current = null;
       setTextEditing(null);
       return;
     }
 
     const previousText = editing.initialText;
+    textEditingRef.current = null;
     setTextEditing(null);
 
     if (nextText === previousText) {
@@ -128,15 +136,18 @@ function useIframeTextEditing({
       }
     }
 
+    textEditingRef.current = null;
     setTextEditing(null);
   }
 
   function runUndo() {
+    textEditingRef.current = null;
     onUndo();
     setTextEditing(null);
   }
 
   function runRedo() {
+    textEditingRef.current = null;
     onRedo();
     setTextEditing(null);
   }
@@ -280,7 +291,7 @@ function useIframeTextEditing({
         beginTextEditing(elementId);
       };
     }
-  }, [activeSlide, iframeRef]);
+  }, [activeSlide, beginTextEditing, iframeRef]);
 
   useEffect(() => {
     const editing = textEditing;

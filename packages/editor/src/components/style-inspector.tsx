@@ -4,14 +4,10 @@ import type { CssPropertyRow } from "../lib/collect-css-properties";
 interface StyleInspectorProps {
   inspectedLabel: string;
   inspectedStyles: CssPropertyRow[];
-  canUndo: boolean;
-  canRedo: boolean;
   isEditingText: boolean;
   isOpen: boolean;
   selectedElementId: string | null;
   onStyleChange: (propertyName: string, nextValue: string) => void;
-  onUndo: () => void;
-  onRedo: () => void;
 }
 
 interface InspectorFieldConfig {
@@ -39,12 +35,44 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
     description: "Fonts, rhythm, alignment, and text color.",
     fields: [
       { propertyName: "font-family", label: "Font family", input: "text", placeholder: "inherit" },
-      { propertyName: "font-size", label: "Font size", input: "number", unit: "px", min: 0, step: 1 },
-      { propertyName: "font-weight", label: "Font weight", input: "select", options: ["", "300", "400", "500", "600", "700", "800"] },
-      { propertyName: "line-height", label: "Line height", input: "text", placeholder: "1.4 or 32px" },
-      { propertyName: "letter-spacing", label: "Letter spacing", input: "text", placeholder: "0.02em" },
-      { propertyName: "text-transform", label: "Text transform", input: "select", options: ["", "none", "uppercase", "lowercase", "capitalize"] },
-      { propertyName: "text-align", label: "Text align", input: "select", options: ["", "left", "center", "right", "justify"] },
+      {
+        propertyName: "font-size",
+        label: "Font size",
+        input: "number",
+        unit: "px",
+        min: 0,
+        step: 1,
+      },
+      {
+        propertyName: "font-weight",
+        label: "Font weight",
+        input: "select",
+        options: ["", "300", "400", "500", "600", "700", "800"],
+      },
+      {
+        propertyName: "line-height",
+        label: "Line height",
+        input: "text",
+        placeholder: "1.4 or 32px",
+      },
+      {
+        propertyName: "letter-spacing",
+        label: "Letter spacing",
+        input: "text",
+        placeholder: "0.02em",
+      },
+      {
+        propertyName: "text-transform",
+        label: "Text transform",
+        input: "select",
+        options: ["", "none", "uppercase", "lowercase", "capitalize"],
+      },
+      {
+        propertyName: "text-align",
+        label: "Text align",
+        input: "select",
+        options: ["", "left", "center", "right", "justify"],
+      },
       { propertyName: "color", label: "Text color", input: "color" },
     ],
   },
@@ -53,8 +81,18 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
     title: "Layout",
     description: "Display mode, positioning, size, and transforms.",
     fields: [
-      { propertyName: "display", label: "Display", input: "select", options: ["", "block", "inline", "inline-block", "flex", "grid", "none"] },
-      { propertyName: "position", label: "Position", input: "select", options: ["", "static", "relative", "absolute", "fixed", "sticky"] },
+      {
+        propertyName: "display",
+        label: "Display",
+        input: "select",
+        options: ["", "block", "inline", "inline-block", "flex", "grid", "none"],
+      },
+      {
+        propertyName: "position",
+        label: "Position",
+        input: "select",
+        options: ["", "static", "relative", "absolute", "fixed", "sticky"],
+      },
       { propertyName: "width", label: "Width", input: "text", placeholder: "320px or auto" },
       { propertyName: "height", label: "Height", input: "text", placeholder: "240px or auto" },
       { propertyName: "top", label: "Top", input: "text", placeholder: "auto or 0" },
@@ -62,7 +100,12 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
       { propertyName: "bottom", label: "Bottom", input: "text", placeholder: "auto or 0" },
       { propertyName: "left", label: "Left", input: "text", placeholder: "auto or 0" },
       { propertyName: "opacity", label: "Opacity", input: "text", placeholder: "0 to 1" },
-      { propertyName: "transform", label: "Transform", input: "text", placeholder: "translate(24px, 0)" },
+      {
+        propertyName: "transform",
+        label: "Transform",
+        input: "text",
+        placeholder: "translate(24px, 0)",
+      },
     ],
   },
   {
@@ -80,7 +123,12 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
     description: "Background paint and color fill.",
     fields: [
       { propertyName: "background-color", label: "Background color", input: "color" },
-      { propertyName: "background", label: "Background", input: "text", placeholder: "linear-gradient(...)" },
+      {
+        propertyName: "background",
+        label: "Background",
+        input: "text",
+        placeholder: "linear-gradient(...)",
+      },
     ],
   },
   {
@@ -90,7 +138,12 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
     fields: [
       { propertyName: "border", label: "Border", input: "text", placeholder: "1px solid #d1c1ae" },
       { propertyName: "border-radius", label: "Radius", input: "text", placeholder: "16px" },
-      { propertyName: "box-shadow", label: "Shadow", input: "text", placeholder: "0 12px 30px rgba(...)" },
+      {
+        propertyName: "box-shadow",
+        label: "Shadow",
+        input: "text",
+        placeholder: "0 12px 30px rgba(...)",
+      },
     ],
   },
 ];
@@ -153,14 +206,10 @@ function commitDraftValue(
 function StyleInspector({
   inspectedLabel,
   inspectedStyles,
-  canUndo,
-  canRedo,
   isEditingText,
   isOpen,
   selectedElementId,
   onStyleChange,
-  onUndo,
-  onRedo,
 }: StyleInspectorProps) {
   const accordionBaseId = useId();
   const styleMap = toStyleMap(inspectedStyles);
@@ -172,6 +221,8 @@ function StyleInspector({
   const hasSelection = Boolean(selectedElementId);
 
   useEffect(() => {
+    void selectedElementId;
+    void inspectedStyles;
     setDraftValues({});
     setCustomPropertyName("");
     setCustomPropertyValue("");
@@ -193,16 +244,25 @@ function StyleInspector({
     const currentValue = styleMap.get(field.propertyName) ?? "";
     const draftValue = draftValues[field.propertyName];
     const inputValue = getInputValue(draftValue ?? currentValue, field);
+    const fieldInputId = `${accordionBaseId}-${field.propertyName}`;
 
     const commitField = () => {
-      commitDraftValue(field.propertyName, draftValues[field.propertyName], currentValue, onStyleChange);
+      commitDraftValue(
+        field.propertyName,
+        draftValues[field.propertyName],
+        currentValue,
+        onStyleChange
+      );
     };
 
     return (
-      <label className="hse-inspector-field" key={field.propertyName}>
-        <span className="hse-inspector-field-label">{field.label}</span>
+      <div className="hse-inspector-field" key={field.propertyName}>
+        <label className="hse-inspector-field-label" htmlFor={fieldInputId}>
+          {field.label}
+        </label>
         {field.input === "select" ? (
           <select
+            id={fieldInputId}
             className="hse-inspector-select"
             value={draftValue ?? currentValue}
             disabled={!hasSelection || isEditingText}
@@ -221,8 +281,11 @@ function StyleInspector({
         ) : (
           <div className="hse-inspector-input-row">
             <input
+              id={fieldInputId}
               className="hse-inspector-input"
-              type={field.input === "number" ? "number" : field.input === "color" ? "color" : "text"}
+              type={
+                field.input === "number" ? "number" : field.input === "color" ? "color" : "text"
+              }
               value={inputValue}
               min={field.min}
               step={field.step}
@@ -244,7 +307,7 @@ function StyleInspector({
             {field.unit ? <span className="hse-inspector-unit">{field.unit}</span> : null}
           </div>
         )}
-      </label>
+      </div>
     );
   };
 
@@ -257,27 +320,6 @@ function StyleInspector({
       {isEditingText ? (
         <p className="hse-editing-hint">Editing text. Press Enter to save or Escape to cancel.</p>
       ) : null}
-
-      <div className="hse-inspector-history">
-        <button
-          type="button"
-          className="hse-inspector-history-button"
-          data-testid="undo-button"
-          disabled={!canUndo || isEditingText}
-          onClick={onUndo}
-        >
-          Undo
-        </button>
-        <button
-          type="button"
-          className="hse-inspector-history-button"
-          data-testid="redo-button"
-          disabled={!canRedo || isEditingText}
-          onClick={onRedo}
-        >
-          Redo
-        </button>
-      </div>
 
       <div className="hse-inspector-tabs" role="tablist" aria-label="Inspector tabs">
         <button
@@ -336,7 +378,9 @@ function StyleInspector({
 
                   {isSectionOpen ? (
                     <div className="hse-inspector-group-panel" id={panelId}>
-                      <div className="hse-inspector-form-grid">{section.fields.map(renderField)}</div>
+                      <div className="hse-inspector-form-grid">
+                        {section.fields.map(renderField)}
+                      </div>
                     </div>
                   ) : null}
                 </section>
@@ -411,7 +455,9 @@ function StyleInspector({
                   <button
                     type="button"
                     className="hse-inspector-apply-button"
-                    disabled={!hasSelection || isEditingText || customPropertyName.trim().length === 0}
+                    disabled={
+                      !hasSelection || isEditingText || customPropertyName.trim().length === 0
+                    }
                     onClick={() => {
                       onStyleChange(customPropertyName.trim(), customPropertyValue.trim());
                       setCustomPropertyValue("");

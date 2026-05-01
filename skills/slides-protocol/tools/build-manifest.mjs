@@ -31,7 +31,7 @@ function getSlideMetadata(filePath, baseDir) {
   const html = fs.readFileSync(filePath, "utf8");
   const dom = new JSDOM(html);
   const { document } = dom.window;
-  const root = document.querySelector("[data-slide-root=\"true\"]");
+  const root = document.querySelector('[data-slide-root="true"]');
   const heading = document.querySelector("h1, h2, title");
   const title = heading?.textContent?.trim() || slugToTitle(path.basename(filePath, ".html"));
 

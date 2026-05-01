@@ -42,10 +42,10 @@ function validateFile(filePath) {
   const { document } = dom.window;
   const errors = [];
   const warnings = [];
-  const roots = Array.from(document.querySelectorAll("[data-slide-root=\"true\"]"));
+  const roots = Array.from(document.querySelectorAll('[data-slide-root="true"]'));
 
   if (roots.length === 0) {
-    errors.push("missing required [data-slide-root=\"true\"]");
+    errors.push('missing required [data-slide-root="true"]');
   }
 
   if (roots.length > 1) {
@@ -70,13 +70,13 @@ function validateFile(filePath) {
     warnings.push("slide contains no editable nodes");
   }
 
-  editableNodes.forEach((node) => {
+  for (const node of editableNodes) {
     const editableType = node.getAttribute("data-editable") ?? "";
     if (!VALID_EDITABLE_TYPES.has(editableType)) {
       errors.push(
         `invalid data-editable value "${editableType}" on <${node.tagName.toLowerCase()}>`
       );
-      return;
+      continue;
     }
 
     if (editableType === "image" && node.tagName.toLowerCase() !== "img") {
@@ -84,7 +84,7 @@ function validateFile(filePath) {
         `editable image is <${node.tagName.toLowerCase()}> instead of <img>; parser support may be limited`
       );
     }
-  });
+  }
 
   return { filePath, errors, warnings };
 }

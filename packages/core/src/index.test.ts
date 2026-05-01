@@ -131,9 +131,9 @@ describe("updateSlideStyle", () => {
     const updatedHtml = updateSlideStyle(html, "text-1", "font-size", "64px");
     const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
 
-    expect(doc.querySelector('[data-editor-id="text-1"]')?.style.getPropertyValue("font-size")).toBe(
-      "64px"
-    );
+    expect(
+      doc.querySelector('[data-editor-id="text-1"]')?.style.getPropertyValue("font-size")
+    ).toBe("64px");
   });
 
   test("removes inline styles when the next value is empty", () => {

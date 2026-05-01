@@ -71,10 +71,7 @@ function BorderIcon() {
 function RadiusIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M5 7.5A2.5 2.5 0 0 1 7.5 5H15v1.5H7.5c-.6 0-1 .4-1 1V15H5z"
-        fill="currentColor"
-      />
+      <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5H15v1.5H7.5c-.6 0-1 .4-1 1V15H5z" fill="currentColor" />
     </svg>
   );
 }
@@ -195,51 +192,81 @@ function FloatingToolbar() {
       <div className="hse-floating-toolbar-shell">
         <div className="hse-floating-toolbar-strip" aria-label="Basic formatting toolbar">
           <button
-            className={activeMenu === "font" ? "hse-floating-toolbar-trigger is-active" : "hse-floating-toolbar-trigger"}
+            className={
+              activeMenu === "font"
+                ? "hse-floating-toolbar-trigger is-active"
+                : "hse-floating-toolbar-trigger"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "font" ? null : "font"));
             }}
           >
             <span className="hse-floating-toolbar-trigger-value">Card</span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button
-            className={activeMenu === "size" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "size"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "size" ? null : "size"));
             }}
           >
             <span className="hse-floating-toolbar-trigger-value">{sizeValue}</span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button
-            className={activeMenu === "color" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "color"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "color" ? null : "color"));
             }}
           >
-            <span className="hse-floating-toolbar-trigger-icon"><PaletteIcon /></span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <PaletteIcon />
+            </span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button
-            className={activeMenu === "case" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "case"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "case" ? null : "case"));
             }}
           >
             <span className="hse-floating-toolbar-trigger-value">Aa</span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button
-            className={activeMenu === "background" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "background"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "background" ? null : "background"));
@@ -250,52 +277,84 @@ function FloatingToolbar() {
               style={{ backgroundColor: backgroundColor }}
               aria-hidden="true"
             />
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button
-            className={activeMenu === "align" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "align"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "align" ? null : "align"));
             }}
           >
-            <span className="hse-floating-toolbar-trigger-icon"><AlignIcon /></span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <AlignIcon />
+            </span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button className="hse-floating-toolbar-trigger is-action is-highlighted" type="button">
-            <span className="hse-floating-toolbar-trigger-icon"><FocusIcon /></span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <FocusIcon />
+            </span>
           </button>
 
           <button
-            className={activeMenu === "border" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "border"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "border" ? null : "border"));
             }}
           >
-            <span className="hse-floating-toolbar-trigger-icon"><BorderIcon /></span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <BorderIcon />
+            </span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button
-            className={activeMenu === "radius" ? "hse-floating-toolbar-trigger is-active is-compact" : "hse-floating-toolbar-trigger is-compact"}
+            className={
+              activeMenu === "radius"
+                ? "hse-floating-toolbar-trigger is-active is-compact"
+                : "hse-floating-toolbar-trigger is-compact"
+            }
             type="button"
             onClick={() => {
               setActiveMenu((current) => (current === "radius" ? null : "radius"));
             }}
           >
-            <span className="hse-floating-toolbar-trigger-icon"><RadiusIcon /></span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">▾</span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <RadiusIcon />
+            </span>
+            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
+              ▾
+            </span>
           </button>
 
           <button className="hse-floating-toolbar-trigger is-compact" type="button">
-            <span className="hse-floating-toolbar-trigger-icon"><SparklesIcon /></span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <SparklesIcon />
+            </span>
           </button>
 
           <button className="hse-floating-toolbar-trigger is-compact" type="button">
-            <span className="hse-floating-toolbar-trigger-icon"><MoreIcon /></span>
+            <span className="hse-floating-toolbar-trigger-icon">
+              <MoreIcon />
+            </span>
           </button>
         </div>
 

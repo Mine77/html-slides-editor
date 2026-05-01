@@ -17,10 +17,7 @@ function getArg(name, fallback = "") {
 
 function main() {
   const workspaceRoot = path.resolve(new URL("../..", import.meta.url).pathname);
-  const outputRoot = path.resolve(
-    process.cwd(),
-    getArg("--out-dir", "generated/regression-deck")
-  );
+  const outputRoot = path.resolve(process.cwd(), getArg("--out-dir", "generated/regression-deck"));
   const appOutputRoot = path.resolve(
     process.cwd(),
     getArg("--app-out-dir", "apps/web/public/generated/current")

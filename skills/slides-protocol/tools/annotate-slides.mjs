@@ -38,7 +38,7 @@ function collectHtmlFiles(targetPath) {
 }
 
 function ensureRoot(document) {
-  const existingRoot = document.querySelector("[data-slide-root=\"true\"]");
+  const existingRoot = document.querySelector('[data-slide-root="true"]');
   if (existingRoot) {
     return existingRoot;
   }
@@ -77,23 +77,21 @@ function annotateFile(filePath, outDir) {
   };
 
   const editableNodes = Array.from(document.querySelectorAll("[data-editable]"));
-  editableNodes.forEach((node) => {
+  for (const node of editableNodes) {
     if (node.getAttribute("data-editor-id")) {
-      return;
+      continue;
     }
 
     const editableType = node.getAttribute("data-editable");
     if (!editableType || !(editableType in counters)) {
-      return;
+      continue;
     }
 
     counters[editableType] += 1;
     node.setAttribute("data-editor-id", `${editableType}-${counters[editableType]}`);
-  });
+  }
 
-  const outputPath = outDir
-    ? path.join(outDir, path.basename(filePath))
-    : filePath;
+  const outputPath = outDir ? path.join(outDir, path.basename(filePath)) : filePath;
 
   if (outDir) {
     fs.mkdirSync(outDir, { recursive: true });

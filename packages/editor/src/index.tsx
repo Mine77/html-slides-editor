@@ -122,8 +122,9 @@ function SlidesEditor({
     onCommitOperation: commitOperation,
   });
   const unifiedSelectionOverlay = manipulationOverlay?.selectionBounds ?? selectionOverlay;
-  const unifiedSelectionLabel =
-    manipulationOverlay ? selectedElement?.type || selectionLabel : selectionLabel;
+  const unifiedSelectionLabel = manipulationOverlay
+    ? selectedElement?.type || selectionLabel
+    : selectionLabel;
   const isSelectionOverlayInteractive = Boolean(manipulationOverlay);
 
   function commitStyleChange(propertyName: string, nextValue: string) {
@@ -232,14 +233,10 @@ function SlidesEditor({
           <StyleInspector
             inspectedLabel={inspectedLabel}
             inspectedStyles={inspectedStyles}
-            canUndo={undoDepth > 0}
-            canRedo={redoDepth > 0}
             isEditingText={isEditingText}
             isOpen={isInspectorOpen}
             selectedElementId={selectedElementId}
             onStyleChange={commitStyleChange}
-            onUndo={runUndo}
-            onRedo={runRedo}
           />
         </main>
       </div>

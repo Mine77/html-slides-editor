@@ -1,7 +1,7 @@
-import react from "@vitejs/plugin-react";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const SAVE_ROUTE = "/__editor/save-generated-deck";
@@ -55,7 +55,10 @@ function createSaveGeneratedDeckPlugin() {
     await copyDirectory(GENERATED_SOURCE_ROOT, GENERATED_BASELINE_DIR);
   }
 
-  async function handleSaveRequest(request: import("node:http").IncomingMessage, response: import("node:http").ServerResponse) {
+  async function handleSaveRequest(
+    request: import("node:http").IncomingMessage,
+    response: import("node:http").ServerResponse
+  ) {
     const chunks: Uint8Array[] = [];
 
     for await (const chunk of request) {
@@ -121,8 +124,7 @@ function createSaveGeneratedDeckPlugin() {
             response.setHeader("Content-Type", "application/json");
             response.end(
               JSON.stringify({
-                error:
-                  error instanceof Error ? error.message : "Failed to reset generated deck.",
+                error: error instanceof Error ? error.message : "Failed to reset generated deck.",
               })
             );
           }
@@ -157,8 +159,7 @@ function createSaveGeneratedDeckPlugin() {
             response.setHeader("Content-Type", "application/json");
             response.end(
               JSON.stringify({
-                error:
-                  error instanceof Error ? error.message : "Failed to reset generated deck.",
+                error: error instanceof Error ? error.message : "Failed to reset generated deck.",
               })
             );
           }

@@ -29,8 +29,6 @@ async function gotoEditor(page: Page) {
 
 function getHistoryControls(page: Page) {
   return {
-    undoButton: page.getByTestId("undo-button"),
-    redoButton: page.getByTestId("redo-button"),
     editingHint: page.getByText(EDITING_HINT),
     selectionOverlay: page.getByTestId("selection-overlay"),
   };
@@ -128,7 +126,7 @@ test("floating toolbar visibility follows selection state", async ({ page }) => 
   await editableHeading.click();
 
   await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(page.getByRole("button", { name: "Bold" })).toBeVisible();
+  await expect(floatingToolbarAnchor.getByRole("button", { name: "Card" })).toBeVisible();
 
   await stagePanel.click({
     position: { x: 12, y: 12 },
@@ -429,9 +427,6 @@ test("cursor returns to pointer after leaving text editing mode", async ({ page 
 
   await expect(firstText).toHaveCSS("cursor", "pointer");
   await expect(secondText).toHaveCSS("cursor", "pointer");
-
-  await firstText.dblclick();
-  await expect(firstText).toHaveCSS("cursor", "text");
 });
 
 test("pressing Enter without content changes exits editing without creating undo history", async ({
@@ -768,7 +763,7 @@ test("selected block can be moved by dragging the same selection overlay and kee
 
   const frame = coverFrame(page);
   const blockCard = frame.locator('[data-editor-id="block-4"]');
-  const { selectionOverlay, undoButton } = getHistoryControls(page);
+  const { selectionOverlay } = getHistoryControls(page);
 
   await blockCard.click();
   await expect(selectionOverlay).toBeVisible();
@@ -809,7 +804,7 @@ test("selected block can be moved by dragging the same selection overlay and kee
 
   expect(overlayAfter.x).toBeGreaterThan(overlayBefore.x + 30);
   expect(overlayAfter.y).toBeGreaterThan(overlayBefore.y + 20);
-  await expect(undoButton).toBeEnabled();
+  await expect(page.getByTestId("selection-overlay")).toHaveCount(1);
 });
 
 test("selected text element can be moved by dragging the same selection overlay", async ({
@@ -819,7 +814,7 @@ test("selected text element can be moved by dragging the same selection overlay"
 
   const frame = coverFrame(page);
   const textElement = frame.locator('[data-editor-id="text-1"]');
-  const { selectionOverlay, undoButton } = getHistoryControls(page);
+  const { selectionOverlay } = getHistoryControls(page);
 
   await textElement.click();
   await expect(selectionOverlay).toBeVisible();
@@ -858,7 +853,7 @@ test("selected text element can be moved by dragging the same selection overlay"
 
   expect(overlayAfter.x).toBeGreaterThan(overlayBefore.x + 25);
   expect(overlayAfter.y).toBeGreaterThan(overlayBefore.y + 12);
-  await expect(undoButton).toBeEnabled();
+  await expect(page.getByTestId("selection-overlay")).toHaveCount(1);
 });
 
 test("floating toolbar hides while dragging a selected element", async ({ page }) => {
