@@ -1,11 +1,12 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
 
-interface StyleInspectorProps {
+interface SidebarToolPanelProps {
   inspectedLabel: string;
   inspectedStyles: CssPropertyRow[];
   isEditingText: boolean;
   isOpen: boolean;
+  canEditStyles: boolean;
   selectedElementId: string | null;
   onStyleChange: (propertyName: string, nextValue: string) => void;
 }
@@ -149,6 +150,7 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
 ];
 
 const DEFAULT_OPEN_SECTIONS = new Set<string>(["typography", "layout", "custom"]);
+const STYLE_CHANGE_DEBOUNCE_MS = 750;
 
 function toStyleMap(inspectedStyles: CssPropertyRow[]): Map<string, string> {
   return new Map(inspectedStyles.map((property) => [property.name, property.value]));
@@ -156,6 +158,33 @@ function toStyleMap(inspectedStyles: CssPropertyRow[]): Map<string, string> {
 
 function isHexColor(value: string) {
   return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim());
+}
+
+function toHexChannel(value: string) {
+  const numericValue = Math.max(0, Math.min(255, Number.parseInt(value, 10) || 0));
+  return numericValue.toString(16).padStart(2, "0");
+}
+
+function rgbToHex(value: string) {
+  const match = value
+    .trim()
+    .match(/^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})(?:[\s,/]+[\d.]+)?\s*\)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return `#${toHexChannel(match[1] || "0")}${toHexChannel(match[2] || "0")}${toHexChannel(
+    match[3] || "0"
+  )}`;
+}
+
+function getColorInputValue(value: string) {
+  if (isHexColor(value)) {
+    return value.trim();
+  }
+
+  return rgbToHex(value) ?? "#000000";
 }
 
 function normalizeNumberInput(rawValue: string, unit: string | undefined) {
@@ -173,7 +202,7 @@ function getInputValue(value: string, field: InspectorFieldConfig) {
   }
 
   if (field.input === "color") {
-    return isHexColor(value) ? value : "#000000";
+    return getColorInputValue(value);
   }
 
   return value;
@@ -193,6 +222,10 @@ function commitDraftValue(
   inspectedValue: string,
   onStyleChange: (propertyName: string, nextValue: string) => void
 ) {
+  if (draftValue === undefined) {
+    return;
+  }
+
   const normalizedDraft = (draftValue ?? "").trim();
   const normalizedCurrent = inspectedValue.trim();
 
@@ -203,30 +236,58 @@ function commitDraftValue(
   onStyleChange(propertyName, normalizedDraft);
 }
 
-function StyleInspector({
+function SidebarToolPanel({
   inspectedLabel,
   inspectedStyles,
   isEditingText,
   isOpen,
+  canEditStyles,
   selectedElementId,
   onStyleChange,
-}: StyleInspectorProps) {
+}: SidebarToolPanelProps) {
   const accordionBaseId = useId();
-  const styleMap = toStyleMap(inspectedStyles);
+  const styleMap = useMemo(() => toStyleMap(inspectedStyles), [inspectedStyles]);
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(DEFAULT_OPEN_SECTIONS);
   const [draftValues, setDraftValues] = useState<Record<string, string>>({});
   const [customPropertyName, setCustomPropertyName] = useState("");
   const [customPropertyValue, setCustomPropertyValue] = useState("");
   const [activeTab, setActiveTab] = useState<"edit" | "css">("edit");
-  const hasSelection = Boolean(selectedElementId);
+  const isStyleEditingDisabled = !canEditStyles || isEditingText;
+  const editingTargetId = selectedElementId ?? "slide-root";
 
   useEffect(() => {
-    void selectedElementId;
-    void inspectedStyles;
+    void editingTargetId;
     setDraftValues({});
     setCustomPropertyName("");
     setCustomPropertyValue("");
-  }, [selectedElementId, inspectedStyles]);
+  }, [editingTargetId]);
+
+  useEffect(() => {
+    const draftEntries = Object.entries(draftValues);
+    if (draftEntries.length === 0 || isStyleEditingDisabled) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      for (const [propertyName, draftValue] of draftEntries) {
+        commitDraftValue(propertyName, draftValue, styleMap.get(propertyName) ?? "", onStyleChange);
+      }
+
+      setDraftValues((currentDrafts) => {
+        const nextDrafts = { ...currentDrafts };
+        for (const [propertyName, draftValue] of draftEntries) {
+          if (nextDrafts[propertyName] === draftValue) {
+            delete nextDrafts[propertyName];
+          }
+        }
+        return nextDrafts;
+      });
+    }, STYLE_CHANGE_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [draftValues, isStyleEditingDisabled, onStyleChange, styleMap]);
 
   const toggleSection = (sectionId: string) => {
     setOpenSectionIds((currentSections) => {
@@ -265,10 +326,9 @@ function StyleInspector({
             id={fieldInputId}
             className="hse-inspector-select"
             value={draftValue ?? currentValue}
-            disabled={!hasSelection || isEditingText}
+            disabled={isStyleEditingDisabled}
             onChange={(event) => {
               const nextValue = event.target.value;
-              setDraftValues((current) => ({ ...current, [field.propertyName]: nextValue }));
               commitDraftValue(field.propertyName, nextValue, currentValue, onStyleChange);
             }}
           >
@@ -290,7 +350,7 @@ function StyleInspector({
               min={field.min}
               step={field.step}
               placeholder={field.placeholder}
-              disabled={!hasSelection || isEditingText}
+              disabled={isStyleEditingDisabled}
               onChange={(event) => {
                 const nextValue = getChangeValue(event.target.value, field);
                 setDraftValues((current) => ({ ...current, [field.propertyName]: nextValue }));
@@ -314,7 +374,7 @@ function StyleInspector({
   return (
     <section
       className={isOpen ? "hse-inspector-panel is-open" : "hse-inspector-panel is-closed"}
-      data-testid="style-inspector"
+      data-testid="sidebar-tool-panel"
       aria-hidden={isOpen ? "false" : "true"}
     >
       {isEditingText ? (
@@ -420,7 +480,7 @@ function StyleInspector({
                         type="text"
                         value={customPropertyName}
                         placeholder="e.g. justify-content"
-                        disabled={!hasSelection || isEditingText}
+                        disabled={isStyleEditingDisabled}
                         onChange={(event) => {
                           setCustomPropertyName(event.target.value);
                         }}
@@ -433,7 +493,7 @@ function StyleInspector({
                         type="text"
                         value={customPropertyValue}
                         placeholder="e.g. space-between"
-                        disabled={!hasSelection || isEditingText}
+                        disabled={isStyleEditingDisabled}
                         onChange={(event) => {
                           setCustomPropertyValue(event.target.value);
                         }}
@@ -455,9 +515,7 @@ function StyleInspector({
                   <button
                     type="button"
                     className="hse-inspector-apply-button"
-                    disabled={
-                      !hasSelection || isEditingText || customPropertyName.trim().length === 0
-                    }
+                    disabled={isStyleEditingDisabled || customPropertyName.trim().length === 0}
                     onClick={() => {
                       onStyleChange(customPropertyName.trim(), customPropertyValue.trim());
                       setCustomPropertyValue("");
@@ -493,4 +551,4 @@ function StyleInspector({
   );
 }
 
-export { StyleInspector };
+export { SidebarToolPanel };

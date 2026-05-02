@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "packageManager": "pnpm@10.33.2",
   "scripts": {
-    "dev": "pnpm --parallel --filter @html-slides-editor/core --filter @html-slides-editor/editor --filter web dev",
+    "dev": "node scripts/dev-with-url.mjs",
     "build": "pnpm -r build",
     "generate:slides": "node skills/html-slides-generator/generate-slides.mjs",
     "prepare:regression-deck": "node testing/regression-deck/prepare-regression-deck.mjs",

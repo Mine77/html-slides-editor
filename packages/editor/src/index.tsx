@@ -6,9 +6,9 @@ import {
 } from "@html-slides-editor/core";
 import { useRef, useState } from "react";
 import { EditorHeader } from "./components/editor-header";
+import { SidebarToolPanel } from "./components/sidebar-tool-panel";
 import { SlideSidebar } from "./components/slide-sidebar";
 import { StageCanvas } from "./components/stage-canvas";
-import { StyleInspector } from "./components/style-inspector";
 import { useBlockManipulation } from "./hooks/use-block-manipulation";
 import { useIframeTextEditing } from "./hooks/use-iframe-text-editing";
 import { useSlideHistory } from "./hooks/use-slide-history";
@@ -128,11 +128,12 @@ function SlidesEditor({
   const isSelectionOverlayInteractive = Boolean(manipulationOverlay);
 
   function commitStyleChange(propertyName: string, nextValue: string) {
-    if (!activeSlide || !selectedElementId) {
+    if (!activeSlide) {
       return;
     }
 
-    const previousValue = getInlineStyleValue(activeSlide, selectedElementId, propertyName);
+    const targetElementId = selectedElementId ?? "slide-root";
+    const previousValue = getInlineStyleValue(activeSlide, targetElementId, propertyName);
     const normalizedNextValue = nextValue.trim();
 
     if (previousValue === normalizedNextValue) {
@@ -142,7 +143,7 @@ function SlidesEditor({
     const operation: StyleUpdateOperation = {
       type: "style.update",
       slideId: activeSlide.id,
-      elementId: selectedElementId,
+      elementId: targetElementId,
       propertyName,
       previousValue,
       nextValue: normalizedNextValue,
@@ -230,11 +231,12 @@ function SlidesEditor({
               }
             }}
           />
-          <StyleInspector
+          <SidebarToolPanel
             inspectedLabel={inspectedLabel}
             inspectedStyles={inspectedStyles}
             isEditingText={isEditingText}
             isOpen={isInspectorOpen}
+            canEditStyles={Boolean(activeSlide)}
             selectedElementId={selectedElementId}
             onStyleChange={commitStyleChange}
           />

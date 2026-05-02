@@ -153,6 +153,23 @@ describe("updateSlideStyle", () => {
     expect(node?.style.getPropertyValue("font-size")).toBe("");
     expect(node?.style.getPropertyValue("color")).toBe("red");
   });
+
+  test("removes the style attribute after the final inline style is cleared", () => {
+    const html = ensureEditableSelectors(`<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text" style="font-size: 64px;">Original heading</h1>
+    </div>
+  </body>
+</html>`);
+
+    const updatedHtml = updateSlideStyle(html, "text-1", "font-size", "");
+    const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
+    const node = doc.querySelector('[data-editor-id="text-1"]');
+
+    expect(node?.hasAttribute("style")).toBe(false);
+  });
 });
 
 describe("slide operations", () => {
@@ -272,6 +289,38 @@ describe("slide operations", () => {
     });
 
     expect(updatedSlide.htmlSource).toContain('style="font-size: 72px;"');
+  });
+
+  test("applySlideOperation keeps parsed metadata current after style edits", () => {
+    const originalSlide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text">Before</h1>
+    </div>
+  </body>
+</html>`,
+      "slide-a"
+    );
+
+    const updatedSlide = applySlideOperation(originalSlide, {
+      type: "style.update",
+      slideId: originalSlide.id,
+      elementId: "text-1",
+      propertyName: "color",
+      previousValue: "",
+      nextValue: "#ff0000",
+      timestamp: 1,
+    });
+    const doc = new DOMParser().parseFromString(updatedSlide.htmlSource, "text/html");
+
+    expect(updatedSlide.elements.find((element) => element.id === "text-1")?.content).toBe(
+      "Before"
+    );
+    expect(doc.querySelector<HTMLElement>('[data-editor-id="text-1"]')?.style.color).toBe(
+      "rgb(255, 0, 0)"
+    );
   });
 
   test("invertSlideOperation pairs correctly with style.update and reverses applySlideOperation", () => {
