@@ -12,7 +12,7 @@ This package is responsible for:
 - rendering the editing shell around slide content
 - translating user interactions into core operations
 - managing transient interaction state such as selection and in-progress editing
-- rendering overlays, thumbnails, and inspector views
+- rendering overlays, thumbnails, and sidebar tool panel views
 
 It consumes `packages/core` APIs and should not redefine document or history
 semantics locally.
@@ -21,7 +21,7 @@ semantics locally.
 
 - text double-click editing is partially implemented
 - local undo/redo for committed text edits is implemented through core history
-- the style inspector currently reads computed CSS but does not edit styles yet
+- the sidebar tool panel edits CSS-backed properties through core style operations
 - layout editing primitives exist only in early utility form and are not yet a
   full user workflow
 

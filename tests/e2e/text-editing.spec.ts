@@ -1,4 +1,4 @@
-import { type FrameLocator, type Page, expect, test } from "@playwright/test";
+import { type FrameLocator, type Locator, type Page, expect, test } from "@playwright/test";
 import {
   REGRESSION_DECK_AGENDA_PARAGRAPH,
   REGRESSION_DECK_HERO_KICKER,
@@ -39,7 +39,7 @@ function getHeaderControls(page: Page) {
     toggleInspectorButton: page.getByTestId("toggle-inspector-button"),
     slideCount: page.getByTestId("slide-count"),
     floatingToolbarAnchor: page.getByTestId("floating-toolbar-anchor"),
-    inspector: page.getByTestId("style-inspector"),
+    inspector: page.getByTestId("sidebar-tool-panel"),
     savingBadge: page.getByText("saving..."),
   };
 }
@@ -51,6 +51,101 @@ function coverFrame(page: Page): FrameLocator {
 async function selectAllAndFill(locator: ReturnType<FrameLocator["locator"]>, value: string) {
   await locator.press(`${MODIFIER}+A`);
   await locator.fill(value);
+}
+
+async function ensureToolPanelSectionOpen(page: Page, sectionName: string) {
+  const sectionToggle = page.getByRole("button", { name: new RegExp(sectionName, "i") });
+  if ((await sectionToggle.getAttribute("aria-expanded")) !== "true") {
+    await sectionToggle.click();
+  }
+}
+
+async function getInlineStyle(locator: Locator, propertyName: string) {
+  return locator.evaluate((node, name) => {
+    return (node as HTMLElement).style.getPropertyValue(name);
+  }, propertyName);
+}
+
+async function expectInlineStyle(locator: Locator, propertyName: string, expectedValue: string) {
+  await expect
+    .poll(async () => getInlineStyle(locator, propertyName), { timeout: 2500 })
+    .toBe(expectedValue);
+}
+
+async function expectInlineStyleContains(
+  locator: Locator,
+  propertyName: string,
+  expectedValue: string
+) {
+  await expect
+    .poll(async () => getInlineStyle(locator, propertyName), { timeout: 2500 })
+    .toContain(expectedValue);
+}
+
+async function fillToolPanelField(page: Page, label: string, value: string) {
+  const field = page.getByLabel(label, { exact: true });
+  await expect(field).toBeEnabled();
+  await field.fill(value);
+}
+
+async function fillToolPanelFieldAndExpectInlineStyle(
+  page: Page,
+  target: Locator,
+  label: string,
+  value: string,
+  propertyName: string,
+  expectedValue: string
+) {
+  await fillToolPanelField(page, label, value);
+  await expectInlineStyle(target, propertyName, expectedValue);
+}
+
+async function selectToolPanelOption(page: Page, label: string, value: string) {
+  const field = page.getByLabel(label, { exact: true });
+  await expect(field).toBeEnabled();
+  await field.selectOption(value);
+}
+
+async function selectToolPanelOptionAndExpectInlineStyle(
+  page: Page,
+  target: Locator,
+  label: string,
+  value: string,
+  propertyName: string,
+  expectedValue: string
+) {
+  await selectToolPanelOption(page, label, value);
+  await expectInlineStyle(target, propertyName, expectedValue);
+}
+
+async function selectChangedToolPanelOptionAndExpectInlineStyle(
+  page: Page,
+  target: Locator,
+  label: string,
+  options: string[],
+  propertyName: string
+) {
+  const currentValue = await page.getByLabel(label, { exact: true }).inputValue();
+  const nextValue = options.find((option) => option !== currentValue);
+  if (!nextValue) {
+    throw new Error(`Expected at least one ${label} option to differ from ${currentValue}.`);
+  }
+
+  await selectToolPanelOptionAndExpectInlineStyle(
+    page,
+    target,
+    label,
+    nextValue,
+    propertyName,
+    nextValue
+  );
+}
+
+async function applyCustomCssProperty(page: Page, propertyName: string, propertyValue: string) {
+  await ensureToolPanelSectionOpen(page, "Custom CSS");
+  await page.getByLabel("Property name").fill(propertyName);
+  await page.getByLabel("Property value").fill(propertyValue);
+  await page.getByRole("button", { name: "Apply property" }).click();
 }
 
 test("plain click selects text only, and double click enters editing", async ({ page }) => {
@@ -143,6 +238,261 @@ test("panel button toggles the inspector", async ({ page }) => {
 
   await toggleInspectorButton.click();
   await expect(inspector).toBeVisible();
+});
+
+test("sidebar tool panel applies numeric style edits after debounce without blur", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const fontSizeInput = page.getByLabel("Font size");
+
+  await editableHeading.click();
+  await expect(fontSizeInput).toBeEnabled();
+
+  const originalFontSize = await editableHeading.evaluate((node) => {
+    return node.ownerDocument.defaultView?.getComputedStyle(node).fontSize ?? "";
+  });
+  const nextFontSize = originalFontSize === "44px" ? "52" : "44";
+  const nextFontSizeCss = `${nextFontSize}px`;
+
+  await fontSizeInput.fill(nextFontSize);
+  await expect(editableHeading).not.toHaveCSS("font-size", nextFontSizeCss, { timeout: 100 });
+  await expect(editableHeading).toHaveCSS("font-size", nextFontSizeCss, { timeout: 2500 });
+
+  await page.keyboard.press(`${MODIFIER}+Z`);
+  await expect(editableHeading).toHaveCSS("font-size", originalFontSize);
+});
+
+test("sidebar tool panel applies all typography controls", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  await editableHeading.click();
+
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Font family",
+    "Georgia",
+    "font-family",
+    "Georgia"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Font size",
+    "44",
+    "font-size",
+    "44px"
+  );
+  await selectChangedToolPanelOptionAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Font weight",
+    ["300", "400", "500", "600", "700", "800"],
+    "font-weight"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Line height",
+    "1.25",
+    "line-height",
+    "1.25"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Letter spacing",
+    "2px",
+    "letter-spacing",
+    "2px"
+  );
+  await selectChangedToolPanelOptionAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Text transform",
+    ["none", "uppercase", "lowercase", "capitalize"],
+    "text-transform"
+  );
+  await selectChangedToolPanelOptionAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Text align",
+    ["left", "center", "right", "justify"],
+    "text-align"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Text color",
+    "#123456",
+    "color",
+    "rgb(18, 52, 86)"
+  );
+});
+
+test("sidebar tool panel applies all layout controls", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  await editableHeading.click();
+  await ensureToolPanelSectionOpen(page, "Layout");
+
+  await selectToolPanelOptionAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Display",
+    "block",
+    "display",
+    "block"
+  );
+  await selectToolPanelOptionAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Position",
+    "absolute",
+    "position",
+    "absolute"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Width",
+    "640px",
+    "width",
+    "640px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Height",
+    "120px",
+    "height",
+    "120px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(page, editableHeading, "Top", "80px", "top", "80px");
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Right",
+    "40px",
+    "right",
+    "40px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Bottom",
+    "20px",
+    "bottom",
+    "20px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Left",
+    "120px",
+    "left",
+    "120px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Opacity",
+    "0.75",
+    "opacity",
+    "0.75"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Transform",
+    "translate(12px, 8px)",
+    "transform",
+    "translate(12px, 8px)"
+  );
+});
+
+test("sidebar tool panel applies spacing fill and border controls", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  await editableHeading.click();
+
+  await ensureToolPanelSectionOpen(page, "Spacing");
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Margin",
+    "12px 16px",
+    "margin",
+    "12px 16px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Padding",
+    "8px 10px",
+    "padding",
+    "8px 10px"
+  );
+
+  await ensureToolPanelSectionOpen(page, "Fill");
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Background color",
+    "#abcdef",
+    "background-color",
+    "rgb(171, 205, 239)"
+  );
+  await fillToolPanelField(page, "Background", "linear-gradient(90deg, red, blue)");
+  await expectInlineStyleContains(editableHeading, "background", "linear-gradient");
+
+  await ensureToolPanelSectionOpen(page, "Border");
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Border",
+    "3px solid #112233",
+    "border",
+    "3px solid rgb(17, 34, 51)"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Radius",
+    "18px",
+    "border-radius",
+    "18px"
+  );
+  await fillToolPanelFieldAndExpectInlineStyle(
+    page,
+    editableHeading,
+    "Shadow",
+    "0 4px 12px rgba(0, 0, 0, 0.25)",
+    "box-shadow",
+    "rgba(0, 0, 0, 0.25) 0px 4px 12px"
+  );
+});
+
+test("sidebar tool panel applies custom css properties", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  await editableHeading.click();
+
+  await applyCustomCssProperty(page, "outline", "4px solid #445566");
+
+  await expectInlineStyle(editableHeading, "outline", "rgb(68, 85, 102) solid 4px");
 });
 
 test("floating toolbar visibility follows selection state", async ({ page }) => {

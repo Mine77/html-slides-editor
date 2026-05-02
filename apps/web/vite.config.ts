@@ -15,6 +15,7 @@ const GENERATED_SOURCE_ROOT = path.resolve(
   "generated/html-slides-editor-project-overview"
 );
 const GENERATED_BASELINE_DIR = path.resolve(workspaceRoot, ".tmp/generated-deck-baseline");
+const NOT_FOUND_ERROR_CODE = "ENOENT";
 
 interface SaveGeneratedDeckPayload {
   slides?: Array<{
@@ -24,7 +25,7 @@ interface SaveGeneratedDeckPayload {
 }
 
 function createSaveGeneratedDeckPlugin() {
-  const targets = [GENERATED_PUBLIC_DIR, GENERATED_DIST_DIR, GENERATED_SOURCE_ROOT];
+  let activeTargets = [GENERATED_PUBLIC_DIR, GENERATED_DIST_DIR, GENERATED_SOURCE_ROOT];
 
   async function resetDirectory(targetDir: string) {
     await fs.rm(targetDir, { recursive: true, force: true });
@@ -50,9 +51,33 @@ function createSaveGeneratedDeckPlugin() {
     );
   }
 
+  async function directoryExists(targetDir: string) {
+    try {
+      const stat = await fs.stat(targetDir);
+      return stat.isDirectory();
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === NOT_FOUND_ERROR_CODE
+      ) {
+        return false;
+      }
+
+      throw error;
+    }
+  }
+
   async function ensureBaselineDeck() {
+    const hasSourceDeck = await directoryExists(GENERATED_SOURCE_ROOT);
+    const baselineSource = hasSourceDeck ? GENERATED_SOURCE_ROOT : GENERATED_PUBLIC_DIR;
+    activeTargets = hasSourceDeck
+      ? [GENERATED_PUBLIC_DIR, GENERATED_DIST_DIR, GENERATED_SOURCE_ROOT]
+      : [GENERATED_PUBLIC_DIR, GENERATED_DIST_DIR];
+
     await fs.rm(GENERATED_BASELINE_DIR, { recursive: true, force: true });
-    await copyDirectory(GENERATED_SOURCE_ROOT, GENERATED_BASELINE_DIR);
+    await copyDirectory(baselineSource, GENERATED_BASELINE_DIR);
   }
 
   async function handleSaveRequest(
@@ -82,7 +107,7 @@ function createSaveGeneratedDeckPlugin() {
     await Promise.all(
       slides.map(async (slide) => {
         await Promise.all(
-          targets.map(async (targetRoot) => {
+          activeTargets.map(async (targetRoot) => {
             const targetPath = path.join(targetRoot, slide.file);
             await fs.mkdir(path.dirname(targetPath), { recursive: true });
             await fs.writeFile(targetPath, slide.htmlSource, "utf8");
@@ -98,7 +123,7 @@ function createSaveGeneratedDeckPlugin() {
 
   async function handleResetRequest(response: import("node:http").ServerResponse) {
     await Promise.all(
-      targets.map(async (targetRoot) => {
+      activeTargets.map(async (targetRoot) => {
         await resetDirectory(targetRoot);
         await copyDirectory(GENERATED_BASELINE_DIR, targetRoot);
       })
