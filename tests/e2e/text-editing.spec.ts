@@ -508,7 +508,7 @@ test("floating toolbar visibility follows selection state", async ({ page }) => 
   await editableHeading.click();
 
   await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByRole("button", { name: "Card" })).toBeVisible();
+  await expect(floatingToolbarAnchor.getByRole("button", { name: "Inter" })).toBeVisible();
 
   await stagePanel.click({
     position: { x: 12, y: 12 },

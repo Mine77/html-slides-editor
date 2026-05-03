@@ -8,6 +8,7 @@
       "coverage",
       ".vite",
       "generated",
+      ".tmp",
       "docs/agents",
       ".scratch",
       "playwright-report",

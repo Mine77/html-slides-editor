@@ -29,6 +29,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -36,7 +37,7 @@ import { ColorPicker } from "./color-picker";
 
 const TOOLBAR_FADE_MS = 140;
 
-type MenuId = "font" | "size" | "color" | "align" | "arrange";
+type MenuId = "font" | "size" | "color" | "align" | "arrange" | "layer";
 type TextAlign = "left" | "center" | "right" | "justify";
 
 interface ElementStyle {
@@ -51,7 +52,7 @@ interface ElementStyle {
   fillColor: string;
 }
 
-const FONTS = ["Inter", "Plus Jakarta Sans", "Card", "IBM Plex Sans", "Georgia", "Courier New"];
+const FONTS = ["Inter", "IBM Plex Sans", "Segoe UI", "Georgia", "Times New Roman", "Courier New"];
 const SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 80];
 const ALIGN_OPTIONS: Array<{ value: TextAlign; icon: LucideIcon; label: string }> = [
   { value: "left", icon: AlignLeft, label: "Left" },
@@ -79,10 +80,12 @@ function classNames(...values: Array<string | false | null | undefined>) {
 
 function FloatingToolbar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const sizeInputRef = useRef<HTMLInputElement>(null);
   const [activeMenu, setActiveMenu] = useState<MenuId | null>(null);
   const [panelLeft, setPanelLeft] = useState(0);
+  const [toolbarOffsetX, setToolbarOffsetX] = useState(0);
   const [style, setStyle] = useState<ElementStyle>({
-    fontFamily: "Card",
+    fontFamily: "Inter",
     fontSize: 24,
     color: "#f3efe8",
     bold: false,
@@ -153,6 +156,32 @@ function FloatingToolbar() {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    const node = toolbarRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const rect = node.getBoundingClientRect();
+    const baseLeft = rect.left - toolbarOffsetX;
+    const baseRight = rect.right - toolbarOffsetX;
+    const viewportPadding = 16;
+    let nextOffsetX = 0;
+
+    if (baseLeft < viewportPadding) {
+      nextOffsetX = viewportPadding - baseLeft;
+    }
+
+    if (baseRight + nextOffsetX > window.innerWidth - viewportPadding) {
+      nextOffsetX += window.innerWidth - viewportPadding - (baseRight + nextOffsetX);
+    }
+
+    if (nextOffsetX !== toolbarOffsetX) {
+      setToolbarOffsetX(nextOffsetX);
+    }
+  });
+
   useEffect(() => {
     function closeOnOutsidePointer(event: MouseEvent) {
       if (toolbarRef.current?.contains(event.target as Node)) {
@@ -168,6 +197,21 @@ function FloatingToolbar() {
     };
   }, []);
 
+  useEffect(() => {
+    if (activeMenu !== "size") {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      sizeInputRef.current?.focus();
+      sizeInputRef.current?.select();
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [activeMenu]);
+
   function toggleMenu(menu: MenuId, event: ReactMouseEvent<HTMLButtonElement>) {
     setPanelLeft(event.currentTarget.offsetLeft);
     setActiveMenu((current) => (current === menu ? null : menu));
@@ -178,7 +222,11 @@ function FloatingToolbar() {
   }
 
   return (
-    <div className="hse-floating-toolbar hse-floating-toolbar-pop" ref={toolbarRef}>
+    <div
+      className="hse-floating-toolbar hse-floating-toolbar-pop"
+      ref={toolbarRef}
+      style={{ marginLeft: toolbarOffsetX }}
+    >
       <div className="hse-floating-toolbar-strip" aria-label="Formatting toolbar">
         <ToolbarTrigger
           active={activeMenu === "font"}
@@ -191,7 +239,6 @@ function FloatingToolbar() {
             <ToolbarIcon icon={Type} />
             <span className="hse-floating-toolbar-truncate">{style.fontFamily}</span>
           </span>
-          <ToolbarIcon icon={ChevronDown} muted />
         </ToolbarTrigger>
 
         <div className="hse-floating-toolbar-size-stepper">
@@ -271,15 +318,11 @@ function FloatingToolbar() {
             toggleMenu("color", event);
           }}
         >
-          <span className="hse-floating-toolbar-trigger-value">
-            <ToolbarIcon icon={Palette} />
-            <span
-              className="hse-floating-toolbar-swatch"
-              style={{ background: style.color }}
-              aria-hidden="true"
-            />
-          </span>
-          <ToolbarIcon icon={ChevronDown} muted />
+          <span
+            className="hse-floating-toolbar-swatch"
+            style={{ background: style.color }}
+            aria-hidden="true"
+          />
         </ToolbarTrigger>
 
         <ToolbarTrigger
@@ -289,7 +332,6 @@ function FloatingToolbar() {
           }}
         >
           <ToolbarIcon icon={getAlignIcon(style.align)} />
-          <ToolbarIcon icon={ChevronDown} muted />
         </ToolbarTrigger>
 
         <Divider />
@@ -301,8 +343,17 @@ function FloatingToolbar() {
             toggleMenu("arrange", event);
           }}
         >
+          <ToolbarIcon icon={AlignCenterHorizontal} />
+        </ToolbarTrigger>
+
+        <ToolbarTrigger
+          active={activeMenu === "layer"}
+          className="hse-floating-toolbar-trigger-icon-only"
+          onClick={(event) => {
+            toggleMenu("layer", event);
+          }}
+        >
           <ToolbarIcon icon={Layers} />
-          <ToolbarIcon icon={ChevronDown} muted />
         </ToolbarTrigger>
 
         <Divider />
@@ -314,7 +365,7 @@ function FloatingToolbar() {
 
       {activeMenu === "font" ? (
         <ToolbarPanel left={panelLeft}>
-          <PanelTitle>字体</PanelTitle>
+          <PanelTitle>Font</PanelTitle>
           <div className="hse-floating-toolbar-list">
             {FONTS.map((font) => (
               <button
@@ -341,6 +392,29 @@ function FloatingToolbar() {
 
       {activeMenu === "size" ? (
         <ToolbarPanel left={panelLeft} width="narrow">
+          <PanelTitle>Font Size</PanelTitle>
+          <input
+            className="hse-floating-toolbar-size-input"
+            ref={sizeInputRef}
+            type="number"
+            min={8}
+            max={200}
+            value={style.fontSize}
+            onChange={(event) => {
+              const nextSize = Number.parseInt(event.target.value, 10);
+
+              if (Number.isNaN(nextSize)) {
+                return;
+              }
+
+              updateStyle({ fontSize: Math.min(200, Math.max(8, nextSize)) });
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === "Escape") {
+                setActiveMenu(null);
+              }
+            }}
+          />
           <div className="hse-floating-toolbar-list">
             {SIZES.map((size) => (
               <button
@@ -365,7 +439,7 @@ function FloatingToolbar() {
 
       {activeMenu === "color" ? (
         <ToolbarPanel left={panelLeft} width="wide">
-          <PanelTitle>选择颜色</PanelTitle>
+          <PanelTitle>Color</PanelTitle>
           <ColorPicker
             value={style.color}
             onChange={(nextColor) => {
@@ -378,13 +452,14 @@ function FloatingToolbar() {
       ) : null}
 
       {activeMenu === "align" ? (
-        <ToolbarPanel left={panelLeft} width="auto">
-          <div className="hse-floating-toolbar-icon-grid hse-floating-toolbar-icon-grid-row">
+        <ToolbarPanel left={panelLeft} width="medium">
+          <PanelTitle>Text Align</PanelTitle>
+          <div className="hse-floating-toolbar-list">
             {ALIGN_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 className={classNames(
-                  "hse-floating-toolbar-grid-button",
+                  "hse-floating-toolbar-option",
                   style.align === option.value && "is-selected"
                 )}
                 type="button"
@@ -395,6 +470,7 @@ function FloatingToolbar() {
                 }}
               >
                 <ToolbarIcon icon={option.icon} />
+                <span>{option.label}</span>
               </button>
             ))}
           </div>
@@ -417,6 +493,11 @@ function FloatingToolbar() {
               </button>
             ))}
           </div>
+        </ToolbarPanel>
+      ) : null}
+
+      {activeMenu === "layer" ? (
+        <ToolbarPanel left={panelLeft} width="medium">
           <PanelTitle>Layer</PanelTitle>
           <div className="hse-floating-toolbar-list">
             {LAYER_OPTIONS.map((option) => (
@@ -493,8 +574,55 @@ function ToolbarPanel({
   left: number;
   width?: "auto" | "default" | "medium" | "narrow" | "wide";
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+
+    if (!panel) {
+      return;
+    }
+
+    const rect = panel.getBoundingClientRect();
+    const baseRect = {
+      bottom: rect.bottom - offset.y,
+      left: rect.left - offset.x,
+      right: rect.right - offset.x,
+      top: rect.top - offset.y,
+    };
+    const viewportPadding = 16;
+    let nextX = 0;
+    let nextY = 0;
+
+    if (baseRect.right > window.innerWidth - viewportPadding) {
+      nextX = window.innerWidth - viewportPadding - baseRect.right;
+    }
+
+    if (baseRect.left + nextX < viewportPadding) {
+      nextX += viewportPadding - (baseRect.left + nextX);
+    }
+
+    if (baseRect.bottom > window.innerHeight - viewportPadding) {
+      nextY = window.innerHeight - viewportPadding - baseRect.bottom;
+    }
+
+    if (baseRect.top + nextY < viewportPadding) {
+      nextY += viewportPadding - (baseRect.top + nextY);
+    }
+
+    if (nextX !== offset.x || nextY !== offset.y) {
+      setOffset({ x: nextX, y: nextY });
+    }
+  });
+
   return (
-    <div className={`hse-floating-toolbar-panel is-${width}`} style={{ left }} role="menu">
+    <div
+      className={`hse-floating-toolbar-panel is-${width}`}
+      ref={panelRef}
+      style={{ left: left + offset.x, top: `calc(100% + 8px + ${offset.y}px)` }}
+      role="menu"
+    >
       {children}
     </div>
   );

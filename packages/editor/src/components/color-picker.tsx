@@ -1,16 +1,24 @@
+import {
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 const SWATCHES = [
-  "#0f172a",
-  "#ffffff",
-  "#ef4444",
-  "#f97316",
-  "#f59e0b",
-  "#10b981",
-  "#06b6d4",
-  "#3b82f6",
-  "#8b5cf6",
-  "#ec4899",
-  "#64748b",
-  "#a78bfa",
+  "#0F172A",
+  "#FFFFFF",
+  "#EF4444",
+  "#F97316",
+  "#F59E0B",
+  "#EAB308",
+  "#84CC16",
+  "#10B981",
+  "#06B6D4",
+  "#3B82F6",
+  "#8B5CF6",
+  "#EC4899",
 ];
 
 const GRADIENTS = [
@@ -28,38 +36,126 @@ interface ColorPickerProps {
 }
 
 function ColorPicker({ value, onChange }: ColorPickerProps) {
-  const colorInputValue = value.startsWith("#") ? value : "#0f172a";
+  const spectrumRef = useRef<HTMLDivElement>(null);
+  const hueRef = useRef<HTMLDivElement>(null);
+  const hsv = useMemo(() => hexToHsv(value), [value]);
+  const normalizedHex = hsvToHex(hsv);
+  const [hexInput, setHexInput] = useState(normalizedHex.replace("#", ""));
+  const hueColor = `hsl(${hsv.h}, 100%, 50%)`;
+
+  useEffect(() => {
+    setHexInput(normalizedHex.replace("#", ""));
+  }, [normalizedHex]);
+
+  function updateFromSpectrum(event: ReactPointerEvent<HTMLDivElement>) {
+    const rect = spectrumRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const saturation = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    const brightness = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
+    onChange(hsvToHex({ ...hsv, s: saturation, v: brightness }));
+  }
+
+  function updateFromHue(event: ReactPointerEvent<HTMLDivElement>) {
+    const rect = hueRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const hue = Math.round(clamp((event.clientX - rect.left) / rect.width, 0, 1) * 360);
+    onChange(hsvToHex({ ...hsv, h: hue === 360 ? 0 : hue }));
+  }
 
   return (
     <div className="hse-color-picker">
-      <div className="hse-color-picker-preview-row">
+      <div
+        className="hse-color-picker-spectrum"
+        ref={spectrumRef}
+        role="slider"
+        aria-label="Color saturation and brightness"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(hsv.v * 100)}
+        aria-valuetext={normalizedHex}
+        tabIndex={0}
+        style={{ backgroundColor: hueColor }}
+        onPointerDown={updateFromSpectrum}
+        onPointerMove={(event) => {
+          if (event.buttons === 1) {
+            updateFromSpectrum(event);
+          }
+        }}
+      >
         <span
-          className="hse-color-picker-preview"
-          style={{ background: value }}
+          className="hse-color-picker-spectrum-handle"
           aria-hidden="true"
-        />
-        <input
-          className="hse-color-picker-hex"
-          type="text"
-          value={value}
-          spellCheck={false}
-          onChange={(event) => {
-            onChange(event.target.value);
+          style={{
+            color: normalizedHex,
+            left: `calc(${hsv.s * 100}% + ${(0.5 - hsv.s) * 22}px)`,
+            top: `calc(${(1 - hsv.v) * 100}% + ${(hsv.v - 0.5) * 22}px)`,
           }}
         />
       </div>
 
-      <input
-        className="hse-color-picker-spectrum"
-        type="color"
-        value={colorInputValue}
-        onChange={(event) => {
-          onChange(event.target.value);
+      <div
+        className="hse-color-picker-hue"
+        ref={hueRef}
+        role="slider"
+        aria-label="Hue"
+        aria-valuemin={0}
+        aria-valuemax={359}
+        aria-valuenow={hsv.h}
+        tabIndex={0}
+        onPointerDown={updateFromHue}
+        onPointerMove={(event) => {
+          if (event.buttons === 1) {
+            updateFromHue(event);
+          }
         }}
-      />
+      >
+        <span
+          className="hse-color-picker-hue-handle"
+          aria-hidden="true"
+          style={{ color: hueColor, left: `${(hsv.h / 360) * 100}%` }}
+        />
+      </div>
+
+      <div className="hse-color-picker-preview-row">
+        <span
+          className="hse-color-picker-preview"
+          style={{ background: normalizedHex }}
+          aria-hidden="true"
+        />
+        <span className="hse-color-picker-hex-prefix">#</span>
+        <input
+          className="hse-color-picker-hex"
+          type="text"
+          value={hexInput}
+          spellCheck={false}
+          onChange={(event) => {
+            const nextValue = event.target.value.replace(/[^0-9a-f]/gi, "").slice(0, 6);
+            setHexInput(nextValue);
+
+            if (nextValue.length === 6) {
+              onChange(`#${nextValue}`);
+            }
+          }}
+          onBlur={() => {
+            setHexInput(normalizedHex.replace("#", ""));
+          }}
+        />
+      </div>
 
       <section className="hse-color-picker-section" aria-label="Preset colors">
-        <div className="hse-color-picker-section-title">色板</div>
+        <div className="hse-color-picker-section-title">Presets</div>
         <div className="hse-color-picker-swatch-grid">
           {SWATCHES.map((color) => (
             <button
@@ -77,7 +173,7 @@ function ColorPicker({ value, onChange }: ColorPickerProps) {
       </section>
 
       <section className="hse-color-picker-section" aria-label="Preset gradients">
-        <div className="hse-color-picker-section-title">渐变</div>
+        <div className="hse-color-picker-section-title">Gradients</div>
         <div className="hse-color-picker-gradient-grid">
           {GRADIENTS.map((gradient) => (
             <button
@@ -95,6 +191,83 @@ function ColorPicker({ value, onChange }: ColorPickerProps) {
       </section>
     </div>
   );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function hexToHsv(value: string) {
+  const fallback = { h: 220, s: 0.54, v: 0.5 };
+  const match = /^#?([0-9a-f]{6})$/i.exec(value.trim());
+
+  if (!match) {
+    return fallback;
+  }
+
+  const hex = match[1];
+  const red = Number.parseInt(hex.slice(0, 2), 16) / 255;
+  const green = Number.parseInt(hex.slice(2, 4), 16) / 255;
+  const blue = Number.parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  let hue = 0;
+
+  if (delta !== 0) {
+    if (max === red) {
+      hue = ((green - blue) / delta) % 6;
+    } else if (max === green) {
+      hue = (blue - red) / delta + 2;
+    } else {
+      hue = (red - green) / delta + 4;
+    }
+  }
+
+  const normalizedHue = Math.round(hue * 60);
+
+  return {
+    h: normalizedHue < 0 ? normalizedHue + 360 : normalizedHue,
+    s: max === 0 ? 0 : delta / max,
+    v: max,
+  };
+}
+
+function hsvToHex({ h, s, v }: { h: number; s: number; v: number }) {
+  const chroma = v * s;
+  const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
+  const match = v - chroma;
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (h < 60) {
+    red = chroma;
+    green = x;
+  } else if (h < 120) {
+    red = x;
+    green = chroma;
+  } else if (h < 180) {
+    green = chroma;
+    blue = x;
+  } else if (h < 240) {
+    green = x;
+    blue = chroma;
+  } else if (h < 300) {
+    red = x;
+    blue = chroma;
+  } else {
+    red = chroma;
+    blue = x;
+  }
+
+  return `#${toHex(red + match)}${toHex(green + match)}${toHex(blue + match)}`.toUpperCase();
+}
+
+function toHex(value: number) {
+  return Math.round(clamp(value, 0, 1) * 255)
+    .toString(16)
+    .padStart(2, "0");
 }
 
 export { ColorPicker };
