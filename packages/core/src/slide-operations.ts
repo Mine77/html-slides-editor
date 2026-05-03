@@ -1,11 +1,12 @@
-import { parseSlide, querySlideElement } from "./slide-document";
-import type { SlideModel } from "./slide-contract";
 import {
   ELEMENT_LAYOUT_STYLE_KEYS,
+  type ElementLayoutStyleSnapshot,
   composeTransform,
   parseTransformParts,
-  type ElementLayoutStyleSnapshot,
 } from "./layout";
+import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
+import type { SlideModel } from "./slide-contract";
+import { parseSlide, querySlideElement } from "./slide-document";
 
 export interface TextUpdateOperation {
   type: "text.update";
@@ -35,10 +36,43 @@ export interface ElementLayoutUpdateOperation {
   timestamp: number;
 }
 
-export type SlideOperation =
+export interface ElementInsertOperation {
+  type: "element.insert";
+  slideId: string;
+  elementId: string;
+  parentElementId: string | null;
+  previousSiblingElementId: string | null;
+  nextSiblingElementId: string | null;
+  html: string;
+  timestamp: number;
+}
+
+export interface ElementRemoveOperation {
+  type: "element.remove";
+  slideId: string;
+  elementId: string;
+  parentElementId: string | null;
+  previousSiblingElementId: string | null;
+  nextSiblingElementId: string | null;
+  html: string;
+  timestamp: number;
+}
+
+export type AtomicSlideOperation =
   | TextUpdateOperation
   | StyleUpdateOperation
-  | ElementLayoutUpdateOperation;
+  | ElementLayoutUpdateOperation
+  | ElementInsertOperation
+  | ElementRemoveOperation;
+
+export interface SlideBatchOperation {
+  type: "operation.batch";
+  slideId: string;
+  operations: AtomicSlideOperation[];
+  timestamp: number;
+}
+
+export type SlideOperation = AtomicSlideOperation | SlideBatchOperation;
 
 function parseHtmlDocument(html: string): Document | null {
   if (typeof DOMParser === "undefined") {
@@ -131,6 +165,143 @@ export function updateSlideElementLayout(
   });
 }
 
+export function createElementPlacement(
+  html: string,
+  elementId: string
+): Pick<
+  ElementInsertOperation,
+  "parentElementId" | "previousSiblingElementId" | "nextSiblingElementId"
+> | null {
+  const doc = parseHtmlDocument(html);
+  if (!doc) {
+    return null;
+  }
+
+  const node = querySlideElement<HTMLElement>(doc, elementId);
+  if (!node || !(node.parentElement instanceof HTMLElement)) {
+    return null;
+  }
+
+  const previousSiblingElementId =
+    node.previousElementSibling instanceof HTMLElement
+      ? node.previousElementSibling.getAttribute(SELECTOR_ATTR)
+      : null;
+  const nextSiblingElementId =
+    node.nextElementSibling instanceof HTMLElement
+      ? node.nextElementSibling.getAttribute(SELECTOR_ATTR)
+      : null;
+
+  return {
+    parentElementId: node.parentElement.getAttribute(SELECTOR_ATTR),
+    previousSiblingElementId,
+    nextSiblingElementId,
+  };
+}
+
+export function getSlideElementHtml(html: string, elementId: string): string | null {
+  const doc = parseHtmlDocument(html);
+  if (!doc) {
+    return null;
+  }
+
+  return querySlideElement<HTMLElement>(doc, elementId)?.outerHTML ?? null;
+}
+
+export function updateSlideElementHtmlIds(
+  elementHtml: string,
+  idMap: Record<string, string>
+): string {
+  const doc = parseHtmlDocument(`<template>${elementHtml}</template>`);
+  const root = doc?.querySelector("template")?.content.firstElementChild;
+  if (!(root instanceof HTMLElement)) {
+    return elementHtml;
+  }
+
+  const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`))];
+  for (const node of nodes) {
+    const currentId = node.getAttribute(SELECTOR_ATTR);
+    if (currentId && idMap[currentId]) {
+      node.setAttribute(SELECTOR_ATTR, idMap[currentId]);
+    }
+  }
+
+  return root.outerHTML;
+}
+
+export function createUniqueElementId(html: string, preferredId: string): string {
+  const doc = parseHtmlDocument(html);
+  if (!doc) {
+    return preferredId;
+  }
+
+  const existingIds = new Set(
+    Array.from(doc.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`))
+      .map((node) => node.getAttribute(SELECTOR_ATTR))
+      .filter((value): value is string => Boolean(value))
+  );
+
+  if (!existingIds.has(preferredId)) {
+    return preferredId;
+  }
+
+  const match = preferredId.match(/^(.*?)(?:-(\d+))?$/);
+  const base = match?.[1] || preferredId;
+  let index = Number.parseInt(match?.[2] || "1", 10) + 1;
+
+  while (existingIds.has(`${base}-${index}`)) {
+    index += 1;
+  }
+
+  return `${base}-${index}`;
+}
+
+export function insertSlideElement(
+  html: string,
+  operation: Pick<
+    ElementInsertOperation,
+    "elementId" | "parentElementId" | "previousSiblingElementId" | "nextSiblingElementId" | "html"
+  >
+): string {
+  return updateHtmlSource(html, (doc) => {
+    if (querySlideElement<HTMLElement>(doc, operation.elementId)) {
+      return;
+    }
+
+    const fragmentDoc = parseHtmlDocument(`<template>${operation.html}</template>`);
+    const node = fragmentDoc?.querySelector("template")?.content.firstElementChild;
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+
+    const parent =
+      (operation.parentElementId
+        ? querySlideElement<HTMLElement>(doc, operation.parentElementId)
+        : null) ??
+      doc.querySelector<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`) ??
+      doc.body;
+    const nextSibling = operation.nextSiblingElementId
+      ? querySlideElement<HTMLElement>(doc, operation.nextSiblingElementId)
+      : null;
+    const previousSibling = operation.previousSiblingElementId
+      ? querySlideElement<HTMLElement>(doc, operation.previousSiblingElementId)
+      : null;
+
+    if (nextSibling?.parentElement === parent) {
+      parent.insertBefore(doc.importNode(node, true), nextSibling);
+    } else if (previousSibling?.parentElement === parent) {
+      previousSibling.after(doc.importNode(node, true));
+    } else {
+      parent.appendChild(doc.importNode(node, true));
+    }
+  });
+}
+
+export function removeSlideElement(html: string, elementId: string): string {
+  return updateHtmlSource(html, (doc) => {
+    querySlideElement<HTMLElement>(doc, elementId)?.remove();
+  });
+}
+
 export function updateSlideElementTransform(
   html: string,
   elementId: string,
@@ -162,19 +333,27 @@ export function updateSlideElementTransform(
   });
 }
 
+function preserveSlideSource(sourceSlide: SlideModel, nextSlide: SlideModel): SlideModel {
+  return {
+    ...nextSlide,
+    sourceFile: sourceSlide.sourceFile,
+  };
+}
+
 export function applySlideOperation(slide: SlideModel, operation: SlideOperation): SlideModel {
   if (slide.id !== operation.slideId) {
     return slide;
   }
 
-  const preserveSlideSource = (nextSlide: SlideModel): SlideModel => ({
-    ...nextSlide,
-    sourceFile: slide.sourceFile,
-  });
-
   switch (operation.type) {
+    case "operation.batch":
+      return operation.operations.reduce(
+        (currentSlide, childOperation) => applySlideOperation(currentSlide, childOperation),
+        slide
+      );
     case "text.update":
       return preserveSlideSource(
+        slide,
         parseSlide(
           updateSlideText(slide.htmlSource, operation.elementId, operation.nextText),
           slide.id
@@ -182,6 +361,7 @@ export function applySlideOperation(slide: SlideModel, operation: SlideOperation
       );
     case "style.update":
       return preserveSlideSource(
+        slide,
         parseSlide(
           updateSlideStyle(
             slide.htmlSource,
@@ -194,16 +374,36 @@ export function applySlideOperation(slide: SlideModel, operation: SlideOperation
       );
     case "element.layout.update":
       return preserveSlideSource(
+        slide,
         parseSlide(
           updateSlideElementLayout(slide.htmlSource, operation.elementId, operation.nextStyle),
           slide.id
         )
+      );
+    case "element.insert":
+      return preserveSlideSource(
+        slide,
+        parseSlide(insertSlideElement(slide.htmlSource, operation), slide.id)
+      );
+    case "element.remove":
+      return preserveSlideSource(
+        slide,
+        parseSlide(removeSlideElement(slide.htmlSource, operation.elementId), slide.id)
       );
   }
 }
 
 export function invertSlideOperation(operation: SlideOperation): SlideOperation {
   switch (operation.type) {
+    case "operation.batch":
+      return {
+        type: "operation.batch",
+        slideId: operation.slideId,
+        operations: operation.operations
+          .map((childOperation) => invertSlideOperation(childOperation) as AtomicSlideOperation)
+          .reverse(),
+        timestamp: operation.timestamp,
+      };
     case "text.update":
       return {
         ...operation,
@@ -221,6 +421,28 @@ export function invertSlideOperation(operation: SlideOperation): SlideOperation 
         ...operation,
         previousStyle: operation.nextStyle,
         nextStyle: operation.previousStyle,
+      };
+    case "element.insert":
+      return {
+        type: "element.remove",
+        slideId: operation.slideId,
+        elementId: operation.elementId,
+        parentElementId: operation.parentElementId,
+        previousSiblingElementId: operation.previousSiblingElementId,
+        nextSiblingElementId: operation.nextSiblingElementId,
+        html: operation.html,
+        timestamp: operation.timestamp,
+      };
+    case "element.remove":
+      return {
+        type: "element.insert",
+        slideId: operation.slideId,
+        elementId: operation.elementId,
+        parentElementId: operation.parentElementId,
+        previousSiblingElementId: operation.previousSiblingElementId,
+        nextSiblingElementId: operation.nextSiblingElementId,
+        html: operation.html,
+        timestamp: operation.timestamp,
       };
   }
 }

@@ -1,9 +1,15 @@
 import { describe, expect, test } from "vitest";
 import {
   applySlideOperation,
+  createElementPlacement,
+  createUniqueElementId,
   ensureEditableSelectors,
+  getSlideElementHtml,
+  insertSlideElement,
   invertSlideOperation,
   parseSlide,
+  removeSlideElement,
+  updateSlideElementHtmlIds,
   updateSlideElementLayout,
   updateSlideElementTransform,
   updateSlideStyle,
@@ -101,6 +107,64 @@ describe("HTML write-back", () => {
     expect(doc.querySelector<HTMLElement>('[data-editor-id="block-1"]')?.style.transform).toBe(
       "translate(15px, 10px) rotate(15deg)"
     );
+  });
+
+  test("element insert and remove helpers preserve document placement", () => {
+    const html = ensureEditableSelectors(`<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text">Before</h1>
+      <p data-editable="text">After</p>
+    </div>
+  </body>
+</html>`);
+    const sourceHtml = getSlideElementHtml(html, "text-1");
+    const placement = createElementPlacement(html, "text-1");
+
+    expect(sourceHtml).toBe('<h1 data-editable="text" data-editor-id="text-1">Before</h1>');
+    expect(placement).toEqual({
+      parentElementId: "slide-root",
+      previousSiblingElementId: null,
+      nextSiblingElementId: "text-2",
+    });
+
+    const removedHtml = removeSlideElement(html, "text-1");
+    const restoredHtml = insertSlideElement(removedHtml, {
+      elementId: "text-1",
+      parentElementId: "slide-root",
+      previousSiblingElementId: null,
+      nextSiblingElementId: "text-2",
+      html: sourceHtml ?? "",
+    });
+    const restoredSlide = parseSlide(restoredHtml, "slide-a");
+
+    expect(restoredSlide.elements.map((element) => element.id)).toEqual(["text-1", "text-2"]);
+  });
+
+  test("element id helpers create unique copied element ids", () => {
+    const html = ensureEditableSelectors(`<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <div data-editable="block" data-editor-id="block-1">
+        <span data-editable="text" data-editor-id="text-2">Nested</span>
+      </div>
+      <div data-editable="block" data-editor-id="block-1-copy">Existing</div>
+    </div>
+  </body>
+</html>`);
+    const copiedHtml = updateSlideElementHtmlIds(
+      '<div data-editable="block" data-editor-id="block-1"><span data-editable="text" data-editor-id="text-2">Nested</span></div>',
+      {
+        "block-1": "block-1-copy-2",
+        "text-2": "block-1-copy-2-text-2",
+      }
+    );
+
+    expect(createUniqueElementId(html, "block-1-copy")).toBe("block-1-copy-2");
+    expect(copiedHtml).toContain('data-editor-id="block-1-copy-2"');
+    expect(copiedHtml).toContain('data-editor-id="block-1-copy-2-text-2"');
   });
 });
 
@@ -224,8 +288,10 @@ describe("slide operations", () => {
     };
 
     expect(
-      applySlideOperation(applySlideOperation(originalSlide, textOperation), invertSlideOperation(textOperation))
-        .htmlSource
+      applySlideOperation(
+        applySlideOperation(originalSlide, textOperation),
+        invertSlideOperation(textOperation)
+      ).htmlSource
     ).toBe(originalSlide.htmlSource);
     expect(invertSlideOperation(styleOperation)).toMatchObject({
       previousValue: "72px",
@@ -237,5 +303,53 @@ describe("slide operations", () => {
         invertSlideOperation(layoutOperation)
       ).htmlSource
     ).toBe(originalSlide.htmlSource);
+  });
+
+  test("insert, remove, and batch operations apply and undo cleanly", () => {
+    const originalSlide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container" data-slide-root="true">
+      <h1 data-editable="text">One</h1>
+      <p data-editable="text">Two</p>
+    </div>
+  </body>
+</html>`,
+      "slide-a"
+    );
+    const operation = {
+      type: "operation.batch" as const,
+      slideId: originalSlide.id,
+      timestamp: 4,
+      operations: [
+        {
+          type: "element.remove" as const,
+          slideId: originalSlide.id,
+          elementId: "text-1",
+          parentElementId: "slide-root",
+          previousSiblingElementId: null,
+          nextSiblingElementId: "text-2",
+          html: '<h1 data-editable="text" data-editor-id="text-1">One</h1>',
+          timestamp: 4,
+        },
+        {
+          type: "element.insert" as const,
+          slideId: originalSlide.id,
+          elementId: "text-3",
+          parentElementId: "slide-root",
+          previousSiblingElementId: "text-2",
+          nextSiblingElementId: null,
+          html: '<p data-editable="text" data-editor-id="text-3">Three</p>',
+          timestamp: 4,
+        },
+      ],
+    };
+
+    const updatedSlide = applySlideOperation(originalSlide, operation);
+    const restoredSlide = applySlideOperation(updatedSlide, invertSlideOperation(operation));
+
+    expect(updatedSlide.elements.map((element) => element.content)).toEqual(["Two", "Three"]);
+    expect(restoredSlide.elements.map((element) => element.content)).toEqual(["One", "Two"]);
   });
 });

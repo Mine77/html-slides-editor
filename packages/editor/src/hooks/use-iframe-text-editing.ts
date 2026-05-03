@@ -1,9 +1,9 @@
 import {
   SELECTOR_ATTR,
-  getSlideElementSelector,
-  querySlideElement,
   type SlideModel,
   type TextUpdateOperation,
+  getSlideElementSelector,
+  querySlideElement,
 } from "@starry-slides/core";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,17 +17,15 @@ interface TextEditingState {
 interface UseIframeTextEditingOptions {
   activeSlide: SlideModel | undefined;
   iframeRef: RefObject<HTMLIFrameElement | null>;
-  canUndo: boolean;
-  canRedo: boolean;
   onCommitOperation: (operation: TextUpdateOperation) => void;
-  onUndo: () => void;
-  onRedo: () => void;
 }
 
 interface UseIframeTextEditingResult {
   selectedElementId: string | null;
+  selectedElementIds: string[];
   isEditingText: boolean;
   setSelectedElementId: Dispatch<SetStateAction<string | null>>;
+  setSelectedElementIds: Dispatch<SetStateAction<string[]>>;
   beginTextEditing: (elementId: string) => void;
   clearSelection: () => void;
 }
@@ -54,19 +52,32 @@ const EDITING_TEXT_STYLE = `
 function useIframeTextEditing({
   activeSlide,
   iframeRef,
-  canUndo,
-  canRedo,
   onCommitOperation,
-  onUndo,
-  onRedo,
 }: UseIframeTextEditingOptions): UseIframeTextEditingResult {
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
   const [textEditing, setTextEditing] = useState<TextEditingState | null>(null);
   const textEditingRef = useRef<TextEditingState | null>(null);
   const commitTextEditRef = useRef<(elementId: string, nextText: string) => void>(() => {});
   const cancelTextEditRef = useRef<() => void>(() => {});
-  const runUndoRef = useRef<() => void>(() => {});
-  const runRedoRef = useRef<() => void>(() => {});
+  const selectedElementId = selectedElementIds[selectedElementIds.length - 1] ?? null;
+
+  function setSelectedElementId(value: SetStateAction<string | null>) {
+    setSelectedElementIds((currentIds) => {
+      const nextValue =
+        typeof value === "function" ? value(currentIds[currentIds.length - 1] ?? null) : value;
+      return nextValue ? [nextValue] : [];
+    });
+  }
+
+  const toggleSelectedElementId = useCallback((elementId: string) => {
+    setSelectedElementIds((currentIds) => {
+      if (currentIds.includes(elementId)) {
+        return currentIds.filter((currentId) => currentId !== elementId);
+      }
+
+      return [...currentIds, elementId];
+    });
+  }, []);
 
   const beginTextEditing = useCallback(
     (elementId: string) => {
@@ -86,7 +97,7 @@ function useIframeTextEditing({
         initialText: node.textContent || "",
       };
 
-      setSelectedElementId(elementId);
+      setSelectedElementIds([elementId]);
       textEditingRef.current = nextEditingState;
       setTextEditing(nextEditingState);
     },
@@ -140,18 +151,6 @@ function useIframeTextEditing({
     setTextEditing(null);
   }
 
-  function runUndo() {
-    textEditingRef.current = null;
-    onUndo();
-    setTextEditing(null);
-  }
-
-  function runRedo() {
-    textEditingRef.current = null;
-    onRedo();
-    setTextEditing(null);
-  }
-
   useEffect(() => {
     textEditingRef.current = textEditing;
   }, [textEditing]);
@@ -166,9 +165,6 @@ function useIframeTextEditing({
 
   commitTextEditRef.current = commitTextEdit;
   cancelTextEditRef.current = cancelTextEdit;
-  runUndoRef.current = runUndo;
-  runRedoRef.current = runRedo;
-
   useEffect(() => {
     if (!activeSlide) {
       return;
@@ -208,17 +204,14 @@ function useIframeTextEditing({
       const target = event.target;
       if (!(target instanceof Element)) {
         if (textEditingRef.current) {
-          const editingNode = querySlideElement<HTMLElement>(
-            doc,
-            textEditingRef.current.elementId
-          );
+          const editingNode = querySlideElement<HTMLElement>(doc, textEditingRef.current.elementId);
           if (editingNode) {
             commitNodeText(editingNode);
             return;
           }
         }
 
-        setSelectedElementId(null);
+        setSelectedElementIds([]);
         return;
       }
 
@@ -236,13 +229,17 @@ function useIframeTextEditing({
 
       const editableTarget = target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
       if (!editableTarget) {
-        setSelectedElementId(null);
+        setSelectedElementIds([]);
         return;
       }
 
       const id = editableTarget.getAttribute(SELECTOR_ATTR);
       if (id) {
-        setSelectedElementId(id);
+        if (event.shiftKey || event.metaKey || event.ctrlKey) {
+          toggleSelectedElementId(id);
+        } else {
+          setSelectedElementIds([id]);
+        }
       }
     };
 
@@ -263,7 +260,11 @@ function useIframeTextEditing({
 
         const id = node.getAttribute(SELECTOR_ATTR);
         if (id) {
-          setSelectedElementId(id);
+          if (event.shiftKey || event.metaKey || event.ctrlKey) {
+            toggleSelectedElementId(id);
+          } else {
+            setSelectedElementIds([id]);
+          }
         }
       };
 
@@ -290,7 +291,7 @@ function useIframeTextEditing({
         beginTextEditing(elementId);
       };
     }
-  }, [activeSlide, beginTextEditing, iframeRef]);
+  }, [activeSlide, beginTextEditing, iframeRef, toggleSelectedElementId]);
 
   useEffect(() => {
     const editing = textEditing;
@@ -423,61 +424,16 @@ function useIframeTextEditing({
     };
   }, [activeSlide, iframeRef, textEditing]);
 
-  useEffect(() => {
-    // The iframe document is rewritten after commits, undo, and redo.
-    // Rebind shortcuts whenever the rendered slide HTML changes so keyboard
-    // events continue to reach the current iframe document.
-    const activeDocumentMarkup = activeSlide?.htmlSource;
-    if (!activeDocumentMarkup) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      const isUndo =
-        (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z";
-      const isRedo =
-        (event.metaKey || event.ctrlKey) &&
-        ((event.shiftKey && event.key.toLowerCase() === "z") || event.key.toLowerCase() === "y");
-
-      if (textEditingRef.current) {
-        return;
-      }
-
-      if (isUndo && canUndo) {
-        event.preventDefault();
-        event.stopPropagation();
-        runUndoRef.current();
-        return;
-      }
-
-      if (isRedo && canRedo) {
-        event.preventDefault();
-        event.stopPropagation();
-        runRedoRef.current();
-      }
-    };
-
-    const iframeDocument = iframeRef.current?.contentDocument;
-    window.addEventListener("keydown", onKeyDown);
-    iframeDocument?.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      iframeDocument?.removeEventListener("keydown", onKeyDown);
-    };
-  }, [activeSlide?.htmlSource, canRedo, canUndo, iframeRef]);
-
   return {
     selectedElementId,
+    selectedElementIds,
     isEditingText: Boolean(activeSlide && textEditing?.slideId === activeSlide.id),
     setSelectedElementId,
+    setSelectedElementIds,
     beginTextEditing,
     clearSelection: () => {
       if (!textEditingRef.current) {
-        setSelectedElementId(null);
+        setSelectedElementIds([]);
       }
     },
   };
