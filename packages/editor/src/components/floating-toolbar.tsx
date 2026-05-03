@@ -1,10 +1,10 @@
+import type { StageRect } from "@html-slides-editor/core";
 import {
   AlignCenter,
   AlignCenterHorizontal,
   AlignCenterVertical,
   AlignEndHorizontal,
   AlignEndVertical,
-  AlignJustify,
   AlignLeft,
   AlignRight,
   AlignStartHorizontal,
@@ -33,32 +33,44 @@ import {
   useRef,
   useState,
 } from "react";
+import type { CssPropertyRow } from "../lib/collect-css-properties";
+import {
+  FONT_FAMILY_OPTIONS,
+  FONT_SIZE_OPTIONS,
+  type TextAlign,
+  composeTransform,
+  getColorInputValue,
+  getFontFamilyLabel,
+  getStyleValue,
+  isBoldFontWeight,
+  isFontFamilySelected,
+  parsePixelValue,
+  parseTextDecorationLines,
+  parseTransformParts,
+} from "../lib/style-controls";
 import { ColorPicker } from "./color-picker";
 
 const TOOLBAR_FADE_MS = 140;
 
 type MenuId = "font" | "size" | "color" | "align" | "arrange" | "layer";
-type TextAlign = "left" | "center" | "right" | "justify";
 
-interface ElementStyle {
-  fontFamily: string;
-  fontSize: number;
-  color: string;
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  strike: boolean;
-  align: TextAlign;
-  fillColor: string;
+interface FloatingToolbarProps {
+  inspectedStyles: CssPropertyRow[];
+  inlineStyleValues: Record<string, string>;
+  selectionOverlay: StageRect;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  slideWidth: number;
+  slideHeight: number;
+  onStyleChange: (propertyName: string, nextValue: string) => void;
+  onDelete: () => void;
 }
 
-const FONTS = ["Inter", "IBM Plex Sans", "Segoe UI", "Georgia", "Times New Roman", "Courier New"];
-const SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 80];
 const ALIGN_OPTIONS: Array<{ value: TextAlign; icon: LucideIcon; label: string }> = [
   { value: "left", icon: AlignLeft, label: "Left" },
   { value: "center", icon: AlignCenter, label: "Center" },
   { value: "right", icon: AlignRight, label: "Right" },
-  { value: "justify", icon: AlignJustify, label: "Justify" },
 ];
 const ARRANGE_OPTIONS: Array<{ value: string; icon: LucideIcon; label: string }> = [
   { value: "left", icon: AlignStartHorizontal, label: "Align left" },
@@ -78,23 +90,37 @@ function classNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
 }
 
-function FloatingToolbar() {
+function FloatingToolbar({
+  inspectedStyles,
+  inlineStyleValues,
+  selectionOverlay,
+  scale,
+  offsetX,
+  offsetY,
+  slideWidth,
+  slideHeight,
+  onStyleChange,
+  onDelete,
+}: FloatingToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const sizeInputRef = useRef<HTMLInputElement>(null);
   const [activeMenu, setActiveMenu] = useState<MenuId | null>(null);
   const [panelLeft, setPanelLeft] = useState(0);
   const [toolbarOffsetX, setToolbarOffsetX] = useState(0);
-  const [style, setStyle] = useState<ElementStyle>({
-    fontFamily: "Inter",
-    fontSize: 24,
-    color: "#f3efe8",
-    bold: false,
-    italic: false,
-    underline: false,
-    strike: false,
-    align: "left",
-    fillColor: "#aeaeae",
-  });
+  const fontFamily = getStyleValue(inspectedStyles, "font-family");
+  const fontSize = Math.round(parsePixelValue(getStyleValue(inspectedStyles, "font-size"), 24));
+  const textColor = getColorInputValue(getStyleValue(inspectedStyles, "color"));
+  const textDecorationLines = parseTextDecorationLines(
+    getStyleValue(inspectedStyles, "text-decoration-line")
+  );
+  const textAlign = normalizeTextAlign(getStyleValue(inspectedStyles, "text-align"));
+  const transform = inlineStyleValues.transform || getStyleValue(inspectedStyles, "transform");
+  const zIndex = inlineStyleValues.zIndex || getStyleValue(inspectedStyles, "z-index");
+  const isBold = isBoldFontWeight(getStyleValue(inspectedStyles, "font-weight"));
+  const isItalic = getStyleValue(inspectedStyles, "font-style").trim().toLowerCase() === "italic";
+  const isUnderlined = textDecorationLines.has("underline");
+  const isStruck = textDecorationLines.has("line-through");
+  const fontFamilyLabel = getFontFamilyLabel(fontFamily);
 
   useEffect(() => {
     const node = toolbarRef.current;
@@ -177,7 +203,7 @@ function FloatingToolbar() {
       nextOffsetX += window.innerWidth - viewportPadding - (baseRight + nextOffsetX);
     }
 
-    if (nextOffsetX !== toolbarOffsetX) {
+    if (shouldUpdateOffset(toolbarOffsetX, nextOffsetX)) {
       setToolbarOffsetX(nextOffsetX);
     }
   });
@@ -217,8 +243,78 @@ function FloatingToolbar() {
     setActiveMenu((current) => (current === menu ? null : menu));
   }
 
-  function updateStyle(patch: Partial<ElementStyle>) {
-    setStyle((current) => ({ ...current, ...patch }));
+  function commitTextDecoration(line: "underline" | "line-through", isActive: boolean) {
+    const nextLines = new Set(textDecorationLines);
+    if (isActive) {
+      nextLines.delete(line);
+    } else {
+      nextLines.add(line);
+    }
+
+    onStyleChange(
+      "text-decoration-line",
+      nextLines.size > 0 ? Array.from(nextLines).join(" ") : "none"
+    );
+  }
+
+  function commitFontSize(nextSize: number) {
+    onStyleChange("font-size", `${Math.min(200, Math.max(8, nextSize))}px`);
+  }
+
+  function commitLayerAction(action: string) {
+    const numericZIndex = Number.parseInt(zIndex, 10);
+    const currentZIndex = Number.isFinite(numericZIndex) ? numericZIndex : 0;
+
+    if (action === "front") {
+      onStyleChange("z-index", "999");
+      return;
+    }
+
+    if (action === "back") {
+      onStyleChange("z-index", "0");
+      return;
+    }
+
+    onStyleChange("z-index", String(Math.max(0, currentZIndex + (action === "forward" ? 1 : -1))));
+  }
+
+  function commitArrangeAction(action: string) {
+    const slideRect = {
+      x: (selectionOverlay.x - offsetX) / scale,
+      y: (selectionOverlay.y - offsetY) / scale,
+      width: selectionOverlay.width / scale,
+      height: selectionOverlay.height / scale,
+    };
+    let deltaX = 0;
+    let deltaY = 0;
+
+    if (action === "left") {
+      deltaX = -slideRect.x;
+    } else if (action === "hcenter") {
+      deltaX = slideWidth / 2 - (slideRect.x + slideRect.width / 2);
+    } else if (action === "right") {
+      deltaX = slideWidth - (slideRect.x + slideRect.width);
+    } else if (action === "top") {
+      deltaY = -slideRect.y;
+    } else if (action === "vcenter") {
+      deltaY = slideHeight / 2 - (slideRect.y + slideRect.height / 2);
+    } else if (action === "bottom") {
+      deltaY = slideHeight - (slideRect.y + slideRect.height);
+    }
+
+    if (Math.abs(deltaX) < 0.01 && Math.abs(deltaY) < 0.01) {
+      return;
+    }
+
+    const transformParts = parseTransformParts(transform);
+    onStyleChange(
+      "transform",
+      composeTransform(
+        transformParts.translateX + deltaX,
+        transformParts.translateY + deltaY,
+        transformParts.rotate
+      )
+    );
   }
 
   return (
@@ -230,6 +326,7 @@ function FloatingToolbar() {
       <div className="hse-floating-toolbar-strip" aria-label="Formatting toolbar">
         <ToolbarTrigger
           active={activeMenu === "font"}
+          label="Font family"
           className="hse-floating-toolbar-trigger-font"
           onClick={(event) => {
             toggleMenu("font", event);
@@ -237,7 +334,7 @@ function FloatingToolbar() {
         >
           <span className="hse-floating-toolbar-trigger-value">
             <ToolbarIcon icon={Type} />
-            <span className="hse-floating-toolbar-truncate">{style.fontFamily}</span>
+            <span className="hse-floating-toolbar-truncate">{fontFamilyLabel}</span>
           </span>
         </ToolbarTrigger>
 
@@ -246,25 +343,26 @@ function FloatingToolbar() {
             label="Decrease font size"
             variant="ghost"
             onClick={() => {
-              updateStyle({ fontSize: Math.max(8, style.fontSize - 2) });
+              commitFontSize(fontSize - 2);
             }}
           >
             <ToolbarIcon icon={Minus} />
           </IconButton>
           <ToolbarTrigger
             active={activeMenu === "size"}
+            label="Font size"
             className="hse-floating-toolbar-trigger-size"
             onClick={(event) => {
               toggleMenu("size", event);
             }}
           >
-            <span className="hse-floating-toolbar-size-value">{style.fontSize}</span>
+            <span className="hse-floating-toolbar-size-value">{fontSize}</span>
           </ToolbarTrigger>
           <IconButton
             label="Increase font size"
             variant="ghost"
             onClick={() => {
-              updateStyle({ fontSize: Math.min(200, style.fontSize + 2) });
+              commitFontSize(fontSize + 2);
             }}
           >
             <ToolbarIcon icon={Plus} />
@@ -275,36 +373,36 @@ function FloatingToolbar() {
 
         <IconButton
           label="Bold"
-          active={style.bold}
+          active={isBold}
           onClick={() => {
-            updateStyle({ bold: !style.bold });
+            onStyleChange("font-weight", isBold ? "400" : "700");
           }}
         >
           <ToolbarIcon icon={Bold} />
         </IconButton>
         <IconButton
           label="Italic"
-          active={style.italic}
+          active={isItalic}
           onClick={() => {
-            updateStyle({ italic: !style.italic });
+            onStyleChange("font-style", isItalic ? "normal" : "italic");
           }}
         >
           <ToolbarIcon icon={Italic} />
         </IconButton>
         <IconButton
           label="Underline"
-          active={style.underline}
+          active={isUnderlined}
           onClick={() => {
-            updateStyle({ underline: !style.underline });
+            commitTextDecoration("underline", isUnderlined);
           }}
         >
           <ToolbarIcon icon={Underline} />
         </IconButton>
         <IconButton
           label="Strikethrough"
-          active={style.strike}
+          active={isStruck}
           onClick={() => {
-            updateStyle({ strike: !style.strike });
+            commitTextDecoration("line-through", isStruck);
           }}
         >
           <ToolbarIcon icon={Strikethrough} />
@@ -314,30 +412,33 @@ function FloatingToolbar() {
 
         <ToolbarTrigger
           active={activeMenu === "color"}
+          label="Text color"
           onClick={(event) => {
             toggleMenu("color", event);
           }}
         >
           <span
             className="hse-floating-toolbar-swatch"
-            style={{ background: style.color }}
+            style={{ background: textColor }}
             aria-hidden="true"
           />
         </ToolbarTrigger>
 
         <ToolbarTrigger
           active={activeMenu === "align"}
+          label="Text align"
           onClick={(event) => {
             toggleMenu("align", event);
           }}
         >
-          <ToolbarIcon icon={getAlignIcon(style.align)} />
+          <ToolbarIcon icon={getAlignIcon(textAlign)} />
         </ToolbarTrigger>
 
         <Divider />
 
         <ToolbarTrigger
           active={activeMenu === "arrange"}
+          label="Arrange"
           className="hse-floating-toolbar-trigger-icon-only"
           onClick={(event) => {
             toggleMenu("arrange", event);
@@ -348,6 +449,7 @@ function FloatingToolbar() {
 
         <ToolbarTrigger
           active={activeMenu === "layer"}
+          label="Layer"
           className="hse-floating-toolbar-trigger-icon-only"
           onClick={(event) => {
             toggleMenu("layer", event);
@@ -358,7 +460,7 @@ function FloatingToolbar() {
 
         <Divider />
 
-        <IconButton label="Delete" variant="danger">
+        <IconButton label="Delete" variant="danger" onClick={onDelete}>
           <ToolbarIcon icon={Trash2} />
         </IconButton>
       </div>
@@ -367,23 +469,21 @@ function FloatingToolbar() {
         <ToolbarPanel left={panelLeft}>
           <PanelTitle>Font</PanelTitle>
           <div className="hse-floating-toolbar-list">
-            {FONTS.map((font) => (
+            {FONT_FAMILY_OPTIONS.map((font) => (
               <button
-                key={font}
+                key={font.value}
                 className={classNames(
                   "hse-floating-toolbar-option",
-                  "hse-floating-toolbar-option-split",
-                  style.fontFamily === font && "is-selected"
+                  isFontFamilySelected(fontFamily, font.value) && "is-selected"
                 )}
-                style={{ fontFamily: font }}
+                style={{ fontFamily: font.value }}
                 type="button"
                 onClick={() => {
-                  updateStyle({ fontFamily: font });
+                  onStyleChange("font-family", font.value);
                   setActiveMenu(null);
                 }}
               >
-                <span>{font}</span>
-                <span className="hse-floating-toolbar-option-meta">Aa</span>
+                <span>{font.label}</span>
               </button>
             ))}
           </div>
@@ -399,7 +499,7 @@ function FloatingToolbar() {
             type="number"
             min={8}
             max={200}
-            value={style.fontSize}
+            value={fontSize}
             onChange={(event) => {
               const nextSize = Number.parseInt(event.target.value, 10);
 
@@ -407,7 +507,7 @@ function FloatingToolbar() {
                 return;
               }
 
-              updateStyle({ fontSize: Math.min(200, Math.max(8, nextSize)) });
+              commitFontSize(nextSize);
             }}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === "Escape") {
@@ -416,17 +516,17 @@ function FloatingToolbar() {
             }}
           />
           <div className="hse-floating-toolbar-list">
-            {SIZES.map((size) => (
+            {FONT_SIZE_OPTIONS.map((size) => (
               <button
                 key={size}
                 className={classNames(
                   "hse-floating-toolbar-option",
                   "hse-floating-toolbar-option-number",
-                  style.fontSize === size && "is-selected"
+                  fontSize === size && "is-selected"
                 )}
                 type="button"
                 onClick={() => {
-                  updateStyle({ fontSize: size });
+                  commitFontSize(size);
                   setActiveMenu(null);
                 }}
               >
@@ -441,11 +541,10 @@ function FloatingToolbar() {
         <ToolbarPanel left={panelLeft} width="wide">
           <PanelTitle>Color</PanelTitle>
           <ColorPicker
-            value={style.color}
+            value={textColor}
+            includeGradients={false}
             onChange={(nextColor) => {
-              updateStyle(
-                nextColor.startsWith("linear") ? { fillColor: nextColor } : { color: nextColor }
-              );
+              onStyleChange("color", nextColor);
             }}
           />
         </ToolbarPanel>
@@ -460,12 +559,12 @@ function FloatingToolbar() {
                 key={option.value}
                 className={classNames(
                   "hse-floating-toolbar-option",
-                  style.align === option.value && "is-selected"
+                  textAlign === option.value && "is-selected"
                 )}
                 type="button"
                 title={option.label}
                 onClick={() => {
-                  updateStyle({ align: option.value });
+                  onStyleChange("text-align", option.value);
                   setActiveMenu(null);
                 }}
               >
@@ -487,6 +586,10 @@ function FloatingToolbar() {
                 className="hse-floating-toolbar-arrange-button"
                 type="button"
                 title={option.label}
+                onClick={() => {
+                  commitArrangeAction(option.value);
+                  setActiveMenu(null);
+                }}
               >
                 <ToolbarIcon icon={option.icon} />
                 <span>{option.label}</span>
@@ -501,7 +604,15 @@ function FloatingToolbar() {
           <PanelTitle>Layer</PanelTitle>
           <div className="hse-floating-toolbar-list">
             {LAYER_OPTIONS.map((option) => (
-              <button key={option.value} className="hse-floating-toolbar-option" type="button">
+              <button
+                key={option.value}
+                className="hse-floating-toolbar-option"
+                type="button"
+                onClick={() => {
+                  commitLayerAction(option.value);
+                  setActiveMenu(null);
+                }}
+              >
                 <ToolbarIcon icon={option.icon} />
                 <span>{option.label}</span>
               </button>
@@ -517,17 +628,20 @@ function ToolbarTrigger({
   children,
   active = false,
   className,
+  label,
   onClick,
 }: {
   children: ReactNode;
   active?: boolean;
   className?: string;
+  label?: string;
   onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <button
       className={classNames("hse-floating-toolbar-trigger", active && "is-active", className)}
       type="button"
+      aria-label={label}
       onClick={onClick}
     >
       {children}
@@ -611,7 +725,7 @@ function ToolbarPanel({
       nextY += viewportPadding - (baseRect.top + nextY);
     }
 
-    if (nextX !== offset.x || nextY !== offset.y) {
+    if (shouldUpdateOffset(offset.x, nextX) || shouldUpdateOffset(offset.y, nextY)) {
       setOffset({ x: nextX, y: nextY });
     }
   });
@@ -626,6 +740,10 @@ function ToolbarPanel({
       {children}
     </div>
   );
+}
+
+function shouldUpdateOffset(current: number, next: number) {
+  return Math.abs(current - next) >= 0.5;
 }
 
 function Divider() {
@@ -645,11 +763,15 @@ function getAlignIcon(align: TextAlign): LucideIcon {
     return AlignRight;
   }
 
-  if (align === "justify") {
-    return AlignJustify;
+  return AlignLeft;
+}
+
+function normalizeTextAlign(value: string): TextAlign {
+  if (value === "center" || value === "right") {
+    return value;
   }
 
-  return AlignLeft;
+  return "left";
 }
 
 function ToolbarIcon({ icon: Icon, muted = false }: { icon: LucideIcon; muted?: boolean }) {

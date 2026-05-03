@@ -1,6 +1,11 @@
 import { MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
+import {
+  FONT_FAMILY_OPTIONS,
+  getColorInputValue,
+  isFontFamilySelected,
+} from "../lib/style-controls";
 import { ChatPanel } from "./chat-panel";
 
 interface SidebarToolPanelProps {
@@ -17,10 +22,15 @@ interface InspectorFieldConfig {
   label: string;
   input: "text" | "number" | "select" | "color";
   placeholder?: string;
-  options?: string[];
+  options?: SelectOption[];
   unit?: string;
   min?: number;
   step?: number;
+}
+
+interface SelectOption {
+  label: string;
+  value: string;
 }
 
 interface InspectorSectionConfig {
@@ -34,9 +44,14 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
   {
     id: "typography",
     title: "Typography",
-    description: "Fonts, rhythm, alignment, and text color.",
+    description: "Text style, spacing, and alignment.",
     fields: [
-      { propertyName: "font-family", label: "Font family", input: "text", placeholder: "inherit" },
+      {
+        propertyName: "font-family",
+        label: "Font family",
+        input: "select",
+        options: FONT_FAMILY_OPTIONS.map((font) => ({ label: font.label, value: font.value })),
+      },
       {
         propertyName: "font-size",
         label: "Font size",
@@ -49,7 +64,15 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
         propertyName: "font-weight",
         label: "Font weight",
         input: "select",
-        options: ["", "300", "400", "500", "600", "700", "800"],
+        options: [
+          { label: "unset", value: "" },
+          { label: "Light", value: "300" },
+          { label: "Regular", value: "400" },
+          { label: "Medium", value: "500" },
+          { label: "Semibold", value: "600" },
+          { label: "Bold", value: "700" },
+          { label: "Heavy", value: "800" },
+        ],
       },
       {
         propertyName: "line-height",
@@ -58,22 +81,15 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
         placeholder: "1.4 or 32px",
       },
       {
-        propertyName: "letter-spacing",
-        label: "Letter spacing",
-        input: "text",
-        placeholder: "0.02em",
-      },
-      {
-        propertyName: "text-transform",
-        label: "Text transform",
-        input: "select",
-        options: ["", "none", "uppercase", "lowercase", "capitalize"],
-      },
-      {
         propertyName: "text-align",
         label: "Text align",
         input: "select",
-        options: ["", "left", "center", "right", "justify"],
+        options: [
+          { label: "unset", value: "" },
+          { label: "Left", value: "left" },
+          { label: "Center", value: "center" },
+          { label: "Right", value: "right" },
+        ],
       },
       { propertyName: "color", label: "Text color", input: "color" },
     ],
@@ -81,62 +97,32 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
   {
     id: "layout",
     title: "Layout",
-    description: "Display mode, positioning, size, and transforms.",
+    description: "Size and element visibility.",
     fields: [
-      {
-        propertyName: "display",
-        label: "Display",
-        input: "select",
-        options: ["", "block", "inline", "inline-block", "flex", "grid", "none"],
-      },
-      {
-        propertyName: "position",
-        label: "Position",
-        input: "select",
-        options: ["", "static", "relative", "absolute", "fixed", "sticky"],
-      },
       { propertyName: "width", label: "Width", input: "text", placeholder: "320px or auto" },
       { propertyName: "height", label: "Height", input: "text", placeholder: "240px or auto" },
-      { propertyName: "top", label: "Top", input: "text", placeholder: "auto or 0" },
-      { propertyName: "right", label: "Right", input: "text", placeholder: "auto or 0" },
-      { propertyName: "bottom", label: "Bottom", input: "text", placeholder: "auto or 0" },
-      { propertyName: "left", label: "Left", input: "text", placeholder: "auto or 0" },
       { propertyName: "opacity", label: "Opacity", input: "text", placeholder: "0 to 1" },
       {
-        propertyName: "transform",
-        label: "Transform",
-        input: "text",
-        placeholder: "translate(24px, 0)",
+        propertyName: "display",
+        label: "Visibility",
+        input: "select",
+        options: [
+          { label: "visible", value: "" },
+          { label: "hidden", value: "none" },
+        ],
       },
-    ],
-  },
-  {
-    id: "spacing",
-    title: "Spacing",
-    description: "Outer and inner spacing around the selected element.",
-    fields: [
-      { propertyName: "margin", label: "Margin", input: "text", placeholder: "24px 32px" },
-      { propertyName: "padding", label: "Padding", input: "text", placeholder: "16px 24px" },
     ],
   },
   {
     id: "fill",
     title: "Fill",
-    description: "Background paint and color fill.",
-    fields: [
-      { propertyName: "background-color", label: "Background color", input: "color" },
-      {
-        propertyName: "background",
-        label: "Background",
-        input: "text",
-        placeholder: "linear-gradient(...)",
-      },
-    ],
+    description: "Background color and surface style.",
+    fields: [{ propertyName: "background-color", label: "Background color", input: "color" }],
   },
   {
     id: "border",
-    title: "Border",
-    description: "Border line, radius, and shadow.",
+    title: "Shape",
+    description: "Edges, border, and shadow.",
     fields: [
       { propertyName: "border", label: "Border", input: "text", placeholder: "1px solid #d1c1ae" },
       { propertyName: "border-radius", label: "Radius", input: "text", placeholder: "16px" },
@@ -150,42 +136,11 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
   },
 ];
 
-const DEFAULT_OPEN_SECTIONS = new Set<string>(["typography", "layout", "custom"]);
+const DEFAULT_OPEN_SECTIONS = new Set<string>(["typography", "layout"]);
 const STYLE_CHANGE_DEBOUNCE_MS = 750;
 
 function toStyleMap(inspectedStyles: CssPropertyRow[]): Map<string, string> {
   return new Map(inspectedStyles.map((property) => [property.name, property.value]));
-}
-
-function isHexColor(value: string) {
-  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim());
-}
-
-function toHexChannel(value: string) {
-  const numericValue = Math.max(0, Math.min(255, Number.parseInt(value, 10) || 0));
-  return numericValue.toString(16).padStart(2, "0");
-}
-
-function rgbToHex(value: string) {
-  const match = value
-    .trim()
-    .match(/^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})(?:[\s,/]+[\d.]+)?\s*\)$/i);
-
-  if (!match) {
-    return null;
-  }
-
-  return `#${toHexChannel(match[1] || "0")}${toHexChannel(match[2] || "0")}${toHexChannel(
-    match[3] || "0"
-  )}`;
-}
-
-function getColorInputValue(value: string) {
-  if (isHexColor(value)) {
-    return value.trim();
-  }
-
-  return rgbToHex(value) ?? "#000000";
 }
 
 function normalizeNumberInput(rawValue: string, unit: string | undefined) {
@@ -207,6 +162,36 @@ function getInputValue(value: string, field: InspectorFieldConfig) {
   }
 
   return value;
+}
+
+function getSelectValue(value: string, field: InspectorFieldConfig): string {
+  if (field.propertyName === "font-family") {
+    return (
+      field.options?.find((option) => isFontFamilySelected(value, option.value))?.value ?? value
+    );
+  }
+
+  if (field.propertyName === "display") {
+    return value === "none" ? "none" : "";
+  }
+
+  if (field.propertyName === "text-align" && value === "start") {
+    return "left";
+  }
+
+  return value;
+}
+
+function getSelectOptions(value: string, field: InspectorFieldConfig): SelectOption[] {
+  const options = field.options ?? [{ label: "unset", value: "" }];
+  const selectValue = getSelectValue(value, field);
+  const hasMatchingOption = options.some((option) => option.value === selectValue);
+
+  if (hasMatchingOption) {
+    return options;
+  }
+
+  return [{ label: value || "unset", value }, ...options];
 }
 
 function getChangeValue(nextRawValue: string, field: InspectorFieldConfig) {
@@ -325,16 +310,24 @@ function SidebarToolPanel({
           <select
             id={fieldInputId}
             className="hse-inspector-select"
-            value={draftValue ?? currentValue}
+            value={getSelectValue(draftValue ?? currentValue, field)}
             disabled={isStyleEditingDisabled}
             onChange={(event) => {
               const nextValue = event.target.value;
               commitDraftValue(field.propertyName, nextValue, currentValue, onStyleChange);
             }}
           >
-            {(field.options ?? [""]).map((option) => (
-              <option key={option || "__empty__"} value={option}>
-                {option || "unset"}
+            {getSelectOptions(draftValue ?? currentValue, field).map((option) => (
+              <option
+                key={option.value || "__empty__"}
+                value={option.value}
+                style={
+                  field.propertyName === "font-family" && option.value
+                    ? { fontFamily: option.value }
+                    : undefined
+                }
+              >
+                {option.label}
               </option>
             ))}
           </select>

@@ -32,10 +32,11 @@ const GRADIENTS = [
 
 interface ColorPickerProps {
   value: string;
+  includeGradients?: boolean;
   onChange: (value: string) => void;
 }
 
-function ColorPicker({ value, onChange }: ColorPickerProps) {
+function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerProps) {
   const spectrumRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
   const hsv = useMemo(() => hexToHsv(value), [value]);
@@ -172,23 +173,25 @@ function ColorPicker({ value, onChange }: ColorPickerProps) {
         </div>
       </section>
 
-      <section className="hse-color-picker-section" aria-label="Preset gradients">
-        <div className="hse-color-picker-section-title">Gradients</div>
-        <div className="hse-color-picker-gradient-grid">
-          {GRADIENTS.map((gradient) => (
-            <button
-              key={gradient}
-              className={gradient === value ? "is-selected" : undefined}
-              type="button"
-              style={{ background: gradient }}
-              aria-label="Use gradient"
-              onClick={() => {
-                onChange(gradient);
-              }}
-            />
-          ))}
-        </div>
-      </section>
+      {includeGradients ? (
+        <section className="hse-color-picker-section" aria-label="Preset gradients">
+          <div className="hse-color-picker-section-title">Gradients</div>
+          <div className="hse-color-picker-gradient-grid">
+            {GRADIENTS.map((gradient) => (
+              <button
+                key={gradient}
+                className={gradient === value ? "is-selected" : undefined}
+                type="button"
+                style={{ background: gradient }}
+                aria-label="Use gradient"
+                onClick={() => {
+                  onChange(gradient);
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

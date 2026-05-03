@@ -1,5 +1,6 @@
 import type { StageRect } from "@html-slides-editor/core";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
+import type { CssPropertyRow } from "../lib/collect-css-properties";
 import { BlockManipulationOverlay } from "./block-manipulation-overlay";
 import { FloatingToolbar } from "./floating-toolbar";
 
@@ -13,7 +14,11 @@ interface StageCanvasProps {
   scale: number;
   selectionOverlay: StageRect | null;
   selectionLabel: string;
+  toolbarKey: string | null;
+  inspectedStyles: CssPropertyRow[];
+  inlineStyleValues: Record<string, string>;
   isSelectionOverlayInteractive: boolean;
+  isEditingText: boolean;
   manipulationOverlay: {
     selectionBounds: StageRect;
     resizeHandles: Array<{
@@ -35,6 +40,8 @@ interface StageCanvasProps {
   onRotateHandleMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void;
   onSelectionOverlayDoubleClick: () => void;
   onBackgroundClick: () => void;
+  onStyleChange: (propertyName: string, nextValue: string) => void;
+  onDeleteSelection: () => void;
 }
 
 function StageCanvas({
@@ -45,7 +52,11 @@ function StageCanvas({
   scale,
   selectionOverlay,
   selectionLabel,
+  toolbarKey,
+  inspectedStyles,
+  inlineStyleValues,
   isSelectionOverlayInteractive,
+  isEditingText,
   manipulationOverlay,
   iframeRef,
   stageViewportRef,
@@ -56,6 +67,8 @@ function StageCanvas({
   onRotateHandleMouseDown,
   onSelectionOverlayDoubleClick,
   onBackgroundClick,
+  onStyleChange,
+  onDeleteSelection,
 }: StageCanvasProps) {
   const clearSelectionIfBackground = (
     target: EventTarget | null,
@@ -76,10 +89,6 @@ function StageCanvas({
         transform: selectionOverlay.y < 84 ? "translate(-50%, 0)" : "translate(-50%, -100%)",
       }
     : undefined;
-  const toolbarKey = selectionOverlay
-    ? `${selectionOverlay.x}:${selectionOverlay.y}:${selectionOverlay.width}:${selectionOverlay.height}:${selectionLabel}`
-    : null;
-
   return (
     <section
       className="hse-stage-panel"
@@ -94,13 +103,25 @@ function StageCanvas({
         }
       }}
     >
-      {selectionOverlay && !isManipulating ? (
+      {selectionOverlay && !isManipulating && !isEditingText ? (
         <div
           className="hse-stage-toolbar-anchor"
           style={toolbarStyle}
           data-testid="floating-toolbar-anchor"
         >
-          <FloatingToolbar key={toolbarKey} />
+          <FloatingToolbar
+            key={toolbarKey}
+            inspectedStyles={inspectedStyles}
+            inlineStyleValues={inlineStyleValues}
+            selectionOverlay={selectionOverlay}
+            scale={scale}
+            offsetX={offsetX}
+            offsetY={offsetY}
+            slideWidth={slideWidth}
+            slideHeight={slideHeight}
+            onStyleChange={onStyleChange}
+            onDelete={onDeleteSelection}
+          />
         </div>
       ) : null}
 
@@ -122,7 +143,7 @@ function StageCanvas({
           data-testid="slide-iframe"
         />
       </div>
-      {selectionOverlay ? (
+      {selectionOverlay && !isEditingText ? (
         <div
           ref={selectionOverlayRef}
           data-testid="selection-overlay"

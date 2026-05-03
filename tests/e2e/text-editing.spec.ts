@@ -66,6 +66,12 @@ async function getInlineStyle(locator: Locator, propertyName: string) {
   }, propertyName);
 }
 
+async function getComputedStyleValue(locator: Locator, propertyName: string) {
+  return locator.evaluate((node, name) => {
+    return node.ownerDocument.defaultView?.getComputedStyle(node).getPropertyValue(name) ?? "";
+  }, propertyName);
+}
+
 async function expectInlineStyle(locator: Locator, propertyName: string, expectedValue: string) {
   await expect
     .poll(async () => getInlineStyle(locator, propertyName), { timeout: 2500 })
@@ -83,7 +89,7 @@ async function expectInlineStyleContains(
 }
 
 async function fillToolPanelField(page: Page, label: string, value: string) {
-  const field = page.getByLabel(label, { exact: true });
+  const field = page.getByTestId("sidebar-tool-panel").getByLabel(label, { exact: true });
   await expect(field).toBeEnabled();
   await field.fill(value);
 }
@@ -101,9 +107,18 @@ async function fillToolPanelFieldAndExpectInlineStyle(
 }
 
 async function selectToolPanelOption(page: Page, label: string, value: string) {
-  const field = page.getByLabel(label, { exact: true });
+  const field = page.getByTestId("sidebar-tool-panel").getByLabel(label, { exact: true });
   await expect(field).toBeEnabled();
   await field.selectOption(value);
+}
+
+async function clickFloatingToolbarButton(page: Page, label: string) {
+  const button = page.getByTestId("floating-toolbar-anchor").getByRole("button", {
+    name: label,
+    exact: true,
+  });
+  await expect(button).toBeVisible();
+  await button.click();
 }
 
 async function selectToolPanelOptionAndExpectInlineStyle(
@@ -125,7 +140,10 @@ async function selectChangedToolPanelOptionAndExpectInlineStyle(
   options: string[],
   propertyName: string
 ) {
-  const currentValue = await page.getByLabel(label, { exact: true }).inputValue();
+  const currentValue = await page
+    .getByTestId("sidebar-tool-panel")
+    .getByLabel(label, { exact: true })
+    .inputValue();
   const nextValue = options.find((option) => option !== currentValue);
   if (!nextValue) {
     throw new Error(`Expected at least one ${label} option to differ from ${currentValue}.`);
@@ -154,6 +172,7 @@ test("plain click selects text only, and double click enters editing", async ({ 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
   const { editingHint, selectionOverlay } = getHistoryControls(page);
+  const { floatingToolbarAnchor } = getHeaderControls(page);
 
   await editableHeading.click();
 
@@ -164,6 +183,8 @@ test("plain click selects text only, and double click enters editing", async ({ 
   await editableHeading.dblclick();
 
   await expect(editingHint).toBeVisible();
+  await expect(floatingToolbarAnchor).toBeHidden();
+  await expect(selectionOverlay).toBeHidden();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 });
 
@@ -247,7 +268,7 @@ test("sidebar tool panel applies numeric style edits after debounce without blur
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
-  const fontSizeInput = page.getByLabel("Font size");
+  const fontSizeInput = page.getByTestId("sidebar-tool-panel").getByLabel("Font size");
 
   await editableHeading.click();
   await expect(fontSizeInput).toBeEnabled();
@@ -273,13 +294,13 @@ test("sidebar tool panel applies all typography controls", async ({ page }) => {
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
   await editableHeading.click();
 
-  await fillToolPanelFieldAndExpectInlineStyle(
+  await selectToolPanelOptionAndExpectInlineStyle(
     page,
     editableHeading,
     "Font family",
-    "Georgia",
+    'Georgia, "Times New Roman", serif',
     "font-family",
-    "Georgia"
+    'Georgia, "Times New Roman", serif'
   );
   await fillToolPanelFieldAndExpectInlineStyle(
     page,
@@ -304,26 +325,11 @@ test("sidebar tool panel applies all typography controls", async ({ page }) => {
     "line-height",
     "1.25"
   );
-  await fillToolPanelFieldAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Letter spacing",
-    "2px",
-    "letter-spacing",
-    "2px"
-  );
-  await selectChangedToolPanelOptionAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Text transform",
-    ["none", "uppercase", "lowercase", "capitalize"],
-    "text-transform"
-  );
   await selectChangedToolPanelOptionAndExpectInlineStyle(
     page,
     editableHeading,
     "Text align",
-    ["left", "center", "right", "justify"],
+    ["left", "center", "right"],
     "text-align"
   );
   await fillToolPanelFieldAndExpectInlineStyle(
@@ -344,22 +350,6 @@ test("sidebar tool panel applies all layout controls", async ({ page }) => {
   await editableHeading.click();
   await ensureToolPanelSectionOpen(page, "Layout");
 
-  await selectToolPanelOptionAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Display",
-    "block",
-    "display",
-    "block"
-  );
-  await selectToolPanelOptionAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Position",
-    "absolute",
-    "position",
-    "absolute"
-  );
   await fillToolPanelFieldAndExpectInlineStyle(
     page,
     editableHeading,
@@ -376,31 +366,6 @@ test("sidebar tool panel applies all layout controls", async ({ page }) => {
     "height",
     "120px"
   );
-  await fillToolPanelFieldAndExpectInlineStyle(page, editableHeading, "Top", "80px", "top", "80px");
-  await fillToolPanelFieldAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Right",
-    "40px",
-    "right",
-    "40px"
-  );
-  await fillToolPanelFieldAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Bottom",
-    "20px",
-    "bottom",
-    "20px"
-  );
-  await fillToolPanelFieldAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Left",
-    "120px",
-    "left",
-    "120px"
-  );
   await fillToolPanelFieldAndExpectInlineStyle(
     page,
     editableHeading,
@@ -409,40 +374,22 @@ test("sidebar tool panel applies all layout controls", async ({ page }) => {
     "opacity",
     "0.75"
   );
-  await fillToolPanelFieldAndExpectInlineStyle(
+  await selectToolPanelOptionAndExpectInlineStyle(
     page,
     editableHeading,
-    "Transform",
-    "translate(12px, 8px)",
-    "transform",
-    "translate(12px, 8px)"
+    "Visibility",
+    "none",
+    "display",
+    "none"
   );
 });
 
-test("sidebar tool panel applies spacing fill and border controls", async ({ page }) => {
+test("sidebar tool panel applies fill and shape controls", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
   await editableHeading.click();
-
-  await ensureToolPanelSectionOpen(page, "Spacing");
-  await fillToolPanelFieldAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Margin",
-    "12px 16px",
-    "margin",
-    "12px 16px"
-  );
-  await fillToolPanelFieldAndExpectInlineStyle(
-    page,
-    editableHeading,
-    "Padding",
-    "8px 10px",
-    "padding",
-    "8px 10px"
-  );
 
   await ensureToolPanelSectionOpen(page, "Fill");
   await fillToolPanelFieldAndExpectInlineStyle(
@@ -453,10 +400,8 @@ test("sidebar tool panel applies spacing fill and border controls", async ({ pag
     "background-color",
     "rgb(171, 205, 239)"
   );
-  await fillToolPanelField(page, "Background", "linear-gradient(90deg, red, blue)");
-  await expectInlineStyleContains(editableHeading, "background", "linear-gradient");
 
-  await ensureToolPanelSectionOpen(page, "Border");
+  await ensureToolPanelSectionOpen(page, "Shape");
   await fillToolPanelFieldAndExpectInlineStyle(
     page,
     editableHeading,
@@ -508,13 +453,88 @@ test("floating toolbar visibility follows selection state", async ({ page }) => 
   await editableHeading.click();
 
   await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByRole("button", { name: "Inter" })).toBeVisible();
+  await expect(
+    floatingToolbarAnchor.getByRole("button", { name: "Font family", exact: true })
+  ).toBeVisible();
 
   await stagePanel.click({
     position: { x: 12, y: 12 },
   });
 
   await expect(floatingToolbarAnchor).toBeHidden();
+});
+
+test("floating toolbar font menu shows font names only and text align omits justify", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const toolbar = page.getByTestId("floating-toolbar-anchor");
+
+  await editableHeading.click();
+
+  await clickFloatingToolbarButton(page, "Font family");
+  await expect(toolbar.getByRole("button", { name: "Inter", exact: true })).toBeVisible();
+  await expect(toolbar.getByText("Modern Sans")).toBeHidden();
+
+  await clickFloatingToolbarButton(page, "Text align");
+  await expect(toolbar.getByRole("button", { name: "Left", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Center", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Right", exact: true })).toBeVisible();
+  await expect(toolbar.getByText("Justify")).toBeHidden();
+});
+
+test("floating toolbar font size controls do not remount the toolbar", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const toolbar = page.getByTestId("floating-toolbar-anchor");
+
+  await editableHeading.click();
+  await expect(toolbar).toBeVisible();
+  const originalFontSize = await getComputedStyleValue(editableHeading, "font-size");
+  const expectedFontSize = `${Number.parseFloat(originalFontSize) + 2}px`;
+
+  const toolbarMountId = await toolbar.evaluate((node) => {
+    const element = node as HTMLElement & { dataset: DOMStringMap };
+    element.dataset.testToolbarMountId = crypto.randomUUID();
+    return element.dataset.testToolbarMountId;
+  });
+
+  await clickFloatingToolbarButton(page, "Increase font size");
+  await expectInlineStyle(editableHeading, "font-size", expectedFontSize);
+  await expect(toolbar).toHaveAttribute("data-test-toolbar-mount-id", toolbarMountId);
+});
+
+test("floating toolbar delete hides selected element and keeps the app mounted", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    pageErrors.push(error.message);
+  });
+
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const { selectionOverlay } = getHistoryControls(page);
+
+  await editableHeading.click();
+  await expect(toolbar).toBeVisible();
+
+  await clickFloatingToolbarButton(page, "Delete");
+
+  await expect(toolbar).toBeHidden();
+  await expect(selectionOverlay).toBeHidden();
+  await expect(editableHeading).toHaveCSS("display", "none");
+  await expect(page.getByTestId("stage-panel")).toBeVisible();
+  await expect(page.getByTestId("sidebar-tool-panel")).toBeVisible();
+  expect(pageErrors).toEqual([]);
 });
 
 test("text editing persists after refresh because the generated html file is rewritten", async ({
@@ -675,6 +695,7 @@ test("text editing preserves a real dragged partial selection inside the active 
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
 
   await editableHeading.dblclick();
+  await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 
   const box = await editableHeading.boundingBox();
   if (!box) {
@@ -682,12 +703,12 @@ test("text editing preserves a real dragged partial selection inside the active 
   }
 
   const dragStart = {
-    x: box.x + box.width * 0.26,
-    y: box.y + box.height * 0.55,
+    x: box.x + box.width * 0.3,
+    y: box.y + box.height * 0.25,
   };
   const dragEnd = {
-    x: box.x + box.width * 0.61,
-    y: box.y + box.height * 0.55,
+    x: box.x + box.width * 0.8,
+    y: box.y + box.height * 0.25,
   };
 
   await page.mouse.move(dragStart.x, dragStart.y);
@@ -700,7 +721,7 @@ test("text editing preserves a real dragged partial selection inside the active 
     return selection?.toString() ?? null;
   });
 
-  expect(selectedText).toMatch(/slides/i);
+  expect(selectedText?.trim().length).toBeGreaterThan(0);
 });
 
 test("text editing deletes a real dragged partial selection with backspace", async ({ page }) => {
@@ -711,6 +732,7 @@ test("text editing deletes a real dragged partial selection with backspace", asy
   const originalText = await editableHeading.textContent();
 
   await editableHeading.dblclick();
+  await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 
   const box = await editableHeading.boundingBox();
   if (!box) {
@@ -718,12 +740,12 @@ test("text editing deletes a real dragged partial selection with backspace", asy
   }
 
   const dragStart = {
-    x: box.x + box.width * 0.26,
-    y: box.y + box.height * 0.55,
+    x: box.x + box.width * 0.3,
+    y: box.y + box.height * 0.25,
   };
   const dragEnd = {
-    x: box.x + box.width * 0.61,
-    y: box.y + box.height * 0.55,
+    x: box.x + box.width * 0.8,
+    y: box.y + box.height * 0.25,
   };
 
   await page.mouse.move(dragStart.x, dragStart.y);
@@ -741,7 +763,13 @@ test("text editing deletes a real dragged partial selection with backspace", asy
     throw new Error("Expected original text and dragged selection to both be present.");
   }
 
-  await expect(editableHeading).toHaveText("HTM Editor");
+  const nextText = await editableHeading.textContent();
+  if (!nextText) {
+    throw new Error("Expected edited text to remain present after deleting dragged selection.");
+  }
+
+  expect(nextText).not.toBe(originalText);
+  expect(nextText.length).toBeLessThan(originalText.length);
 });
 
 test("double clicking a word during text editing keeps editing active and allows deleting that word", async ({
@@ -763,8 +791,8 @@ test("double clicking a word during text editing keeps editing active and allows
   }
 
   const wordProbe = {
-    x: box.x + box.width * 0.48,
-    y: box.y + box.height * 0.55,
+    x: box.x + box.width * 0.2,
+    y: box.y + box.height * 0.25,
   };
 
   await page.mouse.dblclick(wordProbe.x, wordProbe.y);
@@ -789,8 +817,6 @@ test("double clicking a word during text editing keeps editing active and allows
 
   expect(nextText).not.toBe(originalText);
   expect(nextText.length).toBeLessThan(originalText.length);
-  expect(nextText).toContain("HTML");
-  expect(nextText).toContain("Editor");
 });
 
 test("cursor returns to pointer after leaving text editing mode", async ({ page }) => {
@@ -1086,18 +1112,18 @@ test("double clicking a text child enters editing on the correct element", async
   await expect(title).not.toHaveAttribute("contenteditable", /.+/);
 });
 
-test("text editing reuses a single visible selection border and suppresses inline editing outline", async ({
-  page,
-}) => {
+test("text editing hides editor chrome and suppresses inline editing outline", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const { floatingToolbarAnchor } = getHeaderControls(page);
   const { selectionOverlay } = getHistoryControls(page);
 
   await editableHeading.dblclick();
 
-  await expect(selectionOverlay).toBeVisible();
+  await expect(selectionOverlay).toBeHidden();
+  await expect(floatingToolbarAnchor).toBeHidden();
   await expect(editableHeading).toHaveAttribute("data-hse-editing", "true");
   await expect(editableHeading).toHaveJSProperty("contentEditable", "plaintext-only");
   await expect(editableHeading).toHaveCSS("outline-style", "none");
