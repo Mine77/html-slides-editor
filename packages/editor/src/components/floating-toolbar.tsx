@@ -1,131 +1,97 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  AlignCenter,
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Bold,
+  ChevronDown,
+  ChevronUp,
+  Italic,
+  Layers,
+  type LucideIcon,
+  Minus,
+  Palette,
+  Plus,
+  Strikethrough,
+  Trash2,
+  Type,
+  Underline,
+} from "lucide-react";
+import {
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { ColorPicker } from "./color-picker";
 
 const TOOLBAR_FADE_MS = 140;
 
-const SIZE_OPTIONS = ["12", "14", "16", "18", "20", "24", "28", "32", "40", "48", "64"];
-const FONT_OPTIONS = [
-  "Card",
-  "IBM Plex Sans",
-  "Arial",
-  "Helvetica",
-  "Georgia",
-  "Times New Roman",
-  "Courier New",
-  "Monospace",
+type MenuId = "font" | "size" | "color" | "align" | "arrange";
+type TextAlign = "left" | "center" | "right" | "justify";
+
+interface ElementStyle {
+  fontFamily: string;
+  fontSize: number;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strike: boolean;
+  align: TextAlign;
+  fillColor: string;
+}
+
+const FONTS = ["Inter", "Plus Jakarta Sans", "Card", "IBM Plex Sans", "Georgia", "Courier New"];
+const SIZES = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 80];
+const ALIGN_OPTIONS: Array<{ value: TextAlign; icon: LucideIcon; label: string }> = [
+  { value: "left", icon: AlignLeft, label: "Left" },
+  { value: "center", icon: AlignCenter, label: "Center" },
+  { value: "right", icon: AlignRight, label: "Right" },
+  { value: "justify", icon: AlignJustify, label: "Justify" },
 ];
-const ALIGN_OPTIONS = ["Left", "Center", "Right", "Justify"];
-const BORDER_OPTIONS = [
-  "None",
-  "1px solid",
-  "2px solid",
-  "3px solid",
-  "1px dashed",
-  "2px dashed",
-  "Custom...",
+const ARRANGE_OPTIONS: Array<{ value: string; icon: LucideIcon; label: string }> = [
+  { value: "left", icon: AlignStartHorizontal, label: "Align left" },
+  { value: "hcenter", icon: AlignCenterHorizontal, label: "Align horizontal center" },
+  { value: "right", icon: AlignEndHorizontal, label: "Align right" },
+  { value: "top", icon: AlignStartVertical, label: "Align top" },
+  { value: "vcenter", icon: AlignCenterVertical, label: "Align vertical center" },
+  { value: "bottom", icon: AlignEndVertical, label: "Align bottom" },
 ];
-const RADIUS_OPTIONS = ["0", "4px", "8px", "12px", "16px", "24px", "999px"];
-
-type MenuId = "font" | "size" | "color" | "case" | "background" | "align" | "border" | "radius";
-
-function TypeIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="m9.2 4.5-4.2 10.6h2l1-2.5h4.2l1 2.5h2L11 4.5Zm-.5 6.4L10 7.3l1.3 3.6Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function PaletteIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M10 3.2a6.8 6.8 0 1 0 0 13.6h1.2c.8 0 1.3-.4 1.3-1 0-.3-.1-.6-.3-.8-.2-.2-.3-.5-.3-.8 0-.7.6-1.2 1.4-1.2h1.2A4.5 4.5 0 0 0 19 8.6c0-3-2.8-5.4-6.3-5.4Zm-3 5.1a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Zm2.7-1.7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm2.7 1.7a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Zm1.8 3a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function AlignIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M4 5h12v1.6H4zm2.2 3.3h7.6v1.6H6.2zM4 11.6h12v1.6H4zm2.2 3.3h7.6v1.6H6.2z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function BorderIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path d="M5 5h10v10H5zm1.5 1.5v7h7v-7z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function RadiusIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5H15v1.5H7.5c-.6 0-1 .4-1 1V15H5z" fill="currentColor" />
-    </svg>
-  );
-}
-
-function FocusIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M5 8V5h3V3.5H3.5V8zm9-4.5V5h3v3h1.5V3.5zM5 12H3.5v4.5H8V15H5zm12 0V15h-3v1.5h4.5V12z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function SparklesIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="m10 3 1.2 3.5L15 7.7l-3 1.9 1 3.4-3-2.1-3 2.1 1-3.4-3-1.9 3.8-1.2Zm6 8 1 2.8 3 1-3 1-1 2.7-1-2.7-3-1 3-1ZM4 10l.8 2.2 2.2.8-2.2.8L4 16l-.8-2.2L1 13l2.2-.8Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M5 10a1.4 1.4 0 1 1 0-2.8A1.4 1.4 0 0 1 5 10Zm5 0a1.4 1.4 0 1 1 0-2.8A1.4 1.4 0 0 1 10 10Zm5 0a1.4 1.4 0 1 1 0-2.8A1.4 1.4 0 0 1 15 10Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function ExpandIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M6 4.5H3.5V10H5V6h4V4.5Zm8.5 0H10V6h4v4h1.5ZM5 14v-4H3.5v5.5H9V14Zm10-4H13.5v4h-4v1.5H15Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
+const LAYER_OPTIONS: Array<{ value: string; icon: LucideIcon; label: string }> = [
+  { value: "front", icon: ArrowUpToLine, label: "Bring to front" },
+  { value: "forward", icon: ChevronUp, label: "Bring forward" },
+  { value: "backward", icon: ChevronDown, label: "Send backward" },
+  { value: "back", icon: ArrowDownToLine, label: "Send to back" },
+];
+function classNames(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(" ");
 }
 
 function FloatingToolbar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<MenuId | null>(null);
-  const [sizeValue, setSizeValue] = useState("24");
-  const [textColor, setTextColor] = useState("#f3efe8");
-  const [backgroundColor, setBackgroundColor] = useState("#aeaeae");
+  const [panelLeft, setPanelLeft] = useState(0);
+  const [style, setStyle] = useState<ElementStyle>({
+    fontFamily: "Card",
+    fontSize: 24,
+    color: "#f3efe8",
+    bold: false,
+    italic: false,
+    underline: false,
+    strike: false,
+    align: "left",
+    fillColor: "#aeaeae",
+  });
 
   useEffect(() => {
     const node = toolbarRef.current;
@@ -187,335 +153,379 @@ function FloatingToolbar() {
     };
   }, []);
 
+  useEffect(() => {
+    function closeOnOutsidePointer(event: MouseEvent) {
+      if (toolbarRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      setActiveMenu(null);
+    }
+
+    document.addEventListener("mousedown", closeOnOutsidePointer);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsidePointer);
+    };
+  }, []);
+
+  function toggleMenu(menu: MenuId, event: ReactMouseEvent<HTMLButtonElement>) {
+    setPanelLeft(event.currentTarget.offsetLeft);
+    setActiveMenu((current) => (current === menu ? null : menu));
+  }
+
+  function updateStyle(patch: Partial<ElementStyle>) {
+    setStyle((current) => ({ ...current, ...patch }));
+  }
+
   return (
-    <div className="hse-floating-toolbar" ref={toolbarRef}>
-      <div className="hse-floating-toolbar-shell">
-        <div className="hse-floating-toolbar-strip" aria-label="Basic formatting toolbar">
-          <button
-            className={
-              activeMenu === "font"
-                ? "hse-floating-toolbar-trigger is-active"
-                : "hse-floating-toolbar-trigger"
-            }
-            type="button"
+    <div className="hse-floating-toolbar hse-floating-toolbar-pop" ref={toolbarRef}>
+      <div className="hse-floating-toolbar-strip" aria-label="Formatting toolbar">
+        <ToolbarTrigger
+          active={activeMenu === "font"}
+          className="hse-floating-toolbar-trigger-font"
+          onClick={(event) => {
+            toggleMenu("font", event);
+          }}
+        >
+          <span className="hse-floating-toolbar-trigger-value">
+            <ToolbarIcon icon={Type} />
+            <span className="hse-floating-toolbar-truncate">{style.fontFamily}</span>
+          </span>
+          <ToolbarIcon icon={ChevronDown} muted />
+        </ToolbarTrigger>
+
+        <div className="hse-floating-toolbar-size-stepper">
+          <IconButton
+            label="Decrease font size"
+            variant="ghost"
             onClick={() => {
-              setActiveMenu((current) => (current === "font" ? null : "font"));
+              updateStyle({ fontSize: Math.max(8, style.fontSize - 2) });
             }}
           >
-            <span className="hse-floating-toolbar-trigger-value">Card</span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "size"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
-            onClick={() => {
-              setActiveMenu((current) => (current === "size" ? null : "size"));
+            <ToolbarIcon icon={Minus} />
+          </IconButton>
+          <ToolbarTrigger
+            active={activeMenu === "size"}
+            className="hse-floating-toolbar-trigger-size"
+            onClick={(event) => {
+              toggleMenu("size", event);
             }}
           >
-            <span className="hse-floating-toolbar-trigger-value">{sizeValue}</span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "color"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
+            <span className="hse-floating-toolbar-size-value">{style.fontSize}</span>
+          </ToolbarTrigger>
+          <IconButton
+            label="Increase font size"
+            variant="ghost"
             onClick={() => {
-              setActiveMenu((current) => (current === "color" ? null : "color"));
+              updateStyle({ fontSize: Math.min(200, style.fontSize + 2) });
             }}
           >
-            <span className="hse-floating-toolbar-trigger-icon">
-              <PaletteIcon />
-            </span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "case"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
-            onClick={() => {
-              setActiveMenu((current) => (current === "case" ? null : "case"));
-            }}
-          >
-            <span className="hse-floating-toolbar-trigger-value">Aa</span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "background"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
-            onClick={() => {
-              setActiveMenu((current) => (current === "background" ? null : "background"));
-            }}
-          >
-            <span
-              className="hse-floating-toolbar-trigger-swatch"
-              style={{ backgroundColor: backgroundColor }}
-              aria-hidden="true"
-            />
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "align"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
-            onClick={() => {
-              setActiveMenu((current) => (current === "align" ? null : "align"));
-            }}
-          >
-            <span className="hse-floating-toolbar-trigger-icon">
-              <AlignIcon />
-            </span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button className="hse-floating-toolbar-trigger is-action is-highlighted" type="button">
-            <span className="hse-floating-toolbar-trigger-icon">
-              <FocusIcon />
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "border"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
-            onClick={() => {
-              setActiveMenu((current) => (current === "border" ? null : "border"));
-            }}
-          >
-            <span className="hse-floating-toolbar-trigger-icon">
-              <BorderIcon />
-            </span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button
-            className={
-              activeMenu === "radius"
-                ? "hse-floating-toolbar-trigger is-active is-compact"
-                : "hse-floating-toolbar-trigger is-compact"
-            }
-            type="button"
-            onClick={() => {
-              setActiveMenu((current) => (current === "radius" ? null : "radius"));
-            }}
-          >
-            <span className="hse-floating-toolbar-trigger-icon">
-              <RadiusIcon />
-            </span>
-            <span className="hse-floating-toolbar-trigger-caret" aria-hidden="true">
-              ▾
-            </span>
-          </button>
-
-          <button className="hse-floating-toolbar-trigger is-compact" type="button">
-            <span className="hse-floating-toolbar-trigger-icon">
-              <SparklesIcon />
-            </span>
-          </button>
-
-          <button className="hse-floating-toolbar-trigger is-compact" type="button">
-            <span className="hse-floating-toolbar-trigger-icon">
-              <MoreIcon />
-            </span>
-          </button>
+            <ToolbarIcon icon={Plus} />
+          </IconButton>
         </div>
 
-        <button className="hse-floating-toolbar-expand" type="button" aria-label="Expand toolbar">
-          <ExpandIcon />
-        </button>
+        <Divider />
+
+        <IconButton
+          label="Bold"
+          active={style.bold}
+          onClick={() => {
+            updateStyle({ bold: !style.bold });
+          }}
+        >
+          <ToolbarIcon icon={Bold} />
+        </IconButton>
+        <IconButton
+          label="Italic"
+          active={style.italic}
+          onClick={() => {
+            updateStyle({ italic: !style.italic });
+          }}
+        >
+          <ToolbarIcon icon={Italic} />
+        </IconButton>
+        <IconButton
+          label="Underline"
+          active={style.underline}
+          onClick={() => {
+            updateStyle({ underline: !style.underline });
+          }}
+        >
+          <ToolbarIcon icon={Underline} />
+        </IconButton>
+        <IconButton
+          label="Strikethrough"
+          active={style.strike}
+          onClick={() => {
+            updateStyle({ strike: !style.strike });
+          }}
+        >
+          <ToolbarIcon icon={Strikethrough} />
+        </IconButton>
+
+        <Divider />
+
+        <ToolbarTrigger
+          active={activeMenu === "color"}
+          onClick={(event) => {
+            toggleMenu("color", event);
+          }}
+        >
+          <span className="hse-floating-toolbar-trigger-value">
+            <ToolbarIcon icon={Palette} />
+            <span
+              className="hse-floating-toolbar-swatch"
+              style={{ background: style.color }}
+              aria-hidden="true"
+            />
+          </span>
+          <ToolbarIcon icon={ChevronDown} muted />
+        </ToolbarTrigger>
+
+        <ToolbarTrigger
+          active={activeMenu === "align"}
+          onClick={(event) => {
+            toggleMenu("align", event);
+          }}
+        >
+          <ToolbarIcon icon={getAlignIcon(style.align)} />
+          <ToolbarIcon icon={ChevronDown} muted />
+        </ToolbarTrigger>
+
+        <Divider />
+
+        <ToolbarTrigger
+          active={activeMenu === "arrange"}
+          className="hse-floating-toolbar-trigger-icon-only"
+          onClick={(event) => {
+            toggleMenu("arrange", event);
+          }}
+        >
+          <ToolbarIcon icon={Layers} />
+          <ToolbarIcon icon={ChevronDown} muted />
+        </ToolbarTrigger>
+
+        <Divider />
+
+        <IconButton label="Delete" variant="danger">
+          <ToolbarIcon icon={Trash2} />
+        </IconButton>
       </div>
 
       {activeMenu === "font" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-menu-options">
-            {FONT_OPTIONS.map((option) => (
-              <button key={option} className="hse-floating-toolbar-menu-option" type="button">
-                {option}
+        <ToolbarPanel left={panelLeft}>
+          <PanelTitle>字体</PanelTitle>
+          <div className="hse-floating-toolbar-list">
+            {FONTS.map((font) => (
+              <button
+                key={font}
+                className={classNames(
+                  "hse-floating-toolbar-option",
+                  "hse-floating-toolbar-option-split",
+                  style.fontFamily === font && "is-selected"
+                )}
+                style={{ fontFamily: font }}
+                type="button"
+                onClick={() => {
+                  updateStyle({ fontFamily: font });
+                  setActiveMenu(null);
+                }}
+              >
+                <span>{font}</span>
+                <span className="hse-floating-toolbar-option-meta">Aa</span>
               </button>
             ))}
           </div>
-        </div>
+        </ToolbarPanel>
       ) : null}
 
       {activeMenu === "size" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-size-panel">
-            <div className="hse-floating-toolbar-size-input-row">
-              <input
-                className="hse-floating-toolbar-size-input"
-                type="number"
-                value={sizeValue}
-                onChange={(event) => {
-                  setSizeValue(event.target.value);
+        <ToolbarPanel left={panelLeft} width="narrow">
+          <div className="hse-floating-toolbar-list">
+            {SIZES.map((size) => (
+              <button
+                key={size}
+                className={classNames(
+                  "hse-floating-toolbar-option",
+                  "hse-floating-toolbar-option-number",
+                  style.fontSize === size && "is-selected"
+                )}
+                type="button"
+                onClick={() => {
+                  updateStyle({ fontSize: size });
+                  setActiveMenu(null);
                 }}
-              />
-              <span className="hse-floating-toolbar-size-unit">px</span>
-            </div>
-            <div className="hse-floating-toolbar-menu-options">
-              {SIZE_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  className="hse-floating-toolbar-menu-option"
-                  type="button"
-                  onClick={() => {
-                    setSizeValue(option);
-                  }}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+              >
+                {size}
+              </button>
+            ))}
           </div>
-        </div>
+        </ToolbarPanel>
       ) : null}
 
       {activeMenu === "color" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-color-panel">
-            <div className="hse-floating-toolbar-color-preview-row">
-              <span
-                className="hse-floating-toolbar-color-preview"
-                style={{ backgroundColor: textColor }}
-                aria-hidden="true"
-              />
-              <input
-                className="hse-floating-toolbar-color-hex"
-                type="text"
-                value={textColor}
-                onChange={(event) => {
-                  setTextColor(event.target.value);
-                }}
-              />
-            </div>
-            <input
-              className="hse-floating-toolbar-color-picker"
-              type="color"
-              value={textColor}
-              onChange={(event) => {
-                setTextColor(event.target.value);
-              }}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {activeMenu === "background" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-color-panel">
-            <div className="hse-floating-toolbar-color-preview-row">
-              <span
-                className="hse-floating-toolbar-color-preview"
-                style={{ backgroundColor: backgroundColor }}
-                aria-hidden="true"
-              />
-              <input
-                className="hse-floating-toolbar-color-hex"
-                type="text"
-                value={backgroundColor}
-                onChange={(event) => {
-                  setBackgroundColor(event.target.value);
-                }}
-              />
-            </div>
-            <input
-              className="hse-floating-toolbar-color-picker"
-              type="color"
-              value={backgroundColor}
-              onChange={(event) => {
-                setBackgroundColor(event.target.value);
-              }}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {activeMenu === "case" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-menu-options">
-            {["Normal", "Uppercase", "Lowercase", "Capitalize"].map((option) => (
-              <button key={option} className="hse-floating-toolbar-menu-option" type="button">
-                {option}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ToolbarPanel left={panelLeft} width="wide">
+          <PanelTitle>选择颜色</PanelTitle>
+          <ColorPicker
+            value={style.color}
+            onChange={(nextColor) => {
+              updateStyle(
+                nextColor.startsWith("linear") ? { fillColor: nextColor } : { color: nextColor }
+              );
+            }}
+          />
+        </ToolbarPanel>
       ) : null}
 
       {activeMenu === "align" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-menu-options">
+        <ToolbarPanel left={panelLeft} width="auto">
+          <div className="hse-floating-toolbar-icon-grid hse-floating-toolbar-icon-grid-row">
             {ALIGN_OPTIONS.map((option) => (
-              <button key={option} className="hse-floating-toolbar-menu-option" type="button">
-                {option}
+              <button
+                key={option.value}
+                className={classNames(
+                  "hse-floating-toolbar-grid-button",
+                  style.align === option.value && "is-selected"
+                )}
+                type="button"
+                title={option.label}
+                onClick={() => {
+                  updateStyle({ align: option.value });
+                  setActiveMenu(null);
+                }}
+              >
+                <ToolbarIcon icon={option.icon} />
               </button>
             ))}
           </div>
-        </div>
+        </ToolbarPanel>
       ) : null}
 
-      {activeMenu === "border" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-menu-options">
-            {BORDER_OPTIONS.map((option) => (
-              <button key={option} className="hse-floating-toolbar-menu-option" type="button">
-                {option}
+      {activeMenu === "arrange" ? (
+        <ToolbarPanel left={panelLeft} width="medium">
+          <PanelTitle>Align</PanelTitle>
+          <div className="hse-floating-toolbar-icon-grid hse-floating-toolbar-icon-grid-arrange">
+            {ARRANGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                className="hse-floating-toolbar-arrange-button"
+                type="button"
+                title={option.label}
+              >
+                <ToolbarIcon icon={option.icon} />
+                <span>{option.label}</span>
               </button>
             ))}
           </div>
-        </div>
-      ) : null}
-
-      {activeMenu === "radius" ? (
-        <div className="hse-floating-toolbar-menu">
-          <div className="hse-floating-toolbar-menu-options">
-            {RADIUS_OPTIONS.map((option) => (
-              <button key={option} className="hse-floating-toolbar-menu-option" type="button">
-                {option}
+          <PanelTitle>Layer</PanelTitle>
+          <div className="hse-floating-toolbar-list">
+            {LAYER_OPTIONS.map((option) => (
+              <button key={option.value} className="hse-floating-toolbar-option" type="button">
+                <ToolbarIcon icon={option.icon} />
+                <span>{option.label}</span>
               </button>
             ))}
           </div>
-        </div>
+        </ToolbarPanel>
       ) : null}
     </div>
   );
+}
+
+function ToolbarTrigger({
+  children,
+  active = false,
+  className,
+  onClick,
+}: {
+  children: ReactNode;
+  active?: boolean;
+  className?: string;
+  onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <button
+      className={classNames("hse-floating-toolbar-trigger", active && "is-active", className)}
+      type="button"
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function IconButton({
+  children,
+  active = false,
+  label,
+  onClick,
+  variant = "default",
+}: {
+  children: ReactNode;
+  active?: boolean;
+  label: string;
+  onClick?: () => void;
+  variant?: "default" | "ghost" | "danger";
+}) {
+  return (
+    <button
+      className={classNames(
+        "hse-floating-toolbar-icon-button",
+        active && "is-active",
+        variant === "ghost" && "is-ghost",
+        variant === "danger" && "is-danger"
+      )}
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ToolbarPanel({
+  children,
+  left,
+  width = "default",
+}: {
+  children: ReactNode;
+  left: number;
+  width?: "auto" | "default" | "medium" | "narrow" | "wide";
+}) {
+  return (
+    <div className={`hse-floating-toolbar-panel is-${width}`} style={{ left }} role="menu">
+      {children}
+    </div>
+  );
+}
+
+function Divider() {
+  return <div className="hse-floating-toolbar-divider" />;
+}
+
+function PanelTitle({ children }: { children: ReactNode }) {
+  return <div className="hse-floating-toolbar-panel-title">{children}</div>;
+}
+
+function getAlignIcon(align: TextAlign): LucideIcon {
+  if (align === "center") {
+    return AlignCenter;
+  }
+
+  if (align === "right") {
+    return AlignRight;
+  }
+
+  if (align === "justify") {
+    return AlignJustify;
+  }
+
+  return AlignLeft;
+}
+
+function ToolbarIcon({ icon: Icon, muted = false }: { icon: LucideIcon; muted?: boolean }) {
+  return <Icon className={classNames("hse-floating-toolbar-icon", muted && "is-muted")} />;
 }
 
 export { FloatingToolbar };
