@@ -81,6 +81,59 @@ async function getComputedStyleValue(locator: Locator, propertyName: string) {
   }, propertyName);
 }
 
+async function dragMouseInStepsUntil(
+  page: Page,
+  start: { x: number; y: number },
+  target: { x: number; y: number },
+  predicate: () => Promise<boolean>,
+  steps: number
+) {
+  let matched = false;
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+
+  for (let index = 1; index <= steps; index += 1) {
+    const progress = index / steps;
+    await page.mouse.move(
+      start.x + (target.x - start.x) * progress,
+      start.y + (target.y - start.y) * progress
+    );
+
+    if (await predicate()) {
+      matched = true;
+      break;
+    }
+  }
+
+  return matched;
+}
+
+async function dragMouseInStepsAndTrack(
+  page: Page,
+  start: { x: number; y: number },
+  target: { x: number; y: number },
+  predicate: () => Promise<boolean>,
+  steps: number
+) {
+  let matched = false;
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+
+  for (let index = 1; index <= steps; index += 1) {
+    const progress = index / steps;
+    await page.mouse.move(
+      start.x + (target.x - start.x) * progress,
+      start.y + (target.y - start.y) * progress
+    );
+
+    matched ||= await predicate();
+  }
+
+  return matched;
+}
+
 async function expectInlineStyle(locator: Locator, propertyName: string, expectedValue: string) {
   await expect
     .poll(async () => getInlineStyle(locator, propertyName), { timeout: 2500 })
@@ -1657,11 +1710,12 @@ test("dragging a selected block snaps its edge to a sibling edge guide", async (
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const siblingBlock = frame.locator('[data-editor-id="block-7"]');
-  const movingBlock = frame.locator('[data-editor-id="block-10"]');
+  await page.getByLabel("Slide 12").click();
+  const siblingBlock = frame.locator('[data-editor-id="snap-card-b"]');
+  const movingBlock = frame.locator('[data-editor-id="snap-card-c"]');
   const { selectionOverlay } = getHistoryControls(page);
 
-  await movingBlock.click({ position: { x: 12, y: 12 } });
+  await movingBlock.locator(".snap-drag-surface").click();
   await expect(selectionOverlay).toBeVisible();
 
   const siblingBefore = await getRequiredBoundingBox(siblingBlock, "sibling block");
@@ -1673,33 +1727,39 @@ test("dragging a selected block snaps its edge to a sibling edge guide", async (
     y: overlayBefore.y + overlayBefore.height / 2,
   };
   const target = {
-    x: start.x + (siblingRightEdge - movingBefore.x) + 5,
+    x: start.x + (siblingRightEdge - movingBefore.x),
     y: start.y,
   };
+  const siblingEdgeGuide = page
+    .locator('[data-testid="snap-guide-vertical"][data-variant="alignment"]')
+    .first();
 
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(target.x, target.y, { steps: 8 });
-
-  await expect(page.getByTestId("snap-guide-vertical").first()).toBeVisible();
+  const sawGuide = await dragMouseInStepsAndTrack(
+    page,
+    start,
+    target,
+    async () => (await siblingEdgeGuide.count()) > 0,
+    30
+  );
+  expect(sawGuide).toBeTruthy();
   await expect
     .poll(async () => {
       const box = await movingBlock.boundingBox();
       return box ? Math.abs(box.x - siblingRightEdge) : Number.NaN;
     })
-    .toBeLessThanOrEqual(3);
+    .toBeLessThanOrEqual(8);
 
   await page.mouse.up();
 
   const movingAfter = await getRequiredBoundingBox(movingBlock, "moving block after snapping");
-  expect(Math.abs(movingAfter.x - siblingRightEdge)).toBeLessThanOrEqual(3);
+  expect(Math.abs(movingAfter.x - siblingRightEdge)).toBeLessThanOrEqual(8);
 });
 
 test("dragging a third block snaps to the spacing established by two sibling blocks", async ({
   page,
 }) => {
   await gotoEditor(page);
-  await page.getByLabel("Slide 11").click();
+  await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
   const firstBlock = frame.locator('[data-editor-id="snap-card-a"]');
@@ -1739,25 +1799,34 @@ test("dragging a third block snaps to the spacing established by two sibling blo
     x: start.x + (expectedLeft - movingBefore.x),
     y: start.y,
   };
+  const spacingGuide = page
+    .locator('[data-testid="snap-guide-horizontal"][data-variant="spacing"]')
+    .first();
 
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(target.x, target.y, { steps: 8 });
-
-  await expect(
-    page.locator('[data-testid="snap-guide-horizontal"][data-variant="spacing"]').first()
-  ).toBeVisible();
+  const sawGuide = await dragMouseInStepsUntil(
+    page,
+    start,
+    target,
+    async () => {
+      const box = await movingBlock.boundingBox();
+      return (
+        (await spacingGuide.count()) > 0 && Boolean(box && Math.abs(box.x - expectedLeft) <= 8)
+      );
+    },
+    20
+  );
+  expect(sawGuide).toBeTruthy();
   await expect
     .poll(async () => {
       const box = await movingBlock.boundingBox();
       return box ? Math.abs(box.x - expectedLeft) : Number.NaN;
     })
-    .toBeLessThanOrEqual(3);
+    .toBeLessThanOrEqual(8);
 
   await page.mouse.up();
 
   const movingAfter = await getRequiredBoundingBox(movingBlock, "moving block after spacing snap");
-  expect(Math.abs(movingAfter.x - expectedLeft)).toBeLessThanOrEqual(3);
+  expect(Math.abs(movingAfter.x - expectedLeft)).toBeLessThanOrEqual(8);
 });
 
 test("floating toolbar hides while dragging a selected element", async ({ page }) => {

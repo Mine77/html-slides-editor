@@ -4,8 +4,8 @@ import {
   composeTransform,
   parseTransformParts,
 } from "./layout";
-import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
 import type { SlideModel } from "./slide-contract";
+import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
 import { parseSlide, querySlideElement } from "./slide-document";
 
 export interface TextUpdateOperation {
