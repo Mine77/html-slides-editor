@@ -34,6 +34,12 @@ import {
 } from "react";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
 import {
+  EDITOR_MOTION_MS,
+  editorMotionClassName,
+  editorPanelEnterClassName,
+  editorPanelExitClassName,
+} from "../lib/motion";
+import {
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
   type TextAlign,
@@ -52,8 +58,6 @@ import { ColorPicker } from "./color-picker";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
-
-const TOOLBAR_FADE_MS = 140;
 
 type MenuId = "font" | "size" | "color" | "align" | "arrange" | "layer";
 
@@ -127,18 +131,6 @@ function FloatingToolbar({
       return;
     }
 
-    node.animate(
-      [
-        { opacity: 0, filter: "blur(6px)" },
-        { opacity: 1, filter: "blur(0px)" },
-      ],
-      {
-        duration: TOOLBAR_FADE_MS,
-        easing: "ease",
-        fill: "both",
-      }
-    );
-
     return () => {
       const currentNode = toolbarRef.current;
       const stagePanel = currentNode?.closest('[data-testid="stage-panel"]');
@@ -155,6 +147,13 @@ function FloatingToolbar({
       }
 
       ghost.className = cn(ghost.className, "absolute z-40 m-0 pointer-events-none");
+      ghost.classList.remove(
+        "motion-safe:animate-in",
+        "motion-safe:fade-in-0",
+        "motion-safe:zoom-in-95",
+        "motion-safe:slide-in-from-bottom-1"
+      );
+      ghost.className = cn(ghost.className, editorPanelExitClassName);
       ghost.setAttribute("aria-hidden", "true");
       ghost.style.left = `${toolbarRect.left - stageRect.left}px`;
       ghost.style.top = `${toolbarRect.top - stageRect.top}px`;
@@ -162,22 +161,12 @@ function FloatingToolbar({
       ghost.style.height = `${toolbarRect.height}px`;
 
       stagePanel.appendChild(ghost);
-
-      const animation = ghost.animate(
-        [
-          { opacity: 1, filter: "blur(0px)" },
-          { opacity: 0, filter: "blur(6px)" },
-        ],
-        {
-          duration: TOOLBAR_FADE_MS,
-          easing: "ease",
-          fill: "forwards",
-        }
-      );
-
-      void animation.finished.finally(() => {
+      ghost.addEventListener("animationend", () => {
         ghost.remove();
       });
+      window.setTimeout(() => {
+        ghost.remove();
+      }, EDITOR_MOTION_MS + 50);
     };
   }, []);
 
@@ -318,7 +307,12 @@ function FloatingToolbar({
 
   return (
     <div
-      className="relative grid w-max min-w-max max-w-[min(980px,calc(100vw-280px))] animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-1 gap-2 text-foreground pointer-events-auto max-[1200px]:w-full max-[1200px]:min-w-0"
+      className={cn(
+        "relative grid w-max min-w-max max-w-[min(980px,calc(100vw-280px))] gap-2 text-foreground pointer-events-auto max-[1200px]:w-full max-[1200px]:min-w-0",
+        editorMotionClassName,
+        editorPanelEnterClassName,
+        "motion-safe:slide-in-from-bottom-1"
+      )}
       ref={toolbarRef}
       style={{ marginLeft: toolbarOffsetX }}
     >
@@ -736,7 +730,10 @@ function ToolbarPanel({
   return (
     <div
       className={cn(
-        "absolute z-50 grid gap-2 rounded-2xl border border-border bg-popover/95 p-3 text-popover-foreground shadow-[0_10px_26px_rgba(76,57,36,0.14),0_22px_54px_rgba(76,57,36,0.13)] backdrop-blur-md animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 max-[1200px]:max-w-[calc(100vw-40px)]",
+        "absolute z-50 grid gap-2 rounded-2xl border border-border bg-popover/95 p-3 text-popover-foreground shadow-[0_10px_26px_rgba(76,57,36,0.14),0_22px_54px_rgba(76,57,36,0.13)] backdrop-blur-md max-[1200px]:max-w-[calc(100vw-40px)]",
+        editorMotionClassName,
+        editorPanelEnterClassName,
+        "motion-safe:slide-in-from-top-1",
         widthClassName
       )}
       ref={panelRef}
