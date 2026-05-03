@@ -98,6 +98,13 @@ function SlidesEditor({
       slideWidth,
       slideHeight,
     });
+  const selectedInlineStyleValues: Record<string, string> =
+    activeSlide && selectedElementId
+      ? {
+          transform: getInlineStyleValue(activeSlide, selectedElementId, "transform"),
+          zIndex: getInlineStyleValue(activeSlide, selectedElementId, "z-index"),
+        }
+      : {};
   const {
     manipulationOverlay,
     isManipulating,
@@ -153,6 +160,15 @@ function SlidesEditor({
     commitOperation(operation);
   }
 
+  function deleteSelectedElement() {
+    if (!selectedElementId) {
+      return;
+    }
+
+    commitStyleChange("display", "none");
+    setSelectedElementId(null);
+  }
+
   if (!activeSlide) {
     return <div className="hse-empty">No slides loaded.</div>;
   }
@@ -190,7 +206,11 @@ function SlidesEditor({
             scale={scale}
             selectionOverlay={unifiedSelectionOverlay}
             selectionLabel={unifiedSelectionLabel}
+            toolbarKey={selectedElementId ? `${activeSlide.id}:${selectedElementId}` : null}
+            inspectedStyles={inspectedStyles}
+            inlineStyleValues={selectedInlineStyleValues}
             isSelectionOverlayInteractive={isSelectionOverlayInteractive}
+            isEditingText={isEditingText}
             manipulationOverlay={manipulationOverlay}
             iframeRef={iframeRef}
             stageViewportRef={stageViewportRef}
@@ -230,6 +250,8 @@ function SlidesEditor({
                 clearSelection();
               }
             }}
+            onStyleChange={commitStyleChange}
+            onDeleteSelection={deleteSelectedElement}
           />
           <SidebarToolPanel
             inspectedLabel={inspectedLabel}
