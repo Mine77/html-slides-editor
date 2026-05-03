@@ -6,7 +6,20 @@ import {
   getColorInputValue,
   isFontFamilySelected,
 } from "../lib/style-controls";
+import { cn } from "../lib/utils";
 import { ChatPanel } from "./chat-panel";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 interface SidebarToolPanelProps {
   inspectedStyles: CssPropertyRow[];
@@ -138,6 +151,7 @@ const INSPECTOR_SECTIONS: InspectorSectionConfig[] = [
 
 const DEFAULT_OPEN_SECTIONS = new Set<string>(["typography", "layout"]);
 const STYLE_CHANGE_DEBOUNCE_MS = 750;
+const EMPTY_SELECT_VALUE = "__empty__";
 
 function toStyleMap(inspectedStyles: CssPropertyRow[]): Map<string, string> {
   return new Map(inspectedStyles.map((property) => [property.name, property.value]));
@@ -239,6 +253,8 @@ function SidebarToolPanel({
   const [activeTab, setActiveTab] = useState<"edit" | "chat">("edit");
   const isStyleEditingDisabled = !canEditStyles || isEditingText;
   const editingTargetId = selectedElementId ?? "slide-root";
+  const customPropertyNameId = `${accordionBaseId}-custom-property-name`;
+  const customPropertyValueId = `${accordionBaseId}-custom-property-value`;
 
   useEffect(() => {
     void editingTargetId;
@@ -274,18 +290,6 @@ function SidebarToolPanel({
     };
   }, [draftValues, isStyleEditingDisabled, onStyleChange, styleMap]);
 
-  const toggleSection = (sectionId: string) => {
-    setOpenSectionIds((currentSections) => {
-      const nextSections = new Set(currentSections);
-      if (nextSections.has(sectionId)) {
-        nextSections.delete(sectionId);
-      } else {
-        nextSections.add(sectionId);
-      }
-      return nextSections;
-    });
-  };
-
   const renderField = (field: InspectorFieldConfig) => {
     const currentValue = styleMap.get(field.propertyName) ?? "";
     const draftValue = draftValues[field.propertyName];
@@ -302,40 +306,59 @@ function SidebarToolPanel({
     };
 
     return (
-      <div className="hse-inspector-field" key={field.propertyName}>
-        <label className="hse-inspector-field-label" htmlFor={fieldInputId}>
+      <div className="grid gap-1.5" key={field.propertyName}>
+        <label
+          className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground"
+          htmlFor={fieldInputId}
+        >
           {field.label}
         </label>
         {field.input === "select" ? (
-          <select
-            id={fieldInputId}
-            className="hse-inspector-select"
-            value={getSelectValue(draftValue ?? currentValue, field)}
+          <Select
+            value={getSelectValue(draftValue ?? currentValue, field) || EMPTY_SELECT_VALUE}
             disabled={isStyleEditingDisabled}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              commitDraftValue(field.propertyName, nextValue, currentValue, onStyleChange);
+            onValueChange={(nextValue) => {
+              commitDraftValue(
+                field.propertyName,
+                nextValue === EMPTY_SELECT_VALUE ? "" : nextValue,
+                currentValue,
+                onStyleChange
+              );
             }}
           >
-            {getSelectOptions(draftValue ?? currentValue, field).map((option) => (
-              <option
-                key={option.value || "__empty__"}
-                value={option.value}
-                style={
-                  field.propertyName === "font-family" && option.value
-                    ? { fontFamily: option.value }
-                    : undefined
-                }
-              >
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <div className="hse-inspector-input-row">
-            <input
+            <SelectTrigger
               id={fieldInputId}
-              className="hse-inspector-input"
+              aria-label={field.label}
+              className="w-full bg-card/90"
+              data-value={getSelectValue(draftValue ?? currentValue, field)}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {getSelectOptions(draftValue ?? currentValue, field).map((option) => (
+                  <SelectItem
+                    key={option.value || EMPTY_SELECT_VALUE}
+                    value={option.value || EMPTY_SELECT_VALUE}
+                    data-testid={`${field.propertyName}-option`}
+                    data-value={option.value}
+                    style={
+                      field.propertyName === "font-family" && option.value
+                        ? { fontFamily: option.value }
+                        : undefined
+                    }
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <Input
+              id={fieldInputId}
+              className="bg-card/90"
               type={
                 field.input === "number" ? "number" : field.input === "color" ? "color" : "text"
               }
@@ -357,7 +380,9 @@ function SidebarToolPanel({
                 }
               }}
             />
-            {field.unit ? <span className="hse-inspector-unit">{field.unit}</span> : null}
+            {field.unit ? (
+              <span className="text-xs text-muted-foreground">{field.unit}</span>
+            ) : null}
           </div>
         )}
       </div>
@@ -366,112 +391,99 @@ function SidebarToolPanel({
 
   return (
     <section
-      className={isOpen ? "hse-inspector-panel is-open" : "hse-inspector-panel is-closed"}
+      className={cn(
+        "flex min-h-0 w-[360px] max-w-[360px] flex-[0_0_360px] flex-col overflow-x-hidden overflow-y-auto bg-card/90 opacity-100 transition-[width,max-width,padding,opacity] duration-200 max-[1200px]:flex-none",
+        !isOpen && "w-0 max-w-0 pointer-events-none opacity-0"
+      )}
       data-testid="sidebar-tool-panel"
       aria-hidden={isOpen ? "false" : "true"}
     >
       {isEditingText ? (
-        <p className="hse-editing-hint">Editing text. Press Enter to save or Escape to cancel.</p>
+        <p className="mx-[18px] mt-4 rounded-[14px] bg-primary/10 px-3 py-2.5 text-[13px] leading-normal text-accent-foreground">
+          Editing text. Press Enter to save or Escape to cancel.
+        </p>
       ) : null}
 
-      <div className="hse-inspector-tabs" role="tablist" aria-label="Inspector tabs">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "edit"}
-          className={activeTab === "edit" ? "hse-inspector-tab is-active" : "hse-inspector-tab"}
-          onClick={() => {
-            setActiveTab("edit");
-          }}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value === "chat" ? "chat" : "edit");
+        }}
+        className="min-h-0 flex-1 gap-0"
+      >
+        <TabsList
+          variant="line"
+          className="grid h-11 w-full grid-cols-2 rounded-none border-b border-border bg-card/60 px-[18px] py-0"
+          aria-label="Inspector tabs"
         >
-          <SlidersHorizontal aria-hidden="true" />
-          Edit
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "chat"}
-          className={activeTab === "chat" ? "hse-inspector-tab is-active" : "hse-inspector-tab"}
-          onClick={() => {
-            setActiveTab("chat");
-          }}
-        >
-          <MessageSquare aria-hidden="true" />
-          Chat
-        </button>
-      </div>
+          <TabsTrigger value="edit" className="h-full rounded-none text-xs font-semibold">
+            <SlidersHorizontal aria-hidden="true" />
+            Edit
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="h-full rounded-none text-xs font-semibold">
+            <MessageSquare aria-hidden="true" />
+            Chat
+          </TabsTrigger>
+        </TabsList>
 
-      {activeTab === "edit" ? (
-        <div className="hse-inspector-tab-panel" role="tabpanel">
-          <div className="hse-inspector-accordion">
+        <TabsContent value="edit" className="min-h-0 p-[18px]">
+          <Accordion
+            type="multiple"
+            value={Array.from(openSectionIds)}
+            onValueChange={(nextSectionIds) => {
+              setOpenSectionIds(new Set(nextSectionIds));
+            }}
+            className="grid gap-3"
+          >
             {INSPECTOR_SECTIONS.map((section) => {
               const isSectionOpen = openSectionIds.has(section.id);
-              const panelId = `${accordionBaseId}-${section.id}-panel`;
 
               return (
-                <section
+                <AccordionItem
                   key={section.id}
-                  className={isSectionOpen ? "hse-inspector-group is-open" : "hse-inspector-group"}
+                  value={section.id}
+                  className="overflow-hidden rounded-[18px] border border-border bg-card/70"
                 >
-                  <button
-                    type="button"
-                    className="hse-inspector-group-toggle"
-                    aria-expanded={isSectionOpen}
-                    aria-controls={panelId}
-                    onClick={() => {
-                      toggleSection(section.id);
-                    }}
-                  >
-                    <span>
-                      <strong>{section.title}</strong>
-                      <small>{section.description}</small>
+                  <AccordionTrigger className="px-4 py-3.5 hover:no-underline">
+                    <span className="grid gap-1 text-left">
+                      <strong className="text-[15px] leading-tight">{section.title}</strong>
+                      <small className="text-xs leading-normal text-muted-foreground">
+                        {section.description}
+                      </small>
                     </span>
-                    <span className="hse-inspector-group-icon" aria-hidden="true">
-                      {isSectionOpen ? "−" : "+"}
-                    </span>
-                  </button>
+                  </AccordionTrigger>
 
                   {isSectionOpen ? (
-                    <div className="hse-inspector-group-panel" id={panelId}>
-                      <div className="hse-inspector-form-grid">
-                        {section.fields.map(renderField)}
-                      </div>
-                    </div>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="grid gap-3">{section.fields.map(renderField)}</div>
+                    </AccordionContent>
                   ) : null}
-                </section>
+                </AccordionItem>
               );
             })}
 
-            <section
-              className={
-                openSectionIds.has("custom") ? "hse-inspector-group is-open" : "hse-inspector-group"
-              }
+            <AccordionItem
+              value="custom"
+              className="overflow-hidden rounded-[18px] border border-border bg-card/70"
             >
-              <button
-                type="button"
-                className="hse-inspector-group-toggle"
-                aria-expanded={openSectionIds.has("custom")}
-                aria-controls={`${accordionBaseId}-custom-panel`}
-                onClick={() => {
-                  toggleSection("custom");
-                }}
-              >
-                <span>
-                  <strong>Custom CSS</strong>
-                  <small>Add or override any CSS property directly.</small>
+              <AccordionTrigger className="px-4 py-3.5 hover:no-underline">
+                <span className="grid gap-1 text-left">
+                  <strong className="text-[15px] leading-tight">Custom CSS</strong>
+                  <small className="text-xs leading-normal text-muted-foreground">
+                    Add or override any CSS property directly.
+                  </small>
                 </span>
-                <span className="hse-inspector-group-icon" aria-hidden="true">
-                  {openSectionIds.has("custom") ? "−" : "+"}
-                </span>
-              </button>
+              </AccordionTrigger>
 
               {openSectionIds.has("custom") ? (
-                <div className="hse-inspector-group-panel" id={`${accordionBaseId}-custom-panel`}>
-                  <div className="hse-inspector-custom-grid">
-                    <label className="hse-inspector-field">
-                      <span className="hse-inspector-field-label">Property name</span>
-                      <input
-                        className="hse-inspector-input"
+                <AccordionContent className="px-4 pb-4">
+                  <div className="grid gap-3">
+                    <label className="grid gap-1.5" htmlFor={customPropertyNameId}>
+                      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                        Property name
+                      </span>
+                      <Input
+                        id={customPropertyNameId}
                         type="text"
                         value={customPropertyName}
                         placeholder="e.g. justify-content"
@@ -481,10 +493,12 @@ function SidebarToolPanel({
                         }}
                       />
                     </label>
-                    <label className="hse-inspector-field">
-                      <span className="hse-inspector-field-label">Property value</span>
-                      <input
-                        className="hse-inspector-input"
+                    <label className="grid gap-1.5" htmlFor={customPropertyValueId}>
+                      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                        Property value
+                      </span>
+                      <Input
+                        id={customPropertyValueId}
                         type="text"
                         value={customPropertyValue}
                         placeholder="e.g. space-between"
@@ -507,9 +521,10 @@ function SidebarToolPanel({
                     </label>
                   </div>
 
-                  <button
+                  <Button
+                    className="mt-3"
+                    variant="secondary"
                     type="button"
-                    className="hse-inspector-apply-button"
                     disabled={isStyleEditingDisabled || customPropertyName.trim().length === 0}
                     onClick={() => {
                       onStyleChange(customPropertyName.trim(), customPropertyValue.trim());
@@ -517,17 +532,16 @@ function SidebarToolPanel({
                     }}
                   >
                     Apply property
-                  </button>
-                </div>
+                  </Button>
+                </AccordionContent>
               ) : null}
-            </section>
-          </div>
-        </div>
-      ) : (
-        <div className="hse-inspector-tab-panel hse-chat-tab-panel" role="tabpanel">
+            </AccordionItem>
+          </Accordion>
+        </TabsContent>
+        <TabsContent value="chat" className="flex min-h-0 p-[18px]">
           <ChatPanel />
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

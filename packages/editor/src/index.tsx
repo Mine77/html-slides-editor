@@ -9,13 +9,13 @@ import { EditorHeader } from "./components/editor-header";
 import { SidebarToolPanel } from "./components/sidebar-tool-panel";
 import { SlideSidebar } from "./components/slide-sidebar";
 import { StageCanvas } from "./components/stage-canvas";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { useBlockManipulation } from "./hooks/use-block-manipulation";
 import { useIframeTextEditing } from "./hooks/use-iframe-text-editing";
 import { useSlideHistory } from "./hooks/use-slide-history";
 import { useSlideInspector } from "./hooks/use-slide-inspector";
 import { useSlideThumbnails } from "./hooks/use-slide-thumbnails";
 import { useStageViewport } from "./hooks/use-stage-viewport";
-import "./styles/index.css";
 
 export interface SlidesEditorProps {
   slides: SlideModel[];
@@ -170,100 +170,102 @@ function SlidesEditor({
   }
 
   if (!activeSlide) {
-    return <div className="hse-empty">No slides loaded.</div>;
+    return <div className="grid min-h-screen place-items-center">No slides loaded.</div>;
   }
 
   return (
-    <div className="hse-shell">
-      <EditorHeader
-        deckTitle={resolvedDeckTitle}
-        sourceLabel={sourceLabel}
-        isSaving={isSaving}
-        isInspectorOpen={isInspectorOpen}
-        onToggleInspector={() => {
-          setIsInspectorOpen((currentValue) => !currentValue);
-        }}
-      />
-
-      <div className="hse-workspace">
-        <SlideSidebar
-          slides={slides}
-          activeSlideId={activeSlide.id}
-          slideCount={slides.length}
-          thumbnails={thumbnails}
-          onSelectSlide={(slideId) => {
-            setActiveSlideId(slideId);
-            setSelectedElementId(null);
+    <TooltipProvider>
+      <div className="flex h-screen flex-col overflow-hidden">
+        <EditorHeader
+          deckTitle={resolvedDeckTitle}
+          sourceLabel={sourceLabel}
+          isSaving={isSaving}
+          isInspectorOpen={isInspectorOpen}
+          onToggleInspector={() => {
+            setIsInspectorOpen((currentValue) => !currentValue);
           }}
         />
 
-        <main className="hse-main">
-          <StageCanvas
-            slideWidth={slideWidth}
-            slideHeight={slideHeight}
-            offsetX={offsetX}
-            offsetY={offsetY}
-            scale={scale}
-            selectionOverlay={unifiedSelectionOverlay}
-            selectionLabel={unifiedSelectionLabel}
-            toolbarKey={selectedElementId ? `${activeSlide.id}:${selectedElementId}` : null}
-            inspectedStyles={inspectedStyles}
-            inlineStyleValues={selectedInlineStyleValues}
-            isSelectionOverlayInteractive={isSelectionOverlayInteractive}
-            isEditingText={isEditingText}
-            manipulationOverlay={manipulationOverlay}
-            iframeRef={iframeRef}
-            stageViewportRef={stageViewportRef}
-            selectionOverlayRef={selectionOverlayRef}
-            isManipulating={isManipulating}
-            onSelectionOverlayMouseDown={(event) => {
-              beginMove({
-                clientX: event.clientX,
-                clientY: event.clientY,
-                preventDefault: () => event.preventDefault(),
-                stopPropagation: () => event.stopPropagation(),
-              });
+        <div className="flex min-h-0 flex-auto gap-[18px] overflow-hidden max-[1200px]:block">
+          <SlideSidebar
+            slides={slides}
+            activeSlideId={activeSlide.id}
+            slideCount={slides.length}
+            thumbnails={thumbnails}
+            onSelectSlide={(slideId) => {
+              setActiveSlideId(slideId);
+              setSelectedElementId(null);
             }}
-            onResizeHandleMouseDown={(corner, event) => {
-              beginResize(corner, {
-                clientX: event.clientX,
-                clientY: event.clientY,
-                preventDefault: () => event.preventDefault(),
-                stopPropagation: () => event.stopPropagation(),
-              });
-            }}
-            onRotateHandleMouseDown={(event) => {
-              beginRotate({
-                clientX: event.clientX,
-                clientY: event.clientY,
-                preventDefault: () => event.preventDefault(),
-                stopPropagation: () => event.stopPropagation(),
-              });
-            }}
-            onSelectionOverlayDoubleClick={() => {
-              if (selectedElement?.type === "text" && selectedElementId) {
-                beginTextEditing(selectedElementId);
-              }
-            }}
-            onBackgroundClick={() => {
-              if (!suppressBackgroundClear) {
-                clearSelection();
-              }
-            }}
-            onStyleChange={commitStyleChange}
-            onDeleteSelection={deleteSelectedElement}
           />
-          <SidebarToolPanel
-            inspectedStyles={inspectedStyles}
-            isEditingText={isEditingText}
-            isOpen={isInspectorOpen}
-            canEditStyles={Boolean(activeSlide)}
-            selectedElementId={selectedElementId}
-            onStyleChange={commitStyleChange}
-          />
-        </main>
+
+          <main className="flex min-h-0 min-w-0 flex-auto gap-[18px] overflow-visible max-[1200px]:block">
+            <StageCanvas
+              slideWidth={slideWidth}
+              slideHeight={slideHeight}
+              offsetX={offsetX}
+              offsetY={offsetY}
+              scale={scale}
+              selectionOverlay={unifiedSelectionOverlay}
+              selectionLabel={unifiedSelectionLabel}
+              toolbarKey={selectedElementId ? `${activeSlide.id}:${selectedElementId}` : null}
+              inspectedStyles={inspectedStyles}
+              inlineStyleValues={selectedInlineStyleValues}
+              isSelectionOverlayInteractive={isSelectionOverlayInteractive}
+              isEditingText={isEditingText}
+              manipulationOverlay={manipulationOverlay}
+              iframeRef={iframeRef}
+              stageViewportRef={stageViewportRef}
+              selectionOverlayRef={selectionOverlayRef}
+              isManipulating={isManipulating}
+              onSelectionOverlayMouseDown={(event) => {
+                beginMove({
+                  clientX: event.clientX,
+                  clientY: event.clientY,
+                  preventDefault: () => event.preventDefault(),
+                  stopPropagation: () => event.stopPropagation(),
+                });
+              }}
+              onResizeHandleMouseDown={(corner, event) => {
+                beginResize(corner, {
+                  clientX: event.clientX,
+                  clientY: event.clientY,
+                  preventDefault: () => event.preventDefault(),
+                  stopPropagation: () => event.stopPropagation(),
+                });
+              }}
+              onRotateHandleMouseDown={(event) => {
+                beginRotate({
+                  clientX: event.clientX,
+                  clientY: event.clientY,
+                  preventDefault: () => event.preventDefault(),
+                  stopPropagation: () => event.stopPropagation(),
+                });
+              }}
+              onSelectionOverlayDoubleClick={() => {
+                if (selectedElement?.type === "text" && selectedElementId) {
+                  beginTextEditing(selectedElementId);
+                }
+              }}
+              onBackgroundClick={() => {
+                if (!suppressBackgroundClear) {
+                  clearSelection();
+                }
+              }}
+              onStyleChange={commitStyleChange}
+              onDeleteSelection={deleteSelectedElement}
+            />
+            <SidebarToolPanel
+              inspectedStyles={inspectedStyles}
+              isEditingText={isEditingText}
+              isOpen={isInspectorOpen}
+              canEditStyles={Boolean(activeSlide)}
+              selectedElementId={selectedElementId}
+              onStyleChange={commitStyleChange}
+            />
+          </main>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 

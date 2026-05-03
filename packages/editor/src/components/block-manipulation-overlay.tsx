@@ -36,11 +36,14 @@ function BlockManipulationOverlay({
   onResizeHandleMouseDown,
   onRotateHandleMouseDown,
 }: BlockManipulationOverlayProps) {
+  const handleClassName =
+    "absolute z-[5] size-[15px] -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-2 border-white bg-primary shadow-[0_8px_18px_rgba(76,57,36,0.18)] transition-transform duration-150 before:absolute before:inset-[2.5px] before:rounded-full before:bg-white/90 hover:scale-110";
+
   return (
     <>
       <button
         type="button"
-        className="hse-block-handle hse-block-handle-rotate"
+        className={`${handleClassName} cursor-alias`}
         data-testid="block-rotate-handle"
         aria-label="Rotate selected element"
         style={{
@@ -53,7 +56,7 @@ function BlockManipulationOverlay({
         <button
           key={handle.corner}
           type="button"
-          className={`hse-block-handle hse-block-handle-resize hse-block-handle-resize-${handle.corner}`}
+          className={`${handleClassName} cursor-nwse-resize`}
           data-testid={`block-resize-handle-${handle.corner}`}
           aria-label={`Resize selected element from ${handle.corner}`}
           style={{

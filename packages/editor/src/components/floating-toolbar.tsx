@@ -18,7 +18,6 @@ import {
   Layers,
   type LucideIcon,
   Minus,
-  Palette,
   Plus,
   Strikethrough,
   Trash2,
@@ -48,7 +47,11 @@ import {
   parseTextDecorationLines,
   parseTransformParts,
 } from "../lib/style-controls";
+import { cn } from "../lib/utils";
 import { ColorPicker } from "./color-picker";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Separator } from "./ui/separator";
 
 const TOOLBAR_FADE_MS = 140;
 
@@ -86,10 +89,6 @@ const LAYER_OPTIONS: Array<{ value: string; icon: LucideIcon; label: string }> =
   { value: "backward", icon: ChevronDown, label: "Send backward" },
   { value: "back", icon: ArrowDownToLine, label: "Send to back" },
 ];
-function classNames(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
-}
-
 function FloatingToolbar({
   inspectedStyles,
   inlineStyleValues,
@@ -142,7 +141,7 @@ function FloatingToolbar({
 
     return () => {
       const currentNode = toolbarRef.current;
-      const stagePanel = currentNode?.closest(".hse-stage-panel");
+      const stagePanel = currentNode?.closest('[data-testid="stage-panel"]');
       if (!(currentNode instanceof HTMLElement) || !(stagePanel instanceof HTMLElement)) {
         return;
       }
@@ -155,7 +154,7 @@ function FloatingToolbar({
         return;
       }
 
-      ghost.classList.add("hse-floating-toolbar-ghost");
+      ghost.className = cn(ghost.className, "absolute z-40 m-0 pointer-events-none");
       ghost.setAttribute("aria-hidden", "true");
       ghost.style.left = `${toolbarRect.left - stageRect.left}px`;
       ghost.style.top = `${toolbarRect.top - stageRect.top}px`;
@@ -319,26 +318,29 @@ function FloatingToolbar({
 
   return (
     <div
-      className="hse-floating-toolbar hse-floating-toolbar-pop"
+      className="relative grid w-max min-w-max max-w-[min(980px,calc(100vw-280px))] animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-1 gap-2 text-foreground pointer-events-auto max-[1200px]:w-full max-[1200px]:min-w-0"
       ref={toolbarRef}
       style={{ marginLeft: toolbarOffsetX }}
     >
-      <div className="hse-floating-toolbar-strip" aria-label="Formatting toolbar">
+      <div
+        className="flex w-max items-center gap-1 overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-popover/95 px-2 py-1.5 shadow-[0_8px_24px_rgba(76,57,36,0.12),0_18px_50px_rgba(76,57,36,0.14)] backdrop-blur-md max-[1200px]:min-w-[760px]"
+        aria-label="Formatting toolbar"
+      >
         <ToolbarTrigger
           active={activeMenu === "font"}
           label="Font family"
-          className="hse-floating-toolbar-trigger-font"
+          className="w-[118px] justify-start"
           onClick={(event) => {
             toggleMenu("font", event);
           }}
         >
-          <span className="hse-floating-toolbar-trigger-value">
+          <span className="flex min-w-0 items-center gap-2">
             <ToolbarIcon icon={Type} />
-            <span className="hse-floating-toolbar-truncate">{fontFamilyLabel}</span>
+            <span className="truncate">{fontFamilyLabel}</span>
           </span>
         </ToolbarTrigger>
 
-        <div className="hse-floating-toolbar-size-stepper">
+        <div className="flex items-center gap-0 rounded-xl bg-muted/70">
           <IconButton
             label="Decrease font size"
             variant="ghost"
@@ -351,12 +353,12 @@ function FloatingToolbar({
           <ToolbarTrigger
             active={activeMenu === "size"}
             label="Font size"
-            className="hse-floating-toolbar-trigger-size"
+            className="min-w-[30px] px-1"
             onClick={(event) => {
               toggleMenu("size", event);
             }}
           >
-            <span className="hse-floating-toolbar-size-value">{fontSize}</span>
+            <span className="inline-block w-6 text-center font-bold tabular-nums">{fontSize}</span>
           </ToolbarTrigger>
           <IconButton
             label="Increase font size"
@@ -418,7 +420,7 @@ function FloatingToolbar({
           }}
         >
           <span
-            className="hse-floating-toolbar-swatch"
+            className="inline-block size-[18px] rounded-[7px] border-2 border-white shadow-[0_1px_4px_rgba(76,57,36,0.18)]"
             style={{ background: textColor }}
             aria-hidden="true"
           />
@@ -439,7 +441,6 @@ function FloatingToolbar({
         <ToolbarTrigger
           active={activeMenu === "arrange"}
           label="Arrange"
-          className="hse-floating-toolbar-trigger-icon-only"
           onClick={(event) => {
             toggleMenu("arrange", event);
           }}
@@ -450,7 +451,6 @@ function FloatingToolbar({
         <ToolbarTrigger
           active={activeMenu === "layer"}
           label="Layer"
-          className="hse-floating-toolbar-trigger-icon-only"
           onClick={(event) => {
             toggleMenu("layer", event);
           }}
@@ -468,23 +468,19 @@ function FloatingToolbar({
       {activeMenu === "font" ? (
         <ToolbarPanel left={panelLeft}>
           <PanelTitle>Font</PanelTitle>
-          <div className="hse-floating-toolbar-list">
+          <div className="grid gap-0.5">
             {FONT_FAMILY_OPTIONS.map((font) => (
-              <button
+              <ToolbarOption
                 key={font.value}
-                className={classNames(
-                  "hse-floating-toolbar-option",
-                  isFontFamilySelected(fontFamily, font.value) && "is-selected"
-                )}
+                active={isFontFamilySelected(fontFamily, font.value)}
                 style={{ fontFamily: font.value }}
-                type="button"
                 onClick={() => {
                   onStyleChange("font-family", font.value);
                   setActiveMenu(null);
                 }}
               >
                 <span>{font.label}</span>
-              </button>
+              </ToolbarOption>
             ))}
           </div>
         </ToolbarPanel>
@@ -493,8 +489,8 @@ function FloatingToolbar({
       {activeMenu === "size" ? (
         <ToolbarPanel left={panelLeft} width="narrow">
           <PanelTitle>Font Size</PanelTitle>
-          <input
-            className="hse-floating-toolbar-size-input"
+          <Input
+            className="h-9 rounded-[10px] bg-card/80 px-2.5 text-[13px] font-bold tabular-nums"
             ref={sizeInputRef}
             type="number"
             min={8}
@@ -515,23 +511,19 @@ function FloatingToolbar({
               }
             }}
           />
-          <div className="hse-floating-toolbar-list">
+          <div className="grid gap-0.5">
             {FONT_SIZE_OPTIONS.map((size) => (
-              <button
+              <ToolbarOption
                 key={size}
-                className={classNames(
-                  "hse-floating-toolbar-option",
-                  "hse-floating-toolbar-option-number",
-                  fontSize === size && "is-selected"
-                )}
-                type="button"
+                active={fontSize === size}
+                className="tabular-nums"
                 onClick={() => {
                   commitFontSize(size);
                   setActiveMenu(null);
                 }}
               >
                 {size}
-              </button>
+              </ToolbarOption>
             ))}
           </div>
         </ToolbarPanel>
@@ -553,15 +545,11 @@ function FloatingToolbar({
       {activeMenu === "align" ? (
         <ToolbarPanel left={panelLeft} width="medium">
           <PanelTitle>Text Align</PanelTitle>
-          <div className="hse-floating-toolbar-list">
+          <div className="grid gap-0.5">
             {ALIGN_OPTIONS.map((option) => (
-              <button
+              <ToolbarOption
                 key={option.value}
-                className={classNames(
-                  "hse-floating-toolbar-option",
-                  textAlign === option.value && "is-selected"
-                )}
-                type="button"
+                active={textAlign === option.value}
                 title={option.label}
                 onClick={() => {
                   onStyleChange("text-align", option.value);
@@ -570,7 +558,7 @@ function FloatingToolbar({
               >
                 <ToolbarIcon icon={option.icon} />
                 <span>{option.label}</span>
-              </button>
+              </ToolbarOption>
             ))}
           </div>
         </ToolbarPanel>
@@ -579,12 +567,10 @@ function FloatingToolbar({
       {activeMenu === "arrange" ? (
         <ToolbarPanel left={panelLeft} width="medium">
           <PanelTitle>Align</PanelTitle>
-          <div className="hse-floating-toolbar-icon-grid hse-floating-toolbar-icon-grid-arrange">
+          <div className="grid grid-cols-1 gap-1.5">
             {ARRANGE_OPTIONS.map((option) => (
-              <button
+              <ToolbarOption
                 key={option.value}
-                className="hse-floating-toolbar-arrange-button"
-                type="button"
                 title={option.label}
                 onClick={() => {
                   commitArrangeAction(option.value);
@@ -593,7 +579,7 @@ function FloatingToolbar({
               >
                 <ToolbarIcon icon={option.icon} />
                 <span>{option.label}</span>
-              </button>
+              </ToolbarOption>
             ))}
           </div>
         </ToolbarPanel>
@@ -602,12 +588,10 @@ function FloatingToolbar({
       {activeMenu === "layer" ? (
         <ToolbarPanel left={panelLeft} width="medium">
           <PanelTitle>Layer</PanelTitle>
-          <div className="hse-floating-toolbar-list">
+          <div className="grid gap-0.5">
             {LAYER_OPTIONS.map((option) => (
-              <button
+              <ToolbarOption
                 key={option.value}
-                className="hse-floating-toolbar-option"
-                type="button"
                 onClick={() => {
                   commitLayerAction(option.value);
                   setActiveMenu(null);
@@ -615,7 +599,7 @@ function FloatingToolbar({
               >
                 <ToolbarIcon icon={option.icon} />
                 <span>{option.label}</span>
-              </button>
+              </ToolbarOption>
             ))}
           </div>
         </ToolbarPanel>
@@ -638,14 +622,21 @@ function ToolbarTrigger({
   onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
-    <button
-      className={classNames("hse-floating-toolbar-trigger", active && "is-active", className)}
+    <Button
+      variant={active ? "secondary" : "ghost"}
+      size="sm"
+      className={cn(
+        "h-9 min-w-[38px] rounded-xl px-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground",
+        active &&
+          "bg-primary/10 text-accent-foreground shadow-[inset_0_0_0_1px_rgba(242,98,56,0.12)]",
+        className
+      )}
       type="button"
       aria-label={label}
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -663,19 +654,20 @@ function IconButton({
   variant?: "default" | "ghost" | "danger";
 }) {
   return (
-    <button
-      className={classNames(
-        "hse-floating-toolbar-icon-button",
-        active && "is-active",
-        variant === "ghost" && "is-ghost",
-        variant === "danger" && "is-danger"
+    <Button
+      variant={active ? "default" : "ghost"}
+      size="icon-sm"
+      className={cn(
+        "h-9 w-[34px] rounded-xl text-muted-foreground hover:text-foreground",
+        active && "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(242,98,56,0.22)]",
+        variant === "danger" && "hover:bg-destructive/10 hover:text-destructive"
       )}
       type="button"
       aria-label={label}
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -730,9 +722,23 @@ function ToolbarPanel({
     }
   });
 
+  const widthClassName =
+    width === "narrow"
+      ? "w-32"
+      : width === "medium"
+        ? "w-[272px]"
+        : width === "wide"
+          ? "w-80 max-w-[min(320px,calc(100vw-40px))] max-h-[calc(100vh-36px)] overflow-y-auto"
+          : width === "auto"
+            ? "w-auto"
+            : "w-64";
+
   return (
     <div
-      className={`hse-floating-toolbar-panel is-${width}`}
+      className={cn(
+        "absolute z-50 grid gap-2 rounded-2xl border border-border bg-popover/95 p-3 text-popover-foreground shadow-[0_10px_26px_rgba(76,57,36,0.14),0_22px_54px_rgba(76,57,36,0.13)] backdrop-blur-md animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 max-[1200px]:max-w-[calc(100vw-40px)]",
+        widthClassName
+      )}
       ref={panelRef}
       style={{ left: left + offset.x, top: `calc(100% + 8px + ${offset.y}px)` }}
       role="menu"
@@ -747,11 +753,15 @@ function shouldUpdateOffset(current: number, next: number) {
 }
 
 function Divider() {
-  return <div className="hse-floating-toolbar-divider" />;
+  return <Separator orientation="vertical" className="mx-0.5 h-6" />;
 }
 
 function PanelTitle({ children }: { children: ReactNode }) {
-  return <div className="hse-floating-toolbar-panel-title">{children}</div>;
+  return (
+    <div className="inline-flex items-center gap-1.5 px-1 text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted-foreground">
+      {children}
+    </div>
+  );
 }
 
 function getAlignIcon(align: TextAlign): LucideIcon {
@@ -774,8 +784,41 @@ function normalizeTextAlign(value: string): TextAlign {
   return "left";
 }
 
-function ToolbarIcon({ icon: Icon, muted = false }: { icon: LucideIcon; muted?: boolean }) {
-  return <Icon className={classNames("hse-floating-toolbar-icon", muted && "is-muted")} />;
+function ToolbarIcon({ icon: Icon }: { icon: LucideIcon; muted?: boolean }) {
+  return <Icon />;
+}
+
+function ToolbarOption({
+  active = false,
+  children,
+  className,
+  onClick,
+  style,
+  title,
+}: {
+  active?: boolean;
+  children: ReactNode;
+  className?: string;
+  onClick: () => void;
+  style?: React.CSSProperties;
+  title?: string;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      className={cn(
+        "min-h-[34px] w-full justify-start gap-2.5 rounded-[10px] px-2.5 py-1.5 text-left text-[13px] font-normal text-muted-foreground hover:text-foreground",
+        active && "bg-primary/10 font-bold text-accent-foreground",
+        className
+      )}
+      type="button"
+      title={title}
+      style={style}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
 }
 
 export { FloatingToolbar };

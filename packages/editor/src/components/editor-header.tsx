@@ -1,20 +1,13 @@
+import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+
 interface EditorHeaderProps {
   deckTitle: string;
   sourceLabel: string;
   isSaving: boolean;
   isInspectorOpen: boolean;
   onToggleInspector: () => void;
-}
-
-function PanelIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20">
-      <path
-        d="M3 4.5A1.5 1.5 0 0 1 4.5 3h11A1.5 1.5 0 0 1 17 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 15.5zm2 0v11h6v-11zm8 0h-1v11h1z"
-        fill="currentColor"
-      />
-    </svg>
-  );
 }
 
 function EditorHeader({
@@ -24,41 +17,51 @@ function EditorHeader({
   isInspectorOpen,
   onToggleInspector,
 }: EditorHeaderProps) {
+  const InspectorIcon = isInspectorOpen ? PanelRightClose : PanelRightOpen;
+
   return (
-    <header className="hse-editor-header">
-      <div className="hse-editor-header-copy">
-        <div className="hse-editor-header-title-row">
-          <h1>{deckTitle}</h1>
+    <header className="flex min-h-[72px] items-center justify-between gap-5 border-b border-border/70 bg-card/90 px-6 py-3 backdrop-blur-md max-[1200px]:flex-col max-[1200px]:items-start">
+      <div className="grid min-w-0 gap-1">
+        <div className="flex min-w-0 items-center gap-4">
+          <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold leading-tight">
+            {deckTitle}
+          </h1>
           {isSaving ? (
-            <span className="hse-saving-badge" aria-live="polite">
+            <span
+              className="inline-flex h-[22px] shrink-0 items-center rounded-md border border-border bg-secondary px-2.5 text-[11px] font-medium leading-none text-muted-foreground"
+              aria-live="polite"
+            >
               saving...
             </span>
           ) : null}
         </div>
-        <div className="hse-editor-header-meta-row">
-          <p>{sourceLabel}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <p className="m-0 min-w-0 truncate text-[13px] text-muted-foreground">{sourceLabel}</p>
         </div>
       </div>
 
-      <div className="hse-editor-header-actions">
-        <button
-          className="hse-header-button hse-header-button-secondary"
-          type="button"
-          aria-label={isInspectorOpen ? "Hide advanced panel" : "Show advanced panel"}
-          aria-pressed={isInspectorOpen}
-          data-testid="toggle-inspector-button"
-          onClick={onToggleInspector}
-        >
-          <PanelIcon />
-        </button>
-        <button
-          className="hse-header-button hse-header-button-primary"
-          type="button"
-          aria-label="Present slides"
-          title="Present mode UI placeholder"
-        >
+      <div className="flex items-center gap-2.5 max-[1200px]:w-full max-[1200px]:justify-end">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              aria-label={isInspectorOpen ? "Hide advanced panel" : "Show advanced panel"}
+              aria-pressed={isInspectorOpen}
+              data-testid="toggle-inspector-button"
+              onClick={onToggleInspector}
+            >
+              <InspectorIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isInspectorOpen ? "Hide advanced panel" : "Show advanced panel"}
+          </TooltipContent>
+        </Tooltip>
+        <Button type="button" aria-label="Present slides" title="Present mode UI placeholder">
           Present
-        </button>
+        </Button>
       </div>
     </header>
   );

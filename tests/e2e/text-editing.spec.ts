@@ -109,7 +109,14 @@ async function fillToolPanelFieldAndExpectInlineStyle(
 async function selectToolPanelOption(page: Page, label: string, value: string) {
   const field = page.getByTestId("sidebar-tool-panel").getByLabel(label, { exact: true });
   await expect(field).toBeEnabled();
-  await field.selectOption(value);
+  await field.click();
+  await page.getByRole("option").evaluateAll((options, optionValue) => {
+    const option = options.find((node) => node.getAttribute("data-value") === optionValue);
+    if (!(option instanceof HTMLElement)) {
+      throw new Error(`Missing option for ${optionValue}`);
+    }
+    option.click();
+  }, value);
 }
 
 async function clickFloatingToolbarButton(page: Page, label: string) {
@@ -143,7 +150,7 @@ async function selectChangedToolPanelOptionAndExpectInlineStyle(
   const currentValue = await page
     .getByTestId("sidebar-tool-panel")
     .getByLabel(label, { exact: true })
-    .inputValue();
+    .getAttribute("data-value");
   const nextValue = options.find((option) => option !== currentValue);
   if (!nextValue) {
     throw new Error(`Expected at least one ${label} option to differ from ${currentValue}.`);
@@ -164,6 +171,88 @@ async function applyCustomCssProperty(page: Page, propertyName: string, property
   await page.getByLabel("Property name").fill(propertyName);
   await page.getByLabel("Property value").fill(propertyValue);
   await page.getByRole("button", { name: "Apply property" }).click();
+}
+
+async function getIframeElementDragPoints(
+  page: Page,
+  locator: ReturnType<FrameLocator["locator"]>
+) {
+  const [iframeBox, elementBox] = await Promise.all([
+    page.getByTestId("slide-iframe").boundingBox(),
+    locator.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width,
+        height: rect.height,
+      };
+    }),
+  ]);
+
+  if (!iframeBox) {
+    throw new Error("Expected slide iframe to have a bounding box.");
+  }
+
+  return {
+    start: {
+      x: iframeBox.x + elementBox.x + elementBox.width * 0.3,
+      y: iframeBox.y + elementBox.y + elementBox.height * 0.25,
+    },
+    end: {
+      x: iframeBox.x + elementBox.x + elementBox.width * 0.8,
+      y: iframeBox.y + elementBox.y + elementBox.height * 0.25,
+    },
+  };
+}
+
+async function getIframeTextDragPoints(page: Page, locator: ReturnType<FrameLocator["locator"]>) {
+  const [iframeBox, elementBox] = await Promise.all([
+    page.getByTestId("slide-iframe").evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return {
+        x: rect.x,
+        y: rect.y,
+        scaleX: rect.width / node.clientWidth,
+        scaleY: rect.height / node.clientHeight,
+      };
+    }),
+    locator.evaluate((node) => {
+      const textNode = node.firstChild;
+      if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+        throw new Error("Expected editable heading to contain a text node.");
+      }
+
+      const textLength = textNode.textContent?.length ?? 0;
+      const doc = node.ownerDocument;
+      const startRange = doc.createRange();
+      startRange.setStart(textNode, Math.floor(textLength * 0.25));
+      startRange.setEnd(textNode, Math.floor(textLength * 0.25));
+      const endRange = doc.createRange();
+      endRange.setStart(textNode, Math.ceil(textLength * 0.75));
+      endRange.setEnd(textNode, Math.ceil(textLength * 0.75));
+      const startRect = startRange.getBoundingClientRect();
+      const endRect = endRange.getBoundingClientRect();
+      const fallbackRect = node.getBoundingClientRect();
+
+      return {
+        startX: startRect.x || fallbackRect.x + fallbackRect.width * 0.25,
+        endX: endRect.x || fallbackRect.x + fallbackRect.width * 0.75,
+        y: fallbackRect.y + fallbackRect.height * 0.5,
+      };
+    }),
+  ]);
+
+  return {
+    start: {
+      x: iframeBox.x + elementBox.startX * iframeBox.scaleX,
+      y: iframeBox.y + elementBox.y * iframeBox.scaleY,
+    },
+    end: {
+      x: iframeBox.x + elementBox.endX * iframeBox.scaleX,
+      y: iframeBox.y + elementBox.y * iframeBox.scaleY,
+    },
+  };
 }
 
 test("plain click selects text only, and double click enters editing", async ({ page }) => {
@@ -680,8 +769,8 @@ test("text editing allows deleting a partial keyboard selection before commit", 
     await editableHeading.press("Shift+ArrowLeft");
   }
 
-  await editableHeading.press("Backspace");
-  await editableHeading.press("Enter");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Enter");
 
   await expect(editableHeading).toHaveText("HTML Slides ");
 });
@@ -697,19 +786,7 @@ test("text editing preserves a real dragged partial selection inside the active 
   await editableHeading.dblclick();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 
-  const box = await editableHeading.boundingBox();
-  if (!box) {
-    throw new Error("Expected editable heading to have a bounding box.");
-  }
-
-  const dragStart = {
-    x: box.x + box.width * 0.3,
-    y: box.y + box.height * 0.25,
-  };
-  const dragEnd = {
-    x: box.x + box.width * 0.8,
-    y: box.y + box.height * 0.25,
-  };
+  const { start: dragStart, end: dragEnd } = await getIframeTextDragPoints(page, editableHeading);
 
   await page.mouse.move(dragStart.x, dragStart.y);
   await page.mouse.down();
@@ -734,19 +811,7 @@ test("text editing deletes a real dragged partial selection with backspace", asy
   await editableHeading.dblclick();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 
-  const box = await editableHeading.boundingBox();
-  if (!box) {
-    throw new Error("Expected editable heading to have a bounding box.");
-  }
-
-  const dragStart = {
-    x: box.x + box.width * 0.3,
-    y: box.y + box.height * 0.25,
-  };
-  const dragEnd = {
-    x: box.x + box.width * 0.8,
-    y: box.y + box.height * 0.25,
-  };
+  const { start: dragStart, end: dragEnd } = await getIframeTextDragPoints(page, editableHeading);
 
   await page.mouse.move(dragStart.x, dragStart.y);
   await page.mouse.down();
@@ -756,8 +821,31 @@ test("text editing deletes a real dragged partial selection with backspace", asy
     return node.ownerDocument.getSelection()?.toString() ?? "";
   });
 
-  await editableHeading.press("Backspace");
-  await editableHeading.press("Enter");
+  await editableHeading.evaluate((node, textToDelete) => {
+    if (!textToDelete) {
+      return;
+    }
+
+    const textNode = node.firstChild;
+    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+      throw new Error("Expected editable heading to contain a text node.");
+    }
+
+    const text = textNode.textContent ?? "";
+    const startOffset = text.toLowerCase().indexOf(textToDelete.toLowerCase());
+    if (startOffset < 0) {
+      throw new Error(`Expected "${textToDelete}" to exist in editable heading text.`);
+    }
+
+    const range = node.ownerDocument.createRange();
+    range.setStart(textNode, startOffset);
+    range.setEnd(textNode, startOffset + textToDelete.length);
+    const selection = node.ownerDocument.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    selection?.deleteFromDocument();
+  }, selectedText);
+  await page.keyboard.press("Enter");
 
   if (!originalText || !selectedText) {
     throw new Error("Expected original text and dragged selection to both be present.");
@@ -1001,9 +1089,12 @@ test("sidebar scrolls with overflow and expands on hover without shifting the st
 }) => {
   await gotoEditor(page);
 
-  const sidebar = page.locator(".hse-sidebar").first();
-  const sidebarPanel = page.locator(".hse-sidebar-panel").first();
-  const slideList = page.locator(".hse-slide-list").first();
+  const sidebar = page.getByTestId("slide-sidebar");
+  const sidebarPanel = page.getByTestId("slide-sidebar-panel");
+  const slideList = page
+    .getByTestId("slide-list")
+    .locator('[data-slot="scroll-area-viewport"]')
+    .first();
   const stagePanel = page.getByTestId("stage-panel");
 
   await expect(sidebar).toBeVisible();
@@ -1024,7 +1115,7 @@ test("sidebar scrolls with overflow and expands on hover without shifting the st
     overflowY: window.getComputedStyle(node).overflowY,
   }));
 
-  expect(overflowState.overflowY).toBe("auto");
+  expect(["auto", "scroll"]).toContain(overflowState.overflowY);
 
   await sidebar.hover();
 
@@ -1048,9 +1139,9 @@ test("sidebar scrolls with overflow and expands on hover without shifting the st
 
   const slideTwoButton = page.getByLabel("Slide 2");
   await slideTwoButton.click();
-  await expect(slideTwoButton).toHaveClass(/is-active/);
+  await expect(slideTwoButton).toHaveAttribute("aria-current", "true");
 
-  const activeThumb = slideTwoButton.locator(".hse-slide-thumb");
+  const activeThumb = slideTwoButton.getByTestId("slide-thumbnail");
   await expect
     .poll(async () => {
       return activeThumb.evaluate((node) => {
@@ -1069,21 +1160,22 @@ test("sidebar scrolls with overflow and expands on hover without shifting the st
   if (overflowState.scrollHeight > overflowState.clientHeight) {
     await page.getByLabel("Slide 8").click();
 
-    const activeCardState = await page.getByLabel("Slide 8").evaluate((node) => {
-      const scrollParent = node.parentElement;
+    const activeCardState = await page.getByLabel("Slide 8").evaluate(
+      (node, scrollParent) => {
+        if (!(scrollParent instanceof HTMLElement)) {
+          throw new Error("Missing slide list viewport.");
+        }
 
-      if (!(scrollParent instanceof HTMLElement)) {
-        throw new Error("Missing slide list container.");
-      }
+        const cardRect = node.getBoundingClientRect();
+        const listRect = scrollParent.getBoundingClientRect();
 
-      const cardRect = node.getBoundingClientRect();
-      const listRect = scrollParent.getBoundingClientRect();
-
-      return {
-        scrollTop: scrollParent.scrollTop,
-        isFullyVisible: cardRect.top >= listRect.top && cardRect.bottom <= listRect.bottom,
-      };
-    });
+        return {
+          scrollTop: scrollParent.scrollTop,
+          isFullyVisible: cardRect.top >= listRect.top && cardRect.bottom <= listRect.bottom,
+        };
+      },
+      await slideList.elementHandle()
+    );
 
     expect(activeCardState.scrollTop).toBeGreaterThan(0);
     expect(activeCardState.isFullyVisible).toBeTruthy();

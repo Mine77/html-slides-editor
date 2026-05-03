@@ -1,6 +1,7 @@
 import type { StageRect } from "@html-slides-editor/core";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
+import { cn } from "../lib/utils";
 import { BlockManipulationOverlay } from "./block-manipulation-overlay";
 import { FloatingToolbar } from "./floating-toolbar";
 
@@ -91,7 +92,7 @@ function StageCanvas({
     : undefined;
   return (
     <section
-      className="hse-stage-panel"
+      className="relative z-[5] min-h-0 min-w-0 flex-auto overflow-visible p-10 pb-6 max-[1200px]:px-5 max-[1200px]:py-4"
       data-testid="stage-panel"
       ref={stageViewportRef}
       onClick={(event) => {
@@ -105,7 +106,7 @@ function StageCanvas({
     >
       {selectionOverlay && !isManipulating && !isEditingText ? (
         <div
-          className="hse-stage-toolbar-anchor"
+          className="pointer-events-none absolute z-40 w-max max-[1200px]:static max-[1200px]:mb-4 max-[1200px]:pointer-events-auto"
           style={toolbarStyle}
           data-testid="floating-toolbar-anchor"
         >
@@ -126,7 +127,7 @@ function StageCanvas({
       ) : null}
 
       <div
-        className="hse-stage-frame"
+        className="absolute origin-top-left overflow-hidden rounded-[20px] bg-card shadow-[0_18px_40px_rgba(76,57,36,0.16)] max-[1200px]:max-w-full"
         data-testid="stage-frame"
         style={{
           width: `${slideWidth}px`,
@@ -139,7 +140,7 @@ function StageCanvas({
         <iframe
           ref={iframeRef}
           title="Slide canvas"
-          className="hse-slide-iframe"
+          className="size-full border-0 bg-card"
           data-testid="slide-iframe"
         />
       </div>
@@ -147,11 +148,10 @@ function StageCanvas({
         <div
           ref={selectionOverlayRef}
           data-testid="selection-overlay"
-          className={
-            isSelectionOverlayInteractive
-              ? "hse-selection-overlay hse-selection-overlay-interactive"
-              : "hse-selection-overlay"
-          }
+          className={cn(
+            "pointer-events-none absolute z-[3] border-[2.5px] border-dashed border-primary/95",
+            isSelectionOverlayInteractive && "pointer-events-auto"
+          )}
           style={{
             left: `${selectionOverlay.x}px`,
             top: `${selectionOverlay.y}px`,
@@ -163,7 +163,9 @@ function StageCanvas({
             onSelectionOverlayDoubleClick();
           }}
         >
-          <div className="hse-selection-label">{selectionLabel}</div>
+          <div className="pointer-events-none absolute -top-[22px] left-0 whitespace-nowrap rounded-full bg-primary px-1.5 py-0.5 text-[9px] uppercase leading-tight tracking-[0.08em] text-primary-foreground">
+            {selectionLabel}
+          </div>
         </div>
       ) : null}
       {manipulationOverlay ? (

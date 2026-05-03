@@ -1,5 +1,19 @@
 import { Image, Paperclip, Send, Sparkles, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { cn } from "../lib/utils";
+import { Conversation, ConversationContent } from "./ai-elements/conversation";
+import { Message, MessageContent } from "./ai-elements/message";
+import {
+  PromptInput,
+  PromptInputButton,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
+} from "./ai-elements/prompt-input";
+import { Suggestion, Suggestions } from "./ai-elements/suggestion";
+import { Button } from "./ui/button";
+import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 
 const SAMPLE_MESSAGES = [
   {
@@ -55,71 +69,78 @@ function ChatPanel() {
   };
 
   return (
-    <div className="hse-chat-panel">
-      <div className="hse-chat-conversation" aria-label="Chat conversation">
-        {SAMPLE_MESSAGES.map((message) => (
-          <div
-            className={
-              message.role === "user" ? "hse-chat-message is-user" : "hse-chat-message is-assistant"
-            }
-            key={message.id}
-          >
-            <div className="hse-chat-bubble">
-              <p>{message.text}</p>
-            </div>
-          </div>
-        ))}
+    <div className="flex min-h-0 w-full flex-auto flex-col gap-3">
+      <Conversation aria-label="Chat conversation">
+        <ConversationContent>
+          {SAMPLE_MESSAGES.map((message) => (
+            <Message from={message.role} key={message.id}>
+              <MessageContent
+                from={message.role}
+                className={cn(message.role === "user" && "max-w-[92%]")}
+              >
+                <p className="m-0 text-[13px] leading-normal">{message.text}</p>
+              </MessageContent>
+            </Message>
+          ))}
 
-        <div className="hse-chat-message is-assistant">
-          <div className="hse-chat-bubble hse-chat-form-bubble">
-            <div className="hse-chat-form-header">
-              <strong>Choose an edit direction</strong>
-              <p>Selections become the next prompt draft.</p>
-            </div>
+          <Message from="assistant">
+            <MessageContent className="max-w-full p-3">
+              <div className="mb-3 grid gap-1">
+                <strong className="text-[13px] leading-tight">Choose an edit direction</strong>
+                <p className="m-0 text-xs text-muted-foreground">
+                  Selections become the next prompt draft.
+                </p>
+              </div>
 
-            <div className="hse-chat-inline-form">
-              {(Object.keys(FORM_OPTIONS) as FormField[]).map((field) => (
-                <fieldset key={field}>
-                  <legend>{field}</legend>
-                  <div className="hse-chat-option-row">
-                    {FORM_OPTIONS[field].map((option) => (
-                      <button
-                        type="button"
-                        className={
-                          formSelections[field] === option
-                            ? "hse-chat-option is-selected"
-                            : "hse-chat-option"
+              <div className="grid gap-3">
+                {(Object.keys(FORM_OPTIONS) as FormField[]).map((field) => (
+                  <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0" key={field}>
+                    <legend className="p-0 text-[10px] font-semibold uppercase leading-tight text-muted-foreground">
+                      {field}
+                    </legend>
+                    <ToggleGroup
+                      type="single"
+                      value={formSelections[field]}
+                      className="flex w-full flex-wrap justify-start gap-1.5"
+                      aria-label={`${field} options`}
+                      onValueChange={(nextValue) => {
+                        if (nextValue) {
+                          updateInlineForm(field, nextValue);
                         }
-                        key={option}
-                        aria-pressed={formSelections[field] === option}
-                        onClick={() => {
-                          updateInlineForm(field, option);
-                        }}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-              ))}
-            </div>
+                      }}
+                    >
+                      {FORM_OPTIONS[field].map((option) => (
+                        <ToggleGroupItem
+                          className="h-7 rounded-lg border border-border bg-card/60 px-2 text-xs font-medium text-muted-foreground data-[state=on]:border-primary/30 data-[state=on]:bg-primary/10 data-[state=on]:text-accent-foreground"
+                          key={option}
+                          value={option}
+                        >
+                          {option}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  </fieldset>
+                ))}
+              </div>
 
-            <button
-              className="hse-chat-use-prompt"
-              type="button"
-              onClick={() => {
-                setDraftPrompt(inlineFormPrompt);
-              }}
-            >
-              Use as next prompt
-            </button>
-          </div>
-        </div>
-      </div>
+              <Button
+                className="mt-3 w-full"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setDraftPrompt(inlineFormPrompt);
+                }}
+              >
+                Use as next prompt
+              </Button>
+            </MessageContent>
+          </Message>
+        </ConversationContent>
+      </Conversation>
 
-      <div className="hse-chat-suggestions" aria-label="Suggested prompts">
+      <Suggestions aria-label="Suggested prompts">
         {SUGGESTIONS.map((suggestion) => (
-          <button
+          <Suggestion
             type="button"
             key={suggestion}
             onClick={() => {
@@ -128,12 +149,12 @@ function ChatPanel() {
           >
             <Sparkles aria-hidden="true" />
             {suggestion}
-          </button>
+          </Suggestion>
         ))}
-      </div>
+      </Suggestions>
 
-      <form className="hse-chat-composer" aria-label="Chat prompt input">
-        <textarea
+      <PromptInput aria-label="Chat prompt input">
+        <PromptInputTextarea
           rows={4}
           placeholder="Ask for edits to the current slide..."
           value={draftPrompt}
@@ -141,23 +162,23 @@ function ChatPanel() {
             setDraftPrompt(event.target.value);
           }}
         />
-        <div className="hse-chat-composer-footer">
-          <div className="hse-chat-tool-row" aria-label="Prompt tools">
-            <button type="button" aria-label="Attach file">
+        <PromptInputToolbar>
+          <PromptInputTools aria-label="Prompt tools">
+            <PromptInputButton type="button" aria-label="Attach file">
               <Paperclip aria-hidden="true" />
-            </button>
-            <button type="button" aria-label="Reference image">
+            </PromptInputButton>
+            <PromptInputButton type="button" aria-label="Reference image">
               <Image aria-hidden="true" />
-            </button>
-            <button type="button" aria-label="Prompt tools">
+            </PromptInputButton>
+            <PromptInputButton type="button" aria-label="Prompt tools">
               <Wand2 aria-hidden="true" />
-            </button>
-          </div>
-          <button className="hse-chat-send-button" type="button" aria-label="Send message">
+            </PromptInputButton>
+          </PromptInputTools>
+          <PromptInputSubmit type="button" aria-label="Send message">
             <Send aria-hidden="true" />
-          </button>
-        </div>
-      </form>
+          </PromptInputSubmit>
+        </PromptInputToolbar>
+      </PromptInput>
     </div>
   );
 }

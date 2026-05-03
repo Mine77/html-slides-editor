@@ -5,6 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { cn } from "../lib/utils";
+import { Input } from "./ui/input";
 
 const SWATCHES = [
   "#0F172A",
@@ -76,9 +78,9 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
   }
 
   return (
-    <div className="hse-color-picker">
+    <div className="grid gap-3">
       <div
-        className="hse-color-picker-spectrum"
+        className="relative h-36 w-full touch-none select-none overflow-hidden rounded-xl border-0 before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(to_top,#000,transparent),linear-gradient(to_right,#fff,transparent)] before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         ref={spectrumRef}
         role="slider"
         aria-label="Color saturation and brightness"
@@ -96,7 +98,7 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
         }}
       >
         <span
-          className="hse-color-picker-spectrum-handle"
+          className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-current shadow-[0_2px_8px_rgba(17,24,39,0.26)]"
           aria-hidden="true"
           style={{
             color: normalizedHex,
@@ -107,7 +109,7 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
       </div>
 
       <div
-        className="hse-color-picker-hue"
+        className="relative h-3 touch-none select-none rounded-full bg-[linear-gradient(to_right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         ref={hueRef}
         role="slider"
         aria-label="Hue"
@@ -123,21 +125,23 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
         }}
       >
         <span
-          className="hse-color-picker-hue-handle"
+          className="pointer-events-none absolute -top-0.5 size-4 -translate-x-1/2 rounded-full border-2 border-white bg-current shadow-[0_2px_8px_rgba(17,24,39,0.24)]"
           aria-hidden="true"
           style={{ color: hueColor, left: `${(hsv.h / 360) * 100}%` }}
         />
       </div>
 
-      <div className="hse-color-picker-preview-row">
+      <div className="grid grid-cols-[40px_auto_minmax(0,1fr)] items-center gap-2">
         <span
-          className="hse-color-picker-preview"
+          className="size-10 rounded-[10px] border-0 shadow-[0_1px_4px_rgba(76,57,36,0.14)]"
           style={{ background: normalizedHex }}
           aria-hidden="true"
         />
-        <span className="hse-color-picker-hex-prefix">#</span>
-        <input
-          className="hse-color-picker-hex"
+        <span className="font-mono text-sm font-semibold leading-none text-muted-foreground">
+          #
+        </span>
+        <Input
+          className="h-[38px] rounded-[10px] bg-card/75 px-2 font-mono text-sm font-semibold uppercase"
           type="text"
           value={hexInput}
           spellCheck={false}
@@ -155,13 +159,19 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
         />
       </div>
 
-      <section className="hse-color-picker-section" aria-label="Preset colors">
-        <div className="hse-color-picker-section-title">Presets</div>
-        <div className="hse-color-picker-swatch-grid">
+      <section className="grid gap-1.5" aria-label="Preset colors">
+        <div className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted-foreground">
+          Presets
+        </div>
+        <div className="grid grid-cols-12 gap-1">
           {SWATCHES.map((color) => (
             <button
               key={color}
-              className={color.toLowerCase() === value.toLowerCase() ? "is-selected" : undefined}
+              className={cn(
+                "aspect-square min-w-0 cursor-pointer rounded-[10px] border-0 shadow-[0_1px_4px_rgba(76,57,36,0.12)] transition-[transform,box-shadow,outline-color] duration-150 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                color.toLowerCase() === value.toLowerCase() &&
+                  "shadow-[0_0_0_2px_white,0_0_0_4px_var(--primary)]"
+              )}
               type="button"
               style={{ background: color }}
               aria-label={`Use ${color}`}
@@ -174,13 +184,18 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
       </section>
 
       {includeGradients ? (
-        <section className="hse-color-picker-section" aria-label="Preset gradients">
-          <div className="hse-color-picker-section-title">Gradients</div>
-          <div className="hse-color-picker-gradient-grid">
+        <section className="grid gap-1.5" aria-label="Preset gradients">
+          <div className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted-foreground">
+            Gradients
+          </div>
+          <div className="grid grid-cols-6 gap-1.5">
             {GRADIENTS.map((gradient) => (
               <button
                 key={gradient}
-                className={gradient === value ? "is-selected" : undefined}
+                className={cn(
+                  "h-8 cursor-pointer rounded-[10px] border-0 shadow-[0_1px_5px_rgba(76,57,36,0.12)] transition-[transform,box-shadow,outline-color] duration-150 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  gradient === value && "shadow-[0_0_0_2px_white,0_0_0_4px_var(--primary)]"
+                )}
                 type="button"
                 style={{ background: gradient }}
                 aria-label="Use gradient"
