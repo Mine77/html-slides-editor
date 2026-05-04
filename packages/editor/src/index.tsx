@@ -118,6 +118,7 @@ function SlidesEditor({
     activeSlide,
     selectedElement,
     selectedElementId,
+    selectedElementIds,
     selectedStageRect,
     iframeRef,
     stageGeometry: {
@@ -212,7 +213,6 @@ function SlidesEditor({
 
   useEditorKeyboardShortcuts({
     activeSlide,
-    selectedElements,
     selectedElementIds,
     iframeRef,
     slideWidth,
@@ -279,7 +279,7 @@ function SlidesEditor({
               selectionOverlayRef={selectionOverlayRef}
               isManipulating={isManipulating}
               onSelectionOverlayMouseDown={(event) => {
-                if (selectedElementIds.length !== 1) {
+                if (!selectedElementIds.length) {
                   return;
                 }
 

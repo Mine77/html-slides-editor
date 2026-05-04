@@ -1,7 +1,9 @@
 import {
+  type AtomicSlideOperation,
   type EditableElement,
   type ElementLayoutStyleSnapshot,
   type ElementLayoutUpdateOperation,
+  type SlideBatchOperation,
   type SlideModel,
   type StageGeometry,
   type StageRect,
@@ -56,6 +58,7 @@ interface SnapCandidate {
 interface ManipulationSession {
   slideId: string;
   elementId: string;
+  elementIds: string[];
   mode: ManipulationMode;
   resizeCorner: ResizeHandleCorner | null;
   startPointer: { x: number; y: number };
@@ -63,6 +66,8 @@ interface ManipulationSession {
   startStageRect: StageRect;
   centerPoint: { x: number; y: number };
   previousStyle: ElementLayoutStyleSnapshot;
+  previousStyles: Record<string, ElementLayoutStyleSnapshot>;
+  targetNodes: Record<string, HTMLElement>;
   snapTargets: {
     vertical: SnapTarget[];
     horizontal: SnapTarget[];
@@ -73,11 +78,12 @@ interface UseBlockManipulationOptions {
   activeSlide: SlideModel | undefined;
   selectedElement: EditableElement | undefined;
   selectedElementId: string | null;
+  selectedElementIds: string[];
   selectedStageRect: StageRect | null;
   iframeRef: RefObject<HTMLIFrameElement | null>;
   stageGeometry: StageGeometry;
   isEditingText: boolean;
-  onCommitOperation: (operation: ElementLayoutUpdateOperation) => void;
+  onCommitOperation: (operation: ElementLayoutUpdateOperation | SlideBatchOperation) => void;
 }
 
 interface UseBlockManipulationResult {
@@ -129,6 +135,7 @@ function useBlockManipulation({
   activeSlide,
   selectedElement,
   selectedElementId,
+  selectedElementIds,
   selectedStageRect,
   iframeRef,
   stageGeometry,
@@ -244,6 +251,29 @@ function useBlockManipulation({
       if (!rootNode || !targetNode) {
         return;
       }
+      const movableElementIds =
+        mode === "move"
+          ? selectedElementIds.filter((elementId) => {
+              const element = activeSlide.elements.find((candidate) => candidate.id === elementId);
+              return isLayoutEditable(element);
+            })
+          : [selectedElementId];
+      const targetNodes = Object.fromEntries(
+        movableElementIds
+          .map((elementId) => [elementId, querySlideElement<HTMLElement>(doc, elementId)] as const)
+          .filter((entry): entry is [string, HTMLElement] => Boolean(entry[1]))
+      );
+
+      if (!Object.keys(targetNodes).length) {
+        return;
+      }
+
+      const previousStyles = Object.fromEntries(
+        Object.entries(targetNodes).map(([elementId, node]) => [
+          elementId,
+          captureElementLayoutStyleSnapshot(node),
+        ])
+      );
       const iframeElement = iframeRef.current;
       const previousIframePointerEvents = iframeElement?.style.pointerEvents || "";
 
@@ -276,6 +306,7 @@ function useBlockManipulation({
       sessionRef.current = {
         slideId: activeSlide.id,
         elementId: selectedElementId,
+        elementIds: Object.keys(targetNodes),
         mode,
         resizeCorner,
         startPointer: { x: event.clientX, y: event.clientY },
@@ -285,7 +316,9 @@ function useBlockManipulation({
           x: startRect.left + startRect.width / 2,
           y: startRect.top + startRect.height / 2,
         },
-        previousStyle: captureElementLayoutStyleSnapshot(targetNode),
+        previousStyle: previousStyles[selectedElementId],
+        previousStyles,
+        targetNodes,
         snapTargets,
       };
       setIsManipulating(true);
@@ -297,6 +330,11 @@ function useBlockManipulation({
       const applySnapshot = (snapshot: ElementLayoutStyleSnapshot) => {
         for (const [key, value] of Object.entries(snapshot)) {
           targetNode.style[key as keyof CSSStyleDeclaration] = value ?? "";
+        }
+      };
+      const applySnapshotToNode = (node: HTMLElement, snapshot: ElementLayoutStyleSnapshot) => {
+        for (const [key, value] of Object.entries(snapshot)) {
+          node.style[key as keyof CSSStyleDeclaration] = value ?? "";
         }
       };
 
@@ -324,15 +362,26 @@ function useBlockManipulation({
 
           setTransientStageRect(snapResult.rect);
           setSnapGuides(snapResult.guides);
-          applySnapshot({
-            ...session.previousStyle,
-            transform: composeTransform(
-              transformParts.translateX + (snapResult.rect.x - session.startStageRect.x) / scale,
-              transformParts.translateY + (snapResult.rect.y - session.startStageRect.y) / scale,
-              transformParts.rotate
-            ),
-            transformOrigin: session.previousStyle.transformOrigin || "center center",
-          });
+          const deltaX = (snapResult.rect.x - session.startStageRect.x) / scale;
+          const deltaY = (snapResult.rect.y - session.startStageRect.y) / scale;
+          for (const elementId of session.elementIds) {
+            const node = session.targetNodes[elementId];
+            const previousStyle = session.previousStyles[elementId];
+            if (!node || !previousStyle) {
+              continue;
+            }
+
+            const elementTransformParts = parseTransformParts(previousStyle.transform);
+            applySnapshotToNode(node, {
+              ...previousStyle,
+              transform: composeTransform(
+                elementTransformParts.translateX + deltaX,
+                elementTransformParts.translateY + deltaY,
+                elementTransformParts.rotate
+              ),
+              transformOrigin: previousStyle.transformOrigin || "center center",
+            });
+          }
           return;
         }
 
@@ -446,20 +495,45 @@ function useBlockManipulation({
           return;
         }
 
-        const nextStyle = captureElementLayoutStyleSnapshot(targetNode);
-        if (JSON.stringify(nextStyle) === JSON.stringify(session.previousStyle)) {
+        const operations = session.elementIds
+          .map((elementId) => {
+            const node = session.targetNodes[elementId];
+            const previousStyle = session.previousStyles[elementId];
+            if (!node || !previousStyle) {
+              return null;
+            }
+
+            const nextStyle = captureElementLayoutStyleSnapshot(node);
+            if (JSON.stringify(nextStyle) === JSON.stringify(previousStyle)) {
+              return null;
+            }
+
+            return {
+              type: "element.layout.update" as const,
+              slideId: session.slideId,
+              elementId,
+              previousStyle,
+              nextStyle,
+              timestamp: Date.now(),
+            };
+          })
+          .filter((operation): operation is ElementLayoutUpdateOperation => Boolean(operation));
+
+        if (!operations.length) {
           setTransientStageRect(null);
           return;
         }
 
-        onCommitOperation({
-          type: "element.layout.update",
-          slideId: session.slideId,
-          elementId: session.elementId,
-          previousStyle: session.previousStyle,
-          nextStyle,
-          timestamp: Date.now(),
-        });
+        onCommitOperation(
+          operations.length === 1
+            ? operations[0]
+            : {
+                type: "operation.batch",
+                slideId: session.slideId,
+                operations: operations as AtomicSlideOperation[],
+                timestamp: Date.now(),
+              }
+        );
       };
 
       const onKeyDown = (keyEvent: KeyboardEvent) => {
@@ -478,7 +552,13 @@ function useBlockManipulation({
           return;
         }
 
-        applySnapshot(session.previousStyle);
+        for (const elementId of session.elementIds) {
+          const node = session.targetNodes[elementId];
+          const previousStyle = session.previousStyles[elementId];
+          if (node && previousStyle) {
+            applySnapshotToNode(node, previousStyle);
+          }
+        }
         setTransientStageRect(null);
       };
 
@@ -493,6 +573,7 @@ function useBlockManipulation({
       onCommitOperation,
       selectedElement,
       selectedElementId,
+      selectedElementIds,
       selectedStageRect,
       scale,
       offsetX,

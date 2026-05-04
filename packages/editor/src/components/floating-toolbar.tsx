@@ -176,8 +176,9 @@ function FloatingToolbar({
     }
 
     const rect = node.getBoundingClientRect();
-    const baseLeft = rect.left - toolbarOffsetX;
-    const baseRight = rect.right - toolbarOffsetX;
+    const selectionCenterX = selectionOverlay.x + selectionOverlay.width / 2;
+    const baseLeft = selectionCenterX - rect.width / 2;
+    const baseRight = baseLeft + rect.width;
     const viewportPadding = 16;
     let nextOffsetX = 0;
 
@@ -192,7 +193,7 @@ function FloatingToolbar({
     if (shouldUpdateOffset(toolbarOffsetX, nextOffsetX)) {
       setToolbarOffsetX(nextOffsetX);
     }
-  });
+  }, [selectionOverlay.width, selectionOverlay.x, toolbarOffsetX]);
 
   useEffect(() => {
     function closeOnOutsidePointer(event: MouseEvent) {
@@ -683,11 +684,15 @@ function ToolbarPanel({
     }
 
     const rect = panel.getBoundingClientRect();
+    const toolbar = panel.closest('[data-testid="floating-toolbar-anchor"]');
+    const toolbarRect = toolbar instanceof HTMLElement ? toolbar.getBoundingClientRect() : null;
+    const baseLeft = toolbarRect ? toolbarRect.left + left : rect.left - offset.x;
+    const baseTop = toolbarRect ? toolbarRect.bottom + 8 : rect.top - offset.y;
     const baseRect = {
-      bottom: rect.bottom - offset.y,
-      left: rect.left - offset.x,
-      right: rect.right - offset.x,
-      top: rect.top - offset.y,
+      bottom: baseTop + rect.height,
+      left: baseLeft,
+      right: baseLeft + rect.width,
+      top: baseTop,
     };
     const viewportPadding = 16;
     let nextX = 0;
@@ -712,7 +717,7 @@ function ToolbarPanel({
     if (shouldUpdateOffset(offset.x, nextX) || shouldUpdateOffset(offset.y, nextY)) {
       setOffset({ x: nextX, y: nextY });
     }
-  });
+  }, [left, offset.x, offset.y]);
 
   const widthClassName =
     width === "narrow"

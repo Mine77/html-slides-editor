@@ -1,6 +1,5 @@
 import {
   type AtomicSlideOperation,
-  type EditableElement,
   type ElementInsertOperation,
   type ElementLayoutUpdateOperation,
   type ElementRemoveOperation,
@@ -39,7 +38,6 @@ interface SlideRect {
 
 interface UseEditorKeyboardShortcutsOptions {
   activeSlide: SlideModel | undefined;
-  selectedElements: EditableElement[];
   selectedElementIds: string[];
   iframeRef: RefObject<HTMLIFrameElement | null>;
   slideWidth: number;
@@ -125,7 +123,6 @@ function createIdMapForCopiedElement(html: string, sourceElementId: string, next
 
 function useEditorKeyboardShortcuts({
   activeSlide,
-  selectedElements,
   selectedElementIds,
   iframeRef,
   slideWidth,
@@ -139,27 +136,38 @@ function useEditorKeyboardShortcuts({
   onRedo,
 }: UseEditorKeyboardShortcutsOptions) {
   const clipboardRef = useRef<ClipboardPayload | null>(null);
+  const activeSlideRef = useRef(activeSlide);
+  const selectedElementIdsRef = useRef(selectedElementIds);
+  const canUndoRef = useRef(canUndo);
+  const canRedoRef = useRef(canRedo);
+  const isEditingTextRef = useRef(isEditingText);
+
+  activeSlideRef.current = activeSlide;
+  selectedElementIdsRef.current = selectedElementIds;
+  canUndoRef.current = canUndo;
+  canRedoRef.current = canRedo;
+  isEditingTextRef.current = isEditingText;
 
   useEffect(() => {
     const copySelection = () => {
-      if (!activeSlide || !selectedElementIds.length) {
+      const currentSlide = activeSlideRef.current;
+      const currentSelectedElementIds = selectedElementIdsRef.current;
+      if (!currentSlide || !currentSelectedElementIds.length) {
         return false;
       }
 
       const doc = iframeRef.current?.contentDocument;
-      const rootNode = activeSlide
-        ? doc?.querySelector<HTMLElement>(activeSlide.rootSelector)
-        : null;
+      const rootNode = doc?.querySelector<HTMLElement>(currentSlide.rootSelector);
       const rootRect = rootNode?.getBoundingClientRect();
 
       if (!rootRect) {
         return false;
       }
 
-      const elements = selectedElementIds
+      const elements = currentSelectedElementIds
         .map((elementId) => {
-          const html = getSlideElementHtml(activeSlide.htmlSource, elementId);
-          const placement = createElementPlacement(activeSlide.htmlSource, elementId);
+          const html = getSlideElementHtml(currentSlide.htmlSource, elementId);
+          const placement = createElementPlacement(currentSlide.htmlSource, elementId);
           const node = doc ? querySlideElement<HTMLElement>(doc, elementId) : null;
           if (!html || !placement || !node) {
             return null;
@@ -195,21 +203,23 @@ function useEditorKeyboardShortcuts({
     };
 
     const removeSelection = () => {
-      if (!activeSlide || !selectedElementIds.length) {
+      const currentSlide = activeSlideRef.current;
+      const currentSelectedElementIds = selectedElementIdsRef.current;
+      if (!currentSlide || !currentSelectedElementIds.length) {
         return false;
       }
 
-      const operations = selectedElementIds
+      const operations = currentSelectedElementIds
         .map((elementId) => {
-          const html = getSlideElementHtml(activeSlide.htmlSource, elementId);
-          const placement = createElementPlacement(activeSlide.htmlSource, elementId);
+          const html = getSlideElementHtml(currentSlide.htmlSource, elementId);
+          const placement = createElementPlacement(currentSlide.htmlSource, elementId);
           if (!html || !placement) {
             return null;
           }
 
           return {
             type: "element.remove" as const,
-            slideId: activeSlide.id,
+            slideId: currentSlide.id,
             elementId,
             ...placement,
             html,
@@ -222,19 +232,20 @@ function useEditorKeyboardShortcuts({
         return false;
       }
 
-      commitOperations(activeSlide.id, operations, onCommitOperation);
+      commitOperations(currentSlide.id, operations, onCommitOperation);
       onSelectElementIds([]);
       return true;
     };
 
     const pasteSelection = (payload = clipboardRef.current) => {
-      if (!activeSlide || !payload) {
+      const currentSlide = activeSlideRef.current;
+      if (!currentSlide || !payload) {
         return false;
       }
 
-      let htmlSource = activeSlide.htmlSource;
+      let htmlSource = currentSlide.htmlSource;
       const nextElementIds: string[] = [];
-      const slideBounds = getSlideBounds(iframeRef, activeSlide, {
+      const slideBounds = getSlideBounds(iframeRef, currentSlide, {
         width: slideWidth,
         height: slideHeight,
       });
@@ -261,7 +272,7 @@ function useEditorKeyboardShortcuts({
 
         return {
           type: "element.insert" as const,
-          slideId: activeSlide.id,
+          slideId: currentSlide.id,
           elementId: nextElementId,
           parentElementId: null,
           previousSiblingElementId: null,
@@ -271,7 +282,7 @@ function useEditorKeyboardShortcuts({
         };
       });
 
-      commitOperations(activeSlide.id, operations, onCommitOperation);
+      commitOperations(currentSlide.id, operations, onCommitOperation);
       onSelectElementIds(nextElementIds);
       clipboardRef.current = {
         elements: pastedElements,
@@ -282,17 +293,21 @@ function useEditorKeyboardShortcuts({
 
     const moveSelection = (event: KeyboardEvent) => {
       const delta = ARROW_DELTAS[event.key];
-      if (!activeSlide || !selectedElementIds.length || !delta) {
+      const currentSlide = activeSlideRef.current;
+      const currentSelectedElementIds = selectedElementIdsRef.current;
+      if (!currentSlide || !currentSelectedElementIds.length || !delta) {
         return false;
       }
 
       const doc = iframeRef.current?.contentDocument;
       const step = getShortcutStep(event);
-      const operations = selectedElementIds
-        .filter((elementId) =>
-          isLayoutEditable(selectedElements.find((element) => element.id === elementId))
-        )
+      const operations = currentSelectedElementIds
         .map((elementId) => {
+          const element = currentSlide.elements.find((candidate) => candidate.id === elementId);
+          if (!isLayoutEditable(element)) {
+            return null;
+          }
+
           const node = doc ? querySlideElement<HTMLElement>(doc, elementId) : null;
           if (!node) {
             return null;
@@ -302,7 +317,6 @@ function useEditorKeyboardShortcuts({
           const transformParts = parseTransformParts(previousStyle.transform);
           const nextStyle = {
             ...previousStyle,
-            position: previousStyle.position || "relative",
             transform: composeTransform(
               transformParts.translateX + delta.x * step,
               transformParts.translateY + delta.y * step,
@@ -313,7 +327,7 @@ function useEditorKeyboardShortcuts({
 
           return {
             type: "element.layout.update" as const,
-            slideId: activeSlide.id,
+            slideId: currentSlide.id,
             elementId,
             previousStyle,
             nextStyle,
@@ -322,17 +336,19 @@ function useEditorKeyboardShortcuts({
         })
         .filter((operation): operation is ElementLayoutUpdateOperation => Boolean(operation));
 
-      commitOperations(activeSlide.id, operations, onCommitOperation);
+      commitOperations(currentSlide.id, operations, onCommitOperation);
       return true;
     };
 
     const commitLayerAction = (direction: "front" | "forward" | "backward" | "back") => {
-      if (!activeSlide || !selectedElementIds.length) {
+      const currentSlide = activeSlideRef.current;
+      const currentSelectedElementIds = selectedElementIdsRef.current;
+      if (!currentSlide || !currentSelectedElementIds.length) {
         return false;
       }
 
       const doc = iframeRef.current?.contentDocument;
-      const operations = selectedElementIds
+      const operations = currentSelectedElementIds
         .map((elementId) => {
           const node = doc ? querySlideElement<HTMLElement>(doc, elementId) : null;
           if (!node) {
@@ -359,7 +375,7 @@ function useEditorKeyboardShortcuts({
 
           return {
             type: "element.layout.update" as const,
-            slideId: activeSlide.id,
+            slideId: currentSlide.id,
             elementId,
             previousStyle,
             nextStyle,
@@ -368,11 +384,11 @@ function useEditorKeyboardShortcuts({
         })
         .filter((operation): operation is ElementLayoutUpdateOperation => Boolean(operation));
 
-      return commitOperations(activeSlide.id, operations, onCommitOperation);
+      return commitOperations(currentSlide.id, operations, onCommitOperation);
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isEditingText) {
+      if (event.defaultPrevented || isEditingTextRef.current) {
         return;
       }
 
@@ -383,10 +399,10 @@ function useEditorKeyboardShortcuts({
       const isEditableTarget = isEditableElementTarget(event.target);
       let handled = false;
 
-      if (isUndo && canUndo) {
+      if (isUndo && canUndoRef.current) {
         onUndo();
         handled = true;
-      } else if (isRedo && canRedo) {
+      } else if (isRedo && canRedoRef.current) {
         onRedo();
         handled = true;
       } else if (isEditableTarget) {
@@ -402,7 +418,7 @@ function useEditorKeyboardShortcuts({
       } else if (event.key === "Backspace" || event.key === "Delete") {
         handled = removeSelection();
       } else if (event.key === "Escape") {
-        if (selectedElementIds.length) {
+        if (selectedElementIdsRef.current.length) {
           onSelectElementIds([]);
           handled = true;
         }
@@ -421,28 +437,17 @@ function useEditorKeyboardShortcuts({
     };
 
     const iframeDocument = iframeRef.current?.contentDocument;
+    const iframeWindow = iframeRef.current?.contentWindow;
     window.addEventListener("keydown", onKeyDown);
+    iframeWindow?.addEventListener("keydown", onKeyDown);
     iframeDocument?.addEventListener("keydown", onKeyDown);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      iframeWindow?.removeEventListener("keydown", onKeyDown);
       iframeDocument?.removeEventListener("keydown", onKeyDown);
     };
-  }, [
-    activeSlide,
-    canRedo,
-    canUndo,
-    iframeRef,
-    isEditingText,
-    onCommitOperation,
-    onRedo,
-    onSelectElementIds,
-    onUndo,
-    selectedElements,
-    selectedElementIds,
-    slideHeight,
-    slideWidth,
-  ]);
+  }, [iframeRef, onCommitOperation, onRedo, onSelectElementIds, onUndo, slideHeight, slideWidth]);
 }
 
 function commitOperations(
