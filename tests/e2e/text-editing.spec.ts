@@ -921,6 +921,71 @@ test("multi-select copy paste duplicates the selected set", async ({ page }) => 
   expect(Math.abs(secondRestoredCopyRect.y - secondCopyRect.y)).toBeLessThanOrEqual(0.5);
 });
 
+test("multi-select keyboard arrows move sibling snap cards together", async ({ page }) => {
+  await gotoEditor(page);
+  await page.getByLabel("Slide 12").click();
+
+  const frame = coverFrame(page);
+  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const { selectionOverlay } = getHistoryControls(page);
+
+  await firstCard.locator(".snap-drag-surface").click();
+  await secondCard.locator(".snap-drag-surface").click({ modifiers: ["Shift"] });
+  await expect(selectionOverlay).toBeVisible();
+
+  const firstBefore = await getSlideElementRect(firstCard);
+  const secondBefore = await getSlideElementRect(secondCard);
+
+  await page.keyboard.press("ArrowDown");
+
+  const firstAfter = await getSlideElementRect(firstCard);
+  const secondAfter = await getSlideElementRect(secondCard);
+  expect(firstAfter.y - firstBefore.y).toBeCloseTo(5, 0);
+  expect(secondAfter.y - secondBefore.y).toBeCloseTo(5, 0);
+
+  await page.keyboard.press(`${MODIFIER}+Z`);
+
+  const firstRestored = await getSlideElementRect(firstCard);
+  const secondRestored = await getSlideElementRect(secondCard);
+  expect(firstRestored.y).toBeCloseTo(firstBefore.y, 0);
+  expect(secondRestored.y).toBeCloseTo(secondBefore.y, 0);
+});
+
+test("multi-select overlay drag moves sibling snap cards together", async ({ page }) => {
+  await gotoEditor(page);
+  await page.getByLabel("Slide 12").click();
+
+  const frame = coverFrame(page);
+  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const { selectionOverlay } = getHistoryControls(page);
+
+  await firstCard.locator(".snap-drag-surface").click();
+  await secondCard.locator(".snap-drag-surface").click({ modifiers: ["Shift"] });
+  await expect(selectionOverlay).toBeVisible();
+
+  const firstBefore = await getSlideElementRect(firstCard);
+  const secondBefore = await getSlideElementRect(secondCard);
+  const overlayBefore = await getRequiredBoundingBox(selectionOverlay, "multi-selection overlay");
+  const start = {
+    x: overlayBefore.x + overlayBefore.width / 2,
+    y: overlayBefore.y + overlayBefore.height / 2,
+  };
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 50, start.y + 40, { steps: 8 });
+  await page.mouse.up();
+
+  const firstAfter = await getSlideElementRect(firstCard);
+  const secondAfter = await getSlideElementRect(secondCard);
+  expect(firstAfter.x).toBeGreaterThan(firstBefore.x + 20);
+  expect(firstAfter.y).toBeGreaterThan(firstBefore.y + 15);
+  expect(secondAfter.x).toBeGreaterThan(secondBefore.x + 20);
+  expect(secondAfter.y).toBeGreaterThan(secondBefore.y + 15);
+});
+
 test("text editing persists after refresh because the generated html file is rewritten", async ({
   page,
 }) => {
@@ -1060,14 +1125,17 @@ test("text editing allows deleting a partial keyboard selection before commit", 
   await editableHeading.dblclick();
   await editableHeading.press("End");
 
-  for (let index = 0; index < "Editor".length; index += 1) {
+  const deletedSuffix = HERO_KICKER.split(/\s+/).at(-1) ?? "";
+  for (let index = 0; index < deletedSuffix.length; index += 1) {
     await editableHeading.press("Shift+ArrowLeft");
   }
 
   await page.keyboard.press("Backspace");
   await page.keyboard.press("Enter");
 
-  await expect(editableHeading).toHaveText("HTML Slides ");
+  await expect(editableHeading).toHaveText(
+    `${HERO_KICKER.slice(0, -deletedSuffix.length).trimEnd()} `
+  );
 });
 
 test("text editing preserves a real dragged partial selection inside the active element", async ({
