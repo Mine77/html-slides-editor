@@ -20,15 +20,15 @@ function EditorHeader({
   const InspectorIcon = isInspectorOpen ? PanelRightClose : PanelRightOpen;
 
   return (
-    <header className="flex min-h-[72px] items-center justify-between gap-5 border-b border-border/70 bg-card/90 px-6 py-3 backdrop-blur-md max-[1200px]:flex-col max-[1200px]:items-start">
+    <header className="flex min-h-14 items-center justify-between gap-4 border-b border-foreground/[0.08] bg-white px-5 py-2.5 max-[1200px]:flex-col max-[1200px]:items-start">
       <div className="grid min-w-0 gap-1">
         <div className="flex min-w-0 items-center gap-4">
-          <h1 className="min-w-0 flex-1 truncate text-[22px] font-semibold leading-tight">
+          <h1 className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-tight text-foreground">
             {deckTitle}
           </h1>
           {isSaving ? (
             <span
-              className="inline-flex h-[22px] shrink-0 items-center rounded-md border border-border bg-secondary px-2.5 text-[11px] font-medium leading-none text-muted-foreground"
+              className="inline-flex h-5 shrink-0 items-center rounded-md border border-foreground/[0.08] bg-foreground/[0.03] px-2 text-[10px] font-medium uppercase leading-none tracking-wider text-foreground/45"
               aria-live="polite"
             >
               saving...
@@ -36,11 +36,11 @@ function EditorHeader({
           ) : null}
         </div>
         <div className="flex min-w-0 items-center gap-3">
-          <p className="m-0 min-w-0 truncate text-[13px] text-muted-foreground">{sourceLabel}</p>
+          <p className="m-0 min-w-0 truncate text-[12px] text-foreground/45">{sourceLabel}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 max-[1200px]:w-full max-[1200px]:justify-end">
+      <div className="flex items-center gap-1 max-[1200px]:w-full max-[1200px]:justify-end">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -59,7 +59,12 @@ function EditorHeader({
             {isInspectorOpen ? "Hide advanced panel" : "Show advanced panel"}
           </TooltipContent>
         </Tooltip>
-        <Button type="button" aria-label="Present slides" title="Present mode UI placeholder">
+        <Button
+          type="button"
+          variant="outline"
+          aria-label="Present slides"
+          title="Present mode UI placeholder"
+        >
           Present
         </Button>
       </div>

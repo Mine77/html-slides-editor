@@ -32,6 +32,7 @@ export function useSlidesData(): SlidesDataResult {
   const saveTimerRef = useRef<number | null>(null);
   const saveRequestIdRef = useRef(0);
   const isSaveInFlightRef = useRef(false);
+  const clientLoadedAtRef = useRef(Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +113,7 @@ export function useSlidesData(): SlidesDataResult {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        clientLoadedAt: clientLoadedAtRef.current,
         slides: nextSlides.map((slide) => ({
           file: slide.sourceFile ?? sourceFileBySlideId.get(slide.id),
           htmlSource: slide.htmlSource,

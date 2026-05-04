@@ -18,6 +18,7 @@ const GENERATED_BASELINE_DIR = path.resolve(workspaceRoot, ".tmp/generated-deck-
 const NOT_FOUND_ERROR_CODE = "ENOENT";
 
 interface SaveGeneratedDeckPayload {
+  clientLoadedAt?: number;
   slides?: Array<{
     file?: string;
     htmlSource?: string;
@@ -26,6 +27,8 @@ interface SaveGeneratedDeckPayload {
 
 function createSaveGeneratedDeckPlugin() {
   let activeTargets = [GENERATED_PUBLIC_DIR, GENERATED_DIST_DIR, GENERATED_SOURCE_ROOT];
+  let lastResetCompletedAt = 0;
+  let deckOperationQueue: Promise<void> = Promise.resolve();
 
   async function resetDirectory(targetDir: string) {
     await fs.rm(targetDir, { recursive: true, force: true });
@@ -97,6 +100,18 @@ function createSaveGeneratedDeckPlugin() {
 
     const body = Buffer.concat(chunks).toString("utf8");
     const payload = JSON.parse(body) as SaveGeneratedDeckPayload;
+    const clientLoadedAt =
+      typeof payload.clientLoadedAt === "number" && Number.isFinite(payload.clientLoadedAt)
+        ? payload.clientLoadedAt
+        : Number.POSITIVE_INFINITY;
+
+    if (clientLoadedAt < lastResetCompletedAt) {
+      response.statusCode = 200;
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify({ ok: true, stale: true }));
+      return;
+    }
+
     const slides = payload.slides?.filter(
       (slide): slide is { file: string; htmlSource: string } =>
         typeof slide.file === "string" && typeof slide.htmlSource === "string"
@@ -133,10 +148,20 @@ function createSaveGeneratedDeckPlugin() {
         await copyDirectory(GENERATED_BASELINE_DIR, targetRoot);
       })
     );
+    lastResetCompletedAt = Date.now();
 
     response.statusCode = 200;
     response.setHeader("Content-Type", "application/json");
     response.end(JSON.stringify({ ok: true }));
+  }
+
+  async function runDeckOperation(operation: () => Promise<void>) {
+    const nextOperation = deckOperationQueue.then(operation, operation);
+    deckOperationQueue = nextOperation.then(
+      () => undefined,
+      () => undefined
+    );
+    await nextOperation;
   }
 
   return {
@@ -148,7 +173,7 @@ function createSaveGeneratedDeckPlugin() {
       server.middlewares.use(async (request, response, next) => {
         if (request.method === "POST" && request.url === RESET_ROUTE) {
           try {
-            await handleResetRequest(response);
+            await runDeckOperation(() => handleResetRequest(response));
           } catch (error) {
             response.statusCode = 500;
             response.setHeader("Content-Type", "application/json");
@@ -167,7 +192,7 @@ function createSaveGeneratedDeckPlugin() {
         }
 
         try {
-          await handleSaveRequest(request, response);
+          await runDeckOperation(() => handleSaveRequest(request, response));
         } catch (error) {
           response.statusCode = 500;
           response.setHeader("Content-Type", "application/json");
@@ -183,7 +208,7 @@ function createSaveGeneratedDeckPlugin() {
       server.middlewares.use(async (request, response, next) => {
         if (request.method === "POST" && request.url === RESET_ROUTE) {
           try {
-            await handleResetRequest(response);
+            await runDeckOperation(() => handleResetRequest(response));
           } catch (error) {
             response.statusCode = 500;
             response.setHeader("Content-Type", "application/json");
@@ -202,7 +227,7 @@ function createSaveGeneratedDeckPlugin() {
         }
 
         try {
-          await handleSaveRequest(request, response);
+          await runDeckOperation(() => handleSaveRequest(request, response));
         } catch (error) {
           response.statusCode = 500;
           response.setHeader("Content-Type", "application/json");

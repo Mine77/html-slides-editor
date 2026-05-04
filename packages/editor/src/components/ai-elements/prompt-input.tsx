@@ -9,7 +9,7 @@ function PromptInput({ className, ...props }: React.ComponentProps<"form">) {
     <form
       data-slot="prompt-input"
       className={cn(
-        "flex flex-none flex-col gap-2.5 rounded-[14px] border border-border bg-card/80 p-2.5 shadow-[0_10px_28px_rgba(98,70,37,0.07)]",
+        "flex flex-none flex-col gap-2 rounded-xl border border-foreground/[0.08] bg-white p-2 shadow-[0_2px_12px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)]",
         className
       )}
       {...props}
@@ -22,7 +22,7 @@ function PromptInputTextarea({ className, ...props }: React.ComponentProps<"text
     <Textarea
       data-slot="prompt-input-textarea"
       className={cn(
-        "min-h-[86px] max-h-[140px] resize-y border-0 bg-transparent p-0 text-[13px] leading-normal shadow-none focus-visible:ring-0",
+        "min-h-[86px] max-h-[140px] resize-y border-0 bg-transparent p-0 text-[13px] leading-normal shadow-none hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0",
         className
       )}
       {...props}

@@ -27,7 +27,7 @@ function SlideSidebar({
 
   return (
     <aside
-      className="group/sidebar relative flex min-h-0 min-w-0 basis-[132px] items-stretch justify-start overflow-hidden bg-transparent p-3.5 transition-[flex-basis,width,opacity] duration-200 ease-out after:absolute after:inset-y-1.5 after:right-0 after:w-px after:bg-border hover:basis-[272px] focus-within:basis-[272px] max-[1200px]:basis-auto max-[1200px]:p-0 max-[1200px]:pb-2.5 max-[1200px]:after:inset-x-0 max-[1200px]:after:inset-y-auto max-[1200px]:after:bottom-0 max-[1200px]:after:h-px max-[1200px]:after:w-auto"
+      className="group/sidebar relative flex min-h-0 min-w-0 basis-[124px] items-stretch justify-start overflow-hidden bg-transparent p-3 transition-[flex-basis,width,opacity] duration-200 ease-out after:absolute after:inset-y-1.5 after:right-0 after:w-px after:bg-foreground/10 hover:basis-[260px] focus-within:basis-[260px] max-[1200px]:basis-auto max-[1200px]:p-0 max-[1200px]:pb-2.5 max-[1200px]:after:inset-x-0 max-[1200px]:after:inset-y-auto max-[1200px]:after:bottom-0 max-[1200px]:after:h-px max-[1200px]:after:w-auto"
       data-testid="slide-sidebar"
     >
       <div
@@ -36,7 +36,7 @@ function SlideSidebar({
       >
         <div className="flex min-h-7 items-center pt-1">
           <span
-            className="inline-block text-[11px] uppercase tracking-[0.16em] text-muted-foreground"
+            className="inline-block text-[10px] font-medium uppercase tracking-wider text-foreground/40"
             data-testid="slide-count"
           >
             {slideCount} slide{slideCount === 1 ? "" : "s"}
@@ -64,9 +64,9 @@ function SlideSidebar({
               >
                 <div
                   className={cn(
-                    "relative aspect-video w-full overflow-hidden rounded-[14px] border-2 border-transparent bg-transparent transition-[border-color,box-shadow,border-radius] duration-150 group-[:not(:hover):not(:focus-within)]/sidebar:rounded-xl",
+                    "relative aspect-video w-full overflow-hidden rounded-xl border border-foreground/[0.08] bg-white transition-[border-color,box-shadow,border-radius] duration-150 group-[:not(:hover):not(:focus-within)]/sidebar:rounded-lg",
                     slide.id === activeSlideId &&
-                      "border-primary shadow-[0_0_0_1px_rgba(255,250,243,0.92)]"
+                      "border-foreground/25 shadow-[0_0_0_2px_rgba(255,255,255,0.9),0_0_0_4px_rgba(0,0,0,0.08)]"
                   )}
                   data-testid="slide-thumbnail"
                 >
@@ -75,22 +75,22 @@ function SlideSidebar({
                       alt={`Slide ${index + 1}`}
                       className={cn(
                         "block size-full bg-transparent object-cover",
-                        slide.id === activeSlideId && "shadow-[inset_0_0_0_2px_var(--primary)]"
+                        slide.id === activeSlideId && "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]"
                       )}
                       src={thumbnails[slide.id]}
                     />
                   ) : (
                     <div
                       className={cn(
-                        "grid size-full place-items-center bg-gradient-to-br from-card/80 to-card/40",
-                        slide.id === activeSlideId && "shadow-[inset_0_0_0_2px_var(--primary)]"
+                        "grid size-full place-items-center bg-foreground/[0.03]",
+                        slide.id === activeSlideId && "shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]"
                       )}
                       aria-hidden="true"
                     >
                       <span className="size-[18px] animate-spin rounded-full border-[1.5px] border-foreground/15 border-t-foreground/45" />
                     </div>
                   )}
-                  <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-foreground/60 px-2 py-1 text-[11px] uppercase tracking-[0.08em] text-background opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
+                  <span className="pointer-events-none absolute right-2 top-2 rounded-md bg-foreground/65 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-background opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
                     {index + 1}
                   </span>
                 </div>

@@ -98,7 +98,7 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
         }}
       >
         <span
-          className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-current shadow-[0_2px_8px_rgba(17,24,39,0.26)]"
+          className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-current shadow-[0_2px_8px_rgba(0,0,0,0.22)]"
           aria-hidden="true"
           style={{
             color: normalizedHex,
@@ -125,7 +125,7 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
         }}
       >
         <span
-          className="pointer-events-none absolute -top-0.5 size-4 -translate-x-1/2 rounded-full border-2 border-white bg-current shadow-[0_2px_8px_rgba(17,24,39,0.24)]"
+          className="pointer-events-none absolute -top-0.5 size-4 -translate-x-1/2 rounded-full border-2 border-white bg-current shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
           aria-hidden="true"
           style={{ color: hueColor, left: `${(hsv.h / 360) * 100}%` }}
         />
@@ -133,15 +133,13 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
 
       <div className="grid grid-cols-[40px_auto_minmax(0,1fr)] items-center gap-2">
         <span
-          className="size-10 rounded-[10px] border-0 shadow-[0_1px_4px_rgba(76,57,36,0.14)]"
+          className="size-10 rounded-md border border-foreground/10 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
           style={{ background: normalizedHex }}
           aria-hidden="true"
         />
-        <span className="font-mono text-sm font-semibold leading-none text-muted-foreground">
-          #
-        </span>
+        <span className="font-mono text-sm font-medium leading-none text-foreground/45">#</span>
         <Input
-          className="h-[38px] rounded-[10px] bg-card/75 px-2 font-mono text-sm font-semibold uppercase"
+          className="h-8 rounded-md bg-foreground/[0.03] px-2 font-mono text-sm font-medium uppercase"
           type="text"
           value={hexInput}
           spellCheck={false}
@@ -160,7 +158,7 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
       </div>
 
       <section className="grid gap-1.5" aria-label="Preset colors">
-        <div className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted-foreground">
+        <div className="text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
           Presets
         </div>
         <div className="grid grid-cols-12 gap-1">
@@ -168,9 +166,9 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
             <button
               key={color}
               className={cn(
-                "aspect-square min-w-0 cursor-pointer rounded-[10px] border-0 shadow-[0_1px_4px_rgba(76,57,36,0.12)] transition-[transform,box-shadow,outline-color] duration-150 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "aspect-square min-w-0 cursor-pointer rounded-md border border-foreground/10 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-[box-shadow,outline-color,border-color] duration-150 hover:border-foreground/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 color.toLowerCase() === value.toLowerCase() &&
-                  "shadow-[0_0_0_2px_white,0_0_0_4px_var(--primary)]"
+                  "shadow-[0_0_0_2px_white,0_0_0_4px_rgba(0,0,0,0.18)]"
               )}
               type="button"
               style={{ background: color }}
@@ -185,7 +183,7 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
 
       {includeGradients ? (
         <section className="grid gap-1.5" aria-label="Preset gradients">
-          <div className="text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted-foreground">
+          <div className="text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
             Gradients
           </div>
           <div className="grid grid-cols-6 gap-1.5">
@@ -193,8 +191,8 @@ function ColorPicker({ value, includeGradients = true, onChange }: ColorPickerPr
               <button
                 key={gradient}
                 className={cn(
-                  "h-8 cursor-pointer rounded-[10px] border-0 shadow-[0_1px_5px_rgba(76,57,36,0.12)] transition-[transform,box-shadow,outline-color] duration-150 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  gradient === value && "shadow-[0_0_0_2px_white,0_0_0_4px_var(--primary)]"
+                  "h-8 cursor-pointer rounded-md border border-foreground/10 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-[box-shadow,outline-color,border-color] duration-150 hover:border-foreground/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  gradient === value && "shadow-[0_0_0_2px_white,0_0_0_4px_rgba(0,0,0,0.18)]"
                 )}
                 type="button"
                 style={{ background: gradient }}

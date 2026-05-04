@@ -2,9 +2,9 @@ import {
   type AttributeUpdateOperation,
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
-  SELECTOR_ATTR,
-  type ElementRemoveOperation,
   type ElementInsertOperation,
+  type ElementRemoveOperation,
+  SELECTOR_ATTR,
   type SlideModel,
   type StyleUpdateOperation,
   createElementPlacement,
@@ -309,7 +309,7 @@ function SlidesEditor({
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen flex-col overflow-hidden">
+      <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
         <EditorHeader
           deckTitle={resolvedDeckTitle}
           sourceLabel={sourceLabel}
@@ -320,7 +320,7 @@ function SlidesEditor({
           }}
         />
 
-        <div className="flex min-h-0 flex-auto gap-[18px] overflow-hidden max-[1200px]:block">
+        <div className="flex min-h-0 flex-auto gap-3 overflow-hidden max-[1200px]:block">
           <SlideSidebar
             slides={slides}
             activeSlideId={activeSlide.id}

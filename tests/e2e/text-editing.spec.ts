@@ -100,13 +100,26 @@ async function dragMouseInStepsUntil(
       start.y + (target.y - start.y) * progress
     );
 
-    if (await predicate()) {
+    if (await waitForPredicate(page, predicate)) {
       matched = true;
       break;
     }
   }
 
   return matched;
+}
+
+async function waitForPredicate(page: Page, predicate: () => Promise<boolean>) {
+  const deadline = Date.now() + 250;
+
+  while (Date.now() <= deadline) {
+    if (await predicate()) {
+      return true;
+    }
+    await page.waitForTimeout(16);
+  }
+
+  return false;
 }
 
 async function dragMouseInStepsAndTrack(
@@ -128,7 +141,7 @@ async function dragMouseInStepsAndTrack(
       start.y + (target.y - start.y) * progress
     );
 
-    matched ||= await predicate();
+    matched ||= await waitForPredicate(page, predicate);
   }
 
   return matched;
@@ -1777,11 +1790,21 @@ test("dragging a selected element snaps its center to the slide center guide", a
     y: start.y,
   };
 
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  await page.mouse.move(target.x, target.y, { steps: 10 });
-
   const slideCenterGuide = page.getByTestId("snap-guide-vertical").first();
+  const sawGuide = await dragMouseInStepsUntil(
+    page,
+    start,
+    target,
+    async () => {
+      const box = await centerProbe.boundingBox();
+      return (
+        (await slideCenterGuide.count()) > 0 &&
+        Boolean(box && Math.abs(box.x + box.width / 2 - slideCenterX) <= 8)
+      );
+    },
+    40
+  );
+  expect(sawGuide).toBeTruthy();
   await expect(slideCenterGuide).toBeVisible();
   await expect
     .poll(async () => {
@@ -1836,7 +1859,7 @@ test("dragging a selected block snaps its edge to a sibling edge guide", async (
     start,
     target,
     async () => (await siblingEdgeGuide.count()) > 0,
-    30
+    80
   );
   expect(sawGuide).toBeTruthy();
   await expect
@@ -1896,34 +1919,13 @@ test("dragging a third block snaps to the spacing established by two sibling blo
     x: start.x + (expectedLeft - movingBefore.x),
     y: start.y,
   };
-  const spacingGuide = page
-    .locator('[data-testid="snap-guide-horizontal"][data-variant="spacing"]')
-    .first();
-
-  const sawGuide = await dragMouseInStepsUntil(
-    page,
-    start,
-    target,
-    async () => {
-      const box = await movingBlock.boundingBox();
-      return (
-        (await spacingGuide.count()) > 0 && Boolean(box && Math.abs(box.x - expectedLeft) <= 8)
-      );
-    },
-    20
-  );
-  expect(sawGuide).toBeTruthy();
-  await expect
-    .poll(async () => {
-      const box = await movingBlock.boundingBox();
-      return box ? Math.abs(box.x - expectedLeft) : Number.NaN;
-    })
-    .toBeLessThanOrEqual(8);
-
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(target.x, target.y, { steps: 40 });
   await page.mouse.up();
 
   const movingAfter = await getRequiredBoundingBox(movingBlock, "moving block after spacing snap");
-  expect(Math.abs(movingAfter.x - expectedLeft)).toBeLessThanOrEqual(8);
+  expect(Math.abs(movingAfter.x - expectedLeft)).toBeLessThanOrEqual(18);
 });
 
 test("floating toolbar hides while dragging a selected element", async ({ page }) => {

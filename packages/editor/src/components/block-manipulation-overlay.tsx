@@ -46,7 +46,7 @@ function BlockManipulationOverlay({
   onRotateHandleMouseDown,
 }: BlockManipulationOverlayProps) {
   const handleClassName =
-    "absolute z-[5] size-[15px] -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border-2 border-white bg-primary shadow-[0_8px_18px_rgba(76,57,36,0.18)] transition-transform duration-150 before:absolute before:inset-[2.5px] before:rounded-full before:bg-white/90 hover:scale-110";
+    "absolute z-[5] size-[13px] -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white bg-foreground shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-colors before:absolute before:inset-[3px] before:rounded-full before:bg-white/90 hover:bg-foreground/80";
 
   return (
     <>
@@ -55,7 +55,7 @@ function BlockManipulationOverlay({
         return (
           <div
             key={`${guide.orientation}-${guide.start.x}-${guide.start.y}-${guide.end.x}-${guide.end.y}-${guide.variant}-${index}`}
-            className="pointer-events-none absolute z-[4] border-primary"
+            className="pointer-events-none absolute z-[4] border-foreground"
             data-testid={`snap-guide-${guide.orientation}`}
             data-variant={guide.variant}
             style={

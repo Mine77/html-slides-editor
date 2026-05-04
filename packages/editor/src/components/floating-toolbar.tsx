@@ -146,12 +146,7 @@ function FloatingToolbar({
       }
 
       ghost.className = cn(ghost.className, "absolute z-40 m-0 pointer-events-none");
-      ghost.classList.remove(
-        "motion-safe:animate-in",
-        "motion-safe:fade-in-0",
-        "motion-safe:zoom-in-95",
-        "motion-safe:slide-in-from-bottom-1"
-      );
+      ghost.classList.remove("motion-safe:animate-in", "motion-safe:fade-in-0");
       ghost.className = cn(ghost.className, editorPanelExitClassName);
       ghost.setAttribute("aria-hidden", "true");
       ghost.style.left = `${toolbarRect.left - stageRect.left}px`;
@@ -310,14 +305,13 @@ function FloatingToolbar({
       className={cn(
         "relative grid w-max min-w-max max-w-[min(980px,calc(100vw-280px))] gap-2 text-foreground pointer-events-auto max-[1200px]:w-full max-[1200px]:min-w-0",
         editorMotionClassName,
-        editorPanelEnterClassName,
-        "motion-safe:slide-in-from-bottom-1"
+        editorPanelEnterClassName
       )}
       ref={toolbarRef}
       style={{ marginLeft: toolbarOffsetX }}
     >
       <div
-        className="flex w-max items-center gap-1 overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-popover/95 px-2 py-1.5 shadow-[0_8px_24px_rgba(76,57,36,0.12),0_18px_50px_rgba(76,57,36,0.14)] backdrop-blur-md max-[1200px]:min-w-[760px]"
+        className="flex w-max items-center gap-0.5 overflow-x-auto overflow-y-hidden rounded-xl border border-foreground/[0.08] bg-white px-1.5 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)] max-[1200px]:min-w-[760px]"
         aria-label="Formatting toolbar"
       >
         <ToolbarTrigger
@@ -334,7 +328,7 @@ function FloatingToolbar({
           </span>
         </ToolbarTrigger>
 
-        <div className="flex items-center gap-0 rounded-xl bg-muted/70">
+        <div className="flex items-center gap-0 rounded-md bg-foreground/[0.03]">
           <IconButton
             label="Decrease font size"
             variant="ghost"
@@ -352,7 +346,7 @@ function FloatingToolbar({
               toggleMenu("size", event);
             }}
           >
-            <span className="inline-block w-6 text-center font-bold tabular-nums">{fontSize}</span>
+            <span className="inline-block w-6 text-center tabular-nums">{fontSize}</span>
           </ToolbarTrigger>
           <IconButton
             label="Increase font size"
@@ -414,7 +408,7 @@ function FloatingToolbar({
           }}
         >
           <span
-            className="inline-block size-[18px] rounded-[7px] border-2 border-white shadow-[0_1px_4px_rgba(76,57,36,0.18)]"
+            className="inline-block size-5 rounded-md border border-foreground/10 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
             style={{ background: textColor }}
             aria-hidden="true"
           />
@@ -484,7 +478,7 @@ function FloatingToolbar({
         <ToolbarPanel left={panelLeft} width="narrow">
           <PanelTitle>Font Size</PanelTitle>
           <Input
-            className="h-9 rounded-[10px] bg-card/80 px-2.5 text-[13px] font-bold tabular-nums"
+            className="h-8 rounded-md bg-foreground/[0.03] px-2 text-[13px] tabular-nums"
             ref={sizeInputRef}
             type="number"
             min={8}
@@ -620,9 +614,8 @@ function ToolbarTrigger({
       variant={active ? "secondary" : "ghost"}
       size="sm"
       className={cn(
-        "h-9 min-w-[38px] rounded-xl px-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground",
-        active &&
-          "bg-primary/10 text-accent-foreground shadow-[inset_0_0_0_1px_rgba(242,98,56,0.12)]",
+        "h-8 min-w-8 rounded-md px-2 text-[13px] font-normal text-foreground/70 hover:text-foreground",
+        active && "bg-foreground/[0.06] text-foreground",
         className
       )}
       type="button"
@@ -652,8 +645,8 @@ function IconButton({
       variant={active ? "default" : "ghost"}
       size="icon-sm"
       className={cn(
-        "h-9 w-[34px] rounded-xl text-muted-foreground hover:text-foreground",
-        active && "bg-primary text-primary-foreground shadow-[0_8px_18px_rgba(242,98,56,0.22)]",
+        "h-8 w-8 rounded-md text-foreground/60 hover:text-foreground",
+        active && "bg-foreground/[0.06] text-foreground",
         variant === "danger" && "hover:bg-destructive/10 hover:text-destructive"
       )}
       type="button"
@@ -734,10 +727,9 @@ function ToolbarPanel({
   return (
     <div
       className={cn(
-        "absolute z-50 grid gap-2 rounded-2xl border border-border bg-popover/95 p-3 text-popover-foreground shadow-[0_10px_26px_rgba(76,57,36,0.14),0_22px_54px_rgba(76,57,36,0.13)] backdrop-blur-md max-[1200px]:max-w-[calc(100vw-40px)]",
+        "absolute z-50 grid gap-1.5 rounded-xl border border-foreground/[0.08] bg-white p-1.5 text-popover-foreground shadow-[0_4px_20px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.08)] max-[1200px]:max-w-[calc(100vw-40px)]",
         editorMotionClassName,
         editorPanelEnterClassName,
-        "motion-safe:slide-in-from-top-1",
         widthClassName
       )}
       ref={panelRef}
@@ -754,12 +746,12 @@ function shouldUpdateOffset(current: number, next: number) {
 }
 
 function Divider() {
-  return <Separator orientation="vertical" className="mx-0.5 h-6" />;
+  return <Separator orientation="vertical" className="mx-1 h-4 bg-foreground/10" />;
 }
 
 function PanelTitle({ children }: { children: ReactNode }) {
   return (
-    <div className="inline-flex items-center gap-1.5 px-1 text-[11px] font-bold uppercase leading-tight tracking-[0.08em] text-muted-foreground">
+    <div className="inline-flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
       {children}
     </div>
   );
@@ -786,7 +778,7 @@ function normalizeTextAlign(value: string): TextAlign {
 }
 
 function ToolbarIcon({ icon: Icon }: { icon: LucideIcon; muted?: boolean }) {
-  return <Icon />;
+  return <Icon className="size-3.5" />;
 }
 
 function ToolbarOption({
@@ -808,8 +800,8 @@ function ToolbarOption({
     <Button
       variant="ghost"
       className={cn(
-        "min-h-[34px] w-full justify-start gap-2.5 rounded-[10px] px-2.5 py-1.5 text-left text-[13px] font-normal text-muted-foreground hover:text-foreground",
-        active && "bg-primary/10 font-bold text-accent-foreground",
+        "min-h-8 w-full justify-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-normal text-foreground/70 hover:text-foreground",
+        active && "bg-foreground/[0.06] text-foreground",
         className
       )}
       type="button"

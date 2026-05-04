@@ -85,14 +85,7 @@ function StageCanvas({
   };
 
   const toolbarStyle: CSSProperties | undefined = selectionOverlay
-    ? {
-        left: `${selectionOverlay.x + selectionOverlay.width / 2}px`,
-        top:
-          selectionOverlay.y < 84
-            ? `${selectionOverlay.y + selectionOverlay.height + 18}px`
-            : `${selectionOverlay.y - 18}px`,
-        transform: selectionOverlay.y < 84 ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-      }
+    ? createToolbarStyle({ selectionOverlay, offsetX, scale, slideWidth })
     : undefined;
   return (
     <section
@@ -131,7 +124,7 @@ function StageCanvas({
       ) : null}
 
       <div
-        className="absolute origin-top-left overflow-hidden rounded-[20px] bg-card shadow-[0_18px_40px_rgba(76,57,36,0.16)] max-[1200px]:max-w-full"
+        className="absolute origin-top-left overflow-hidden rounded-xl bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_12px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)] max-[1200px]:max-w-full"
         data-testid="stage-frame"
         style={{
           width: `${slideWidth}px`,
@@ -144,7 +137,7 @@ function StageCanvas({
         <iframe
           ref={iframeRef}
           title="Slide canvas"
-          className="size-full border-0 bg-card"
+          className="size-full border-0 bg-white"
           data-testid="slide-iframe"
         />
       </div>
@@ -153,7 +146,7 @@ function StageCanvas({
           ref={selectionOverlayRef}
           data-testid="selection-overlay"
           className={cn(
-            "pointer-events-none absolute z-[3] border-[2.5px] border-dashed border-primary/95",
+            "pointer-events-none absolute z-[3] border border-dashed border-foreground/55 bg-foreground/[0.02]",
             isSelectionOverlayInteractive && "pointer-events-auto"
           )}
           style={{
@@ -180,6 +173,37 @@ function StageCanvas({
       ) : null}
     </section>
   );
+}
+
+function createToolbarStyle({
+  selectionOverlay,
+  offsetX,
+  scale,
+  slideWidth,
+}: {
+  selectionOverlay: StageRect;
+  offsetX: number;
+  scale: number;
+  slideWidth: number;
+}): CSSProperties {
+  const toolbarHalfWidth = 288;
+  const slideLeft = offsetX;
+  const slideRight = offsetX + slideWidth * scale;
+  const slideHalfWidth = Math.max((slideRight - slideLeft) / 2, 0);
+  const inset = Math.min(toolbarHalfWidth, slideHalfWidth);
+  const minCenterX = slideLeft + inset;
+  const maxCenterX = slideRight - inset;
+  const targetCenterX = selectionOverlay.x + selectionOverlay.width / 2;
+  const centerX = Math.min(Math.max(targetCenterX, minCenterX), Math.max(minCenterX, maxCenterX));
+
+  return {
+    left: `${centerX}px`,
+    top:
+      selectionOverlay.y < 84
+        ? `${selectionOverlay.y + selectionOverlay.height + 18}px`
+        : `${selectionOverlay.y - 18}px`,
+    transform: selectionOverlay.y < 84 ? "translate(-50%, 0)" : "translate(-50%, -100%)",
+  };
 }
 
 export { StageCanvas };

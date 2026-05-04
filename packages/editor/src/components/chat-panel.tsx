@@ -87,7 +87,7 @@ function ChatPanel() {
             <MessageContent className="max-w-full p-3">
               <div className="mb-3 grid gap-1">
                 <strong className="text-[13px] leading-tight">Choose an edit direction</strong>
-                <p className="m-0 text-xs text-muted-foreground">
+                <p className="m-0 text-xs text-foreground/50">
                   Selections become the next prompt draft.
                 </p>
               </div>
@@ -95,7 +95,7 @@ function ChatPanel() {
               <div className="grid gap-3">
                 {(Object.keys(FORM_OPTIONS) as FormField[]).map((field) => (
                   <fieldset className="m-0 grid min-w-0 gap-2 border-0 p-0" key={field}>
-                    <legend className="p-0 text-[10px] font-semibold uppercase leading-tight text-muted-foreground">
+                    <legend className="p-0 text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
                       {field}
                     </legend>
                     <ToggleGroup
@@ -111,7 +111,7 @@ function ChatPanel() {
                     >
                       {FORM_OPTIONS[field].map((option) => (
                         <ToggleGroupItem
-                          className="h-7 rounded-lg border border-border bg-card/60 px-2 text-xs font-medium text-muted-foreground data-[state=on]:border-primary/30 data-[state=on]:bg-primary/10 data-[state=on]:text-accent-foreground"
+                          className="h-7 rounded-md border border-foreground/[0.08] bg-white px-2 text-xs font-medium text-foreground/60 data-[state=on]:border-foreground/[0.12] data-[state=on]:bg-foreground/[0.06] data-[state=on]:text-foreground"
                           key={option}
                           value={option}
                         >

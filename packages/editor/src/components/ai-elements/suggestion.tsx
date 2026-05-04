@@ -16,7 +16,7 @@ function Suggestion({ className, ...props }: React.ComponentProps<typeof Button>
       variant="outline"
       size="sm"
       className={cn(
-        "h-[30px] max-w-full rounded-full bg-card/70 px-2.5 text-xs font-medium text-muted-foreground",
+        "h-8 max-w-full rounded-md bg-white px-2 text-[12px] font-medium text-foreground/60 hover:text-foreground",
         className
       )}
       {...props}

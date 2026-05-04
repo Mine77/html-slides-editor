@@ -27,7 +27,7 @@ function MessageContent({ className, from, ...props }: MessageContentProps) {
       data-slot="message-content"
       data-from={from}
       className={cn(
-        "min-w-0 max-w-[92%] rounded-[11px] border border-border bg-card/60 px-3 py-2.5 text-foreground data-[from=user]:border-primary/20 data-[from=user]:bg-primary/10",
+        "min-w-0 max-w-[92%] rounded-lg border border-foreground/[0.08] bg-white px-3 py-2.5 text-foreground data-[from=user]:border-foreground/[0.12] data-[from=user]:bg-foreground/[0.04]",
         className
       )}
       {...props}

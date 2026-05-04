@@ -122,6 +122,27 @@ function isManipulable(element: EditableElement | undefined): boolean {
   return element?.type === "block" || element?.type === "text";
 }
 
+function unionStageRects(rects: StageRect[]): StageRect {
+  const [firstRect, ...restRects] = rects;
+  if (!firstRect) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  return restRects.reduce((accumulator, rect) => {
+    const minX = Math.min(accumulator.x, rect.x);
+    const minY = Math.min(accumulator.y, rect.y);
+    const maxX = Math.max(accumulator.x + accumulator.width, rect.x + rect.width);
+    const maxY = Math.max(accumulator.y + accumulator.height, rect.y + rect.height);
+
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  }, firstRect);
+}
+
 function getRotationDeltaDegrees(
   pointerX: number,
   pointerY: number,
@@ -303,6 +324,12 @@ function useBlockManipulation({
         slideStageRect,
         stageGeometry: snapStageGeometry,
       });
+      const freshStageRects = Object.values(targetNodes).map((node) =>
+        elementRectToStageRect(node.getBoundingClientRect(), rootRect, snapStageGeometry)
+      );
+      const freshSelectedStageRect = freshStageRects.length
+        ? unionStageRects(freshStageRects)
+        : selectedStageRect;
       sessionRef.current = {
         slideId: activeSlide.id,
         elementId: selectedElementId,
@@ -311,7 +338,7 @@ function useBlockManipulation({
         resizeCorner,
         startPointer: { x: event.clientX, y: event.clientY },
         startRect,
-        startStageRect: selectedStageRect,
+        startStageRect: freshSelectedStageRect,
         centerPoint: {
           x: startRect.left + startRect.width / 2,
           y: startRect.top + startRect.height / 2,
@@ -351,10 +378,10 @@ function useBlockManipulation({
 
         if (session.mode === "move") {
           const unsnappedRect = {
-            x: (selectedStageRect?.x ?? 0) + stageDeltaX,
-            y: (selectedStageRect?.y ?? 0) + stageDeltaY,
-            width: selectedStageRect?.width ?? 0,
-            height: selectedStageRect?.height ?? 0,
+            x: session.startStageRect.x + stageDeltaX,
+            y: session.startStageRect.y + stageDeltaY,
+            width: session.startStageRect.width,
+            height: session.startStageRect.height,
           };
           const snapResult = moveEvent.altKey
             ? { rect: unsnappedRect, guides: [] }
@@ -600,11 +627,11 @@ function useBlockManipulation({
   };
 }
 
-const SNAP_THRESHOLD_PX = 8;
+const SNAP_THRESHOLD_PX = 18;
 const SPACING_SNAP_DISTANCE_BONUS_PX = 6;
 const SNAP_AXIS_PROXIMITY_PX = 80;
 const SNAP_GUIDE_EXTENSION_PX = 24;
-const SPACING_ALIGNMENT_TOLERANCE_PX = 24;
+const SPACING_ALIGNMENT_TOLERANCE_PX = 40;
 const MIN_SPACING_TARGET_GAP_PX = 12;
 const MAX_SPACING_TARGET_GAP_PX = 360;
 
@@ -629,7 +656,7 @@ function collectSnapTargets({
     kind: "slide",
     role,
     anchor: null,
-    priority: role === "center" ? -2000 : 2,
+    priority: role === "center" ? 0 : 2,
     elementId: null,
     relatedRects: [],
   });
@@ -961,7 +988,6 @@ function findSnapCandidate(
       if (target.anchor && target.anchor !== anchor.anchor) {
         continue;
       }
-
       const delta = target.position - anchor.position;
       const distance = Math.abs(delta);
       if (distance > SNAP_THRESHOLD_PX) {
@@ -972,7 +998,8 @@ function findSnapCandidate(
         target.kind === "spacing"
           ? Math.max(0, distance - SPACING_SNAP_DISTANCE_BONUS_PX)
           : distance;
-      const candidatePriority = effectiveDistance * 100 + target.priority;
+      const anchorPriority = getSnapAnchorPriority(anchor.anchor, target);
+      const candidatePriority = effectiveDistance * 100 + target.priority + anchorPriority;
       const bestPriority = bestCandidate
         ? getSnapCandidatePriority(bestCandidate)
         : Number.POSITIVE_INFINITY;
@@ -997,7 +1024,19 @@ function getSnapCandidatePriority(candidate: SnapCandidate): number {
     candidate.target.kind === "spacing"
       ? Math.max(0, distance - SPACING_SNAP_DISTANCE_BONUS_PX)
       : distance;
-  return effectiveDistance * 100 + candidate.target.priority;
+  return (
+    effectiveDistance * 100 +
+    candidate.target.priority +
+    getSnapAnchorPriority(candidate.anchor, candidate.target)
+  );
+}
+
+function getSnapAnchorPriority(anchor: SnapCandidate["anchor"], target: SnapTarget): number {
+  if (target.kind === "slide" && target.role === "center" && anchor !== "center") {
+    return 25;
+  }
+
+  return 0;
 }
 
 function isRelevantSnapTarget(

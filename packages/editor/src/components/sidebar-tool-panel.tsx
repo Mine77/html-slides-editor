@@ -435,16 +435,45 @@ function SidebarToolPanel({
             </SelectContent>
           </Select>
         ) : field.input === "segmented" ? (
-          <SegmentedControl
-            value={getSelectValue(draftValue ?? currentValue, field)}
-            options={field.options ?? []}
+          <Select
+            value={getSelectValue(draftValue ?? currentValue, field) || EMPTY_SELECT_VALUE}
             disabled={isStyleEditingDisabled}
-            onChange={(nextValue) => {
-              commitDraftValue(field.propertyName, nextValue, currentValue, onStyleChange);
+            onValueChange={(nextValue) => {
+              commitDraftValue(
+                field.propertyName,
+                nextValue === EMPTY_SELECT_VALUE ? "" : nextValue,
+                currentValue,
+                onStyleChange
+              );
             }}
-          />
+          >
+            <SelectTrigger
+              id={fieldInputId}
+              aria-label={field.label}
+              size="sm"
+              className="h-8 flex-1 rounded-md border-transparent bg-foreground/[0.03] px-2 text-xs shadow-none hover:bg-foreground/[0.06]"
+              data-value={getSelectValue(draftValue ?? currentValue, field)}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {(field.options ?? []).map((option) => (
+                  <SelectItem
+                    key={option.value || EMPTY_SELECT_VALUE}
+                    value={option.value || EMPTY_SELECT_VALUE}
+                    data-value={option.value}
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         ) : field.input === "color" ? (
           <ColorSwatch
+            id={fieldInputId}
+            label={field.label}
             value={inputValue}
             disabled={isStyleEditingDisabled}
             onChange={(nextValue) => {
@@ -518,7 +547,7 @@ function SidebarToolPanel({
     <section
       className={cn(
         "flex h-full min-h-0 w-[340px] max-w-[340px] flex-[0_0_340px] flex-col overflow-hidden border-l border-foreground/[0.08] bg-white font-sans opacity-100 transition-[width,max-width,opacity] duration-200 max-[1200px]:h-[70vh] max-[1200px]:flex-none max-[1200px]:border-t",
-        !isOpen && "w-0 max-w-0 pointer-events-none opacity-0"
+        !isOpen && "hidden w-0 max-w-0 pointer-events-none opacity-0"
       )}
       data-testid="sidebar-tool-panel"
       aria-hidden={isOpen ? "false" : "true"}
@@ -757,7 +786,7 @@ function SidebarToolPanel({
               />
             </label>
             <button
-              className="h-9 rounded-md border border-foreground/[0.06] bg-foreground/[0.03] text-xs font-medium transition hover:bg-foreground/[0.07] disabled:pointer-events-none disabled:opacity-50"
+              className="h-8 rounded-md border border-foreground/[0.08] bg-foreground/[0.03] text-xs font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
               type="button"
               disabled={isStyleEditingDisabled || customPropertyName.trim().length === 0}
               onClick={applyCustomProperty}
@@ -776,7 +805,7 @@ function SidebarToolPanel({
           >
             <div className="grid grid-cols-2 gap-2">
               <button
-                className="flex h-9 items-center justify-center gap-1.5 rounded-md border border-foreground/[0.06] bg-foreground/[0.03] text-xs font-medium transition hover:bg-foreground/[0.07]"
+                className="flex h-8 items-center justify-center gap-1.5 rounded-md border border-foreground/[0.08] bg-foreground/[0.03] text-xs font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 type="button"
                 disabled={!selectedElementId}
                 onClick={onDuplicateSelection}
@@ -785,7 +814,7 @@ function SidebarToolPanel({
                 Copy
               </button>
               <button
-                className="flex h-9 items-center justify-center gap-1.5 rounded-md border border-red-100 bg-red-50 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                className="flex h-8 items-center justify-center gap-1.5 rounded-md border border-foreground/[0.08] bg-foreground/[0.03] text-xs font-medium text-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
                 type="button"
                 disabled={!selectedElementId}
                 onClick={onDeleteSelection}
@@ -859,7 +888,7 @@ function Section({
       </button>
       <div className={cn("grid transition-all", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
         <div className="overflow-hidden">
-          <div className="space-y-2 px-4 pt-1 pb-3">{children}</div>
+          <div className="flex flex-col gap-2 px-4 pt-1 pb-3">{children}</div>
         </div>
       </div>
     </div>
@@ -1024,47 +1053,15 @@ function NumberSlider({
   );
 }
 
-function SegmentedControl({
-  value,
-  options,
-  disabled,
-  onChange,
-}: {
-  value: string;
-  options: SelectOption[];
-  disabled: boolean;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div
-      className="grid flex-1 gap-0.5 rounded-md bg-foreground/[0.03] p-0.5"
-      style={{ gridTemplateColumns: `repeat(${Math.max(options.length, 1)}, minmax(0,1fr))` }}
-    >
-      {options.map((option) => (
-        <button
-          key={option.value || EMPTY_SELECT_VALUE}
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "h-7 rounded px-1 text-[10px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
-            value === option.value
-              ? "bg-white text-foreground shadow-sm"
-              : "text-foreground/50 hover:text-foreground"
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function ColorSwatch({
+  id,
+  label,
   value,
   disabled,
   onChange,
 }: {
+  id: string;
+  label: string;
   value: string;
   disabled: boolean;
   onChange: (value: string) => void;
@@ -1073,20 +1070,31 @@ function ColorSwatch({
 
   return (
     <div className="relative flex-1">
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
-        className="flex h-8 w-full items-center gap-2 rounded-md border border-transparent bg-foreground/[0.03] px-2 transition hover:bg-foreground/[0.06] hover:border-foreground/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      <div className="flex h-8 w-full items-center gap-2 rounded-md border border-transparent bg-foreground/[0.03] px-2 transition-colors hover:border-foreground/[0.08] hover:bg-foreground/[0.06] focus-within:border-foreground/20 focus-within:bg-white">
         <span
           className="size-5 shrink-0 rounded border border-foreground/10"
           style={{ background: value }}
         />
-        <span className="truncate font-mono text-[11px] font-medium text-foreground/70">
-          {value.startsWith("linear") ? "Gradient" : value.toUpperCase()}
-        </span>
-      </button>
+        <input
+          id={id}
+          aria-label={label}
+          className="min-w-0 flex-1 bg-transparent font-mono text-[11px] font-medium text-foreground/70 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={disabled}
+          spellCheck={false}
+          value={value.startsWith("linear") ? "Gradient" : value.toUpperCase()}
+          onChange={(event) => onChange(event.target.value)}
+          onFocus={() => setOpen(false)}
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={`Open ${label} picker`}
+          onClick={() => setOpen((current) => !current)}
+          className="size-5 shrink-0 rounded text-foreground/45 transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Palette className="m-auto size-3" />
+        </button>
+      </div>
       {open ? (
         <>
           <button
@@ -1095,7 +1103,7 @@ function ColorSwatch({
             className="fixed inset-0 z-40 cursor-default bg-transparent"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-border bg-popover p-3 shadow-md">
+          <div className="absolute right-0 top-full z-50 mt-1.5 w-72 rounded-xl border border-foreground/[0.08] bg-white p-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.08)]">
             <ColorPicker value={value} onChange={onChange} />
           </div>
         </>
@@ -1168,7 +1176,29 @@ function AttributeSelect({
 }) {
   return (
     <Row label={label}>
-      <SegmentedControl value={value} options={options} disabled={disabled} onChange={onChange} />
+      <Select value={value || EMPTY_SELECT_VALUE} disabled={disabled} onValueChange={onChange}>
+        <SelectTrigger
+          aria-label={label}
+          size="sm"
+          className="h-8 flex-1 rounded-md border-transparent bg-foreground/[0.03] px-2 text-xs shadow-none hover:bg-foreground/[0.06]"
+          data-value={value}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem
+                key={option.value || EMPTY_SELECT_VALUE}
+                value={option.value || EMPTY_SELECT_VALUE}
+                data-value={option.value}
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </Row>
   );
 }

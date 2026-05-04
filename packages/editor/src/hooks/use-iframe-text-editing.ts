@@ -49,6 +49,10 @@ const EDITING_TEXT_STYLE = `
 }
 `;
 
+function getEditableSelectionTarget(target: Element): HTMLElement | null {
+  return target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
+}
+
 function useIframeTextEditing({
   activeSlide,
   iframeRef,
@@ -227,7 +231,7 @@ function useIframeTextEditing({
         return;
       }
 
-      const editableTarget = target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
+      const editableTarget = getEditableSelectionTarget(target);
       if (!editableTarget) {
         setSelectedElementIds([]);
         return;
@@ -254,16 +258,19 @@ function useIframeTextEditing({
       node.onclick = (event) => {
         event.stopPropagation();
 
-        if (textEditingRef.current?.elementId === node.getAttribute(SELECTOR_ATTR)) {
+        const editableTarget = getEditableSelectionTarget(event.target as Element);
+        const targetId =
+          editableTarget?.getAttribute(SELECTOR_ATTR) ?? node.getAttribute(SELECTOR_ATTR);
+
+        if (textEditingRef.current?.elementId === targetId) {
           return;
         }
 
-        const id = node.getAttribute(SELECTOR_ATTR);
-        if (id) {
+        if (targetId) {
           if (event.shiftKey || event.metaKey || event.ctrlKey) {
-            toggleSelectedElementId(id);
+            toggleSelectedElementId(targetId);
           } else {
-            setSelectedElementIds([id]);
+            setSelectedElementIds([targetId]);
           }
         }
       };
