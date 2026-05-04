@@ -27,6 +27,16 @@ export interface StyleUpdateOperation {
   timestamp: number;
 }
 
+export interface AttributeUpdateOperation {
+  type: "attribute.update";
+  slideId: string;
+  elementId: string;
+  attributeName: string;
+  previousValue: string;
+  nextValue: string;
+  timestamp: number;
+}
+
 export interface ElementLayoutUpdateOperation {
   type: "element.layout.update";
   slideId: string;
@@ -61,6 +71,7 @@ export interface ElementRemoveOperation {
 export type AtomicSlideOperation =
   | TextUpdateOperation
   | StyleUpdateOperation
+  | AttributeUpdateOperation
   | ElementLayoutUpdateOperation
   | ElementInsertOperation
   | ElementRemoveOperation;
@@ -128,6 +139,48 @@ export function updateSlideStyle(
     if (!node.getAttribute("style")?.trim()) {
       node.removeAttribute("style");
     }
+  });
+}
+
+export function updateSlideAttribute(
+  html: string,
+  elementId: string,
+  attributeName: string,
+  value: string
+): string {
+  return updateHtmlSource(html, (doc) => {
+    const node = querySlideElement<HTMLElement>(doc, elementId);
+    if (!node) {
+      return;
+    }
+
+    if (value.trim().length === 0) {
+      node.removeAttribute(attributeName);
+    } else {
+      node.setAttribute(attributeName, value);
+    }
+  });
+}
+
+export function duplicateSlideElement(
+  html: string,
+  sourceElementId: string,
+  nextElementId: string
+): string {
+  return updateHtmlSource(html, (doc) => {
+    const sourceNode = querySlideElement<HTMLElement>(doc, sourceElementId);
+    if (!sourceNode) {
+      return;
+    }
+
+    const clonedNode = sourceNode.cloneNode(true);
+    if (!(clonedNode instanceof HTMLElement)) {
+      return;
+    }
+
+    clonedNode.setAttribute(SELECTOR_ATTR, nextElementId);
+    clonedNode.removeAttribute("data-hse-editing");
+    sourceNode.insertAdjacentElement("afterend", clonedNode);
   });
 }
 
@@ -372,6 +425,19 @@ export function applySlideOperation(slide: SlideModel, operation: SlideOperation
           slide.id
         )
       );
+    case "attribute.update":
+      return preserveSlideSource(
+        slide,
+        parseSlide(
+          updateSlideAttribute(
+            slide.htmlSource,
+            operation.elementId,
+            operation.attributeName,
+            operation.nextValue
+          ),
+          slide.id
+        )
+      );
     case "element.layout.update":
       return preserveSlideSource(
         slide,
@@ -411,6 +477,12 @@ export function invertSlideOperation(operation: SlideOperation): SlideOperation 
         nextText: operation.previousText,
       };
     case "style.update":
+      return {
+        ...operation,
+        previousValue: operation.nextValue,
+        nextValue: operation.previousValue,
+      };
+    case "attribute.update":
       return {
         ...operation,
         previousValue: operation.nextValue,

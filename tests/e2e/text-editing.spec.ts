@@ -1447,6 +1447,35 @@ test("clicking blank space clears the current selection", async ({ page }) => {
   await expect(selectionOverlay).toBeHidden();
 });
 
+test("selecting another element after clearing selection keeps the app mounted", async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    pageErrors.push(error.message);
+  });
+
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const firstElement = frame.locator('[data-editor-id="text-1"]');
+  const secondElement = frame.locator('[data-editor-id="text-2"]');
+  const stagePanel = page.getByTestId("stage-panel");
+  const { selectionOverlay } = getHistoryControls(page);
+
+  await firstElement.click();
+  await expect(selectionOverlay).toBeVisible();
+
+  await stagePanel.click({ position: { x: 12, y: 12 } });
+  await expect(selectionOverlay).toBeHidden();
+
+  await secondElement.click();
+  await expect(selectionOverlay).toBeVisible();
+  await expect(page.getByTestId("stage-panel")).toBeVisible();
+  await expect(page.getByTestId("sidebar-tool-panel")).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});
+
 test("sidebar scrolls with overflow and expands on hover without shifting the stage", async ({
   page,
 }) => {

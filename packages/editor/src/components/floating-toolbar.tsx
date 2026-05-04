@@ -108,6 +108,7 @@ function FloatingToolbar({
   const [activeMenu, setActiveMenu] = useState<MenuId | null>(null);
   const [panelLeft, setPanelLeft] = useState(0);
   const [toolbarOffsetX, setToolbarOffsetX] = useState(0);
+  const toolbarOffsetXRef = useRef(0);
   const fontFamily = getStyleValue(inspectedStyles, "font-family");
   const fontSize = Math.round(parsePixelValue(getStyleValue(inspectedStyles, "font-size"), 24));
   const textColor = getColorInputValue(getStyleValue(inspectedStyles, "color"));
@@ -176,9 +177,8 @@ function FloatingToolbar({
     }
 
     const rect = node.getBoundingClientRect();
-    const selectionCenterX = selectionOverlay.x + selectionOverlay.width / 2;
-    const baseLeft = selectionCenterX - rect.width / 2;
-    const baseRight = baseLeft + rect.width;
+    const baseLeft = rect.left - toolbarOffsetXRef.current;
+    const baseRight = rect.right - toolbarOffsetXRef.current;
     const viewportPadding = 16;
     let nextOffsetX = 0;
 
@@ -190,10 +190,11 @@ function FloatingToolbar({
       nextOffsetX += window.innerWidth - viewportPadding - (baseRight + nextOffsetX);
     }
 
-    if (shouldUpdateOffset(toolbarOffsetX, nextOffsetX)) {
+    if (shouldUpdateOffset(toolbarOffsetXRef.current, nextOffsetX)) {
+      toolbarOffsetXRef.current = nextOffsetX;
       setToolbarOffsetX(nextOffsetX);
     }
-  }, [selectionOverlay.width, selectionOverlay.x, toolbarOffsetX]);
+  }, []);
 
   useEffect(() => {
     function closeOnOutsidePointer(event: MouseEvent) {

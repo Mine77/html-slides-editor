@@ -1,16 +1,19 @@
 import {
+  type AttributeUpdateOperation,
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
-  type EditableElement,
+  SELECTOR_ATTR,
   type ElementRemoveOperation,
+  type ElementInsertOperation,
   type SlideModel,
-  type SlideOperation,
   type StyleUpdateOperation,
   createElementPlacement,
+  createUniqueElementId,
   getSlideElementHtml,
   getSlideInlineStyleValue,
+  updateSlideElementHtmlIds,
 } from "@starry-slides/core";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { EditorHeader } from "./components/editor-header";
 import { SidebarToolPanel } from "./components/sidebar-tool-panel";
 import { SlideSidebar } from "./components/slide-sidebar";
@@ -72,13 +75,6 @@ function SlidesEditor({
   });
 
   const selectedElement = activeSlide?.elements.find((element) => element.id === selectedElementId);
-  const selectedElements = useMemo(
-    () =>
-      selectedElementIds
-        .map((elementId) => activeSlide?.elements.find((element) => element.id === elementId))
-        .filter((element): element is EditableElement => Boolean(element)),
-    [activeSlide?.elements, selectedElementIds]
-  );
   const resolvedDeckTitle = deckTitle?.trim() || "Untitled deck";
 
   const slideWidth = activeSlide?.width || DEFAULT_SLIDE_WIDTH;
@@ -163,6 +159,32 @@ function SlidesEditor({
     commitOperation(operation);
   }
 
+  function commitAttributeChange(attributeName: string, nextValue: string) {
+    if (!activeSlide) {
+      return;
+    }
+
+    const targetElementId = selectedElementId ?? "slide-root";
+    const previousValue = getHtmlAttributeValue(activeSlide, targetElementId, attributeName);
+    const normalizedNextValue = nextValue.trim();
+
+    if (previousValue === normalizedNextValue) {
+      return;
+    }
+
+    const operation: AttributeUpdateOperation = {
+      type: "attribute.update",
+      slideId: activeSlide.id,
+      elementId: targetElementId,
+      attributeName,
+      previousValue,
+      nextValue: normalizedNextValue,
+      timestamp: Date.now(),
+    };
+
+    commitOperation(operation);
+  }
+
   function createRemoveOperation(elementId: string): ElementRemoveOperation | null {
     if (!activeSlide) {
       return null;
@@ -211,6 +233,61 @@ function SlidesEditor({
     setSelectedElementIds([]);
   }
 
+  function duplicateSelectedElement() {
+    if (!activeSlide || !selectedElementIds.length) {
+      return;
+    }
+
+    let htmlSource = activeSlide.htmlSource;
+    const nextElementIds: string[] = [];
+    const operations = selectedElementIds
+      .map((elementId) => {
+        const html = getSlideElementHtml(htmlSource, elementId);
+        const placement = createElementPlacement(htmlSource, elementId);
+        if (!html || !placement) {
+          return null;
+        }
+
+        const nextElementId = createUniqueElementId(htmlSource, `${elementId}-copy`);
+        const copiedHtml = updateSlideElementHtmlIds(
+          html,
+          createIdMapForCopiedElement(html, elementId, nextElementId)
+        );
+
+        htmlSource = `${htmlSource}\n<!-- ${nextElementId} reserved -->`;
+        nextElementIds.push(nextElementId);
+
+        const operation: ElementInsertOperation = {
+          type: "element.insert" as const,
+          slideId: activeSlide.id,
+          elementId: nextElementId,
+          parentElementId: placement.parentElementId,
+          previousSiblingElementId: elementId,
+          nextSiblingElementId: placement.nextSiblingElementId,
+          html: copiedHtml,
+          timestamp: Date.now(),
+        };
+        return operation;
+      })
+      .filter((operation): operation is ElementInsertOperation => Boolean(operation));
+
+    if (!operations.length) {
+      return;
+    }
+
+    commitOperation(
+      operations.length === 1
+        ? operations[0]
+        : {
+            type: "operation.batch",
+            slideId: activeSlide.id,
+            operations,
+            timestamp: Date.now(),
+          }
+    );
+    setSelectedElementIds(nextElementIds);
+  }
+
   useEditorKeyboardShortcuts({
     activeSlide,
     selectedElementIds,
@@ -255,7 +332,7 @@ function SlidesEditor({
             }}
           />
 
-          <main className="flex min-h-0 min-w-0 flex-auto gap-[18px] overflow-visible max-[1200px]:block">
+          <main className="flex min-h-0 min-w-0 flex-auto overflow-visible max-[1200px]:block">
             <StageCanvas
               slideWidth={slideWidth}
               slideHeight={slideHeight}
@@ -263,7 +340,6 @@ function SlidesEditor({
               offsetY={offsetY}
               scale={scale}
               selectionOverlay={unifiedSelectionOverlay}
-              selectionLabel={unifiedSelectionLabel}
               toolbarKey={
                 selectedElementIds.length
                   ? `${activeSlide.id}:${selectedElementIds.join(",")}`
@@ -336,8 +412,50 @@ function SlidesEditor({
               isEditingText={isEditingText}
               isOpen={isInspectorOpen}
               canEditStyles={Boolean(activeSlide)}
+              selectedElementType={selectedElement?.type ?? "block"}
+              selectedElementLabel={selectedElementId ? unifiedSelectionLabel : "slide"}
+              attributeValues={{
+                name: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "data-editor-name"
+                ),
+                locked: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "data-editor-locked"
+                ),
+                altText: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "alt"
+                ),
+                ariaLabel: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "aria-label"
+                ),
+                clickAction: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "data-click-action"
+                ),
+                linkUrl: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "data-link-url"
+                ),
+                targetSlide: getHtmlAttributeValue(
+                  activeSlide,
+                  selectedElementId ?? "slide-root",
+                  "data-target-slide"
+                ),
+              }}
               selectedElementId={selectedElementId}
               onStyleChange={commitStyleChange}
+              onAttributeChange={commitAttributeChange}
+              onDuplicateSelection={duplicateSelectedElement}
+              onDeleteSelection={deleteSelectedElement}
             />
           </main>
         </div>
@@ -348,6 +466,41 @@ function SlidesEditor({
 
 function getInlineStyleValue(slide: SlideModel, elementId: string, propertyName: string) {
   return getSlideInlineStyleValue(slide, elementId, propertyName);
+}
+
+function getHtmlAttributeValue(slide: SlideModel, elementId: string, attributeName: string) {
+  if (typeof DOMParser === "undefined") {
+    return "";
+  }
+
+  const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
+  const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${elementId}"]`);
+  return node?.getAttribute(attributeName)?.trim() ?? "";
+}
+
+function createIdMapForCopiedElement(html: string, sourceElementId: string, nextElementId: string) {
+  const idMap: Record<string, string> = {
+    [sourceElementId]: nextElementId,
+  };
+
+  if (typeof DOMParser === "undefined") {
+    return idMap;
+  }
+
+  const doc = new DOMParser().parseFromString(`<template>${html}</template>`, "text/html");
+  const root = doc.querySelector("template")?.content.firstElementChild;
+  if (!(root instanceof HTMLElement)) {
+    return idMap;
+  }
+
+  for (const node of root.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)) {
+    const currentId = node.getAttribute(SELECTOR_ATTR);
+    if (currentId) {
+      idMap[currentId] = `${nextElementId}-${currentId}`;
+    }
+  }
+
+  return idMap;
 }
 
 export { SlidesEditor };
