@@ -164,6 +164,35 @@ HTML-native slide 编辑器中，组合的主流实现方式：
 
 ---
 
+## 6. CLI `verify` 增加 Overflow 检测
+
+**需求：** 当前 `verify` 只做 HTML 结构检查（data-slide-root、data-editable 等）。需要增加检测 slide 内元素是否溢出（超出 slide 可视区域）的功能。
+
+**方案：**
+
+当前 `verify` 使用 JSDOM 做静态分析，但 JSDOM 无法计算实际渲染尺寸（无布局引擎）。overflow 检测需要两种方式配合：
+
+### 6a. 静态检测（JSDOM，快速）
+- 检查元素的 inline style 中 `width` / `left` / `right` 组合是否超出 `data-slide-width`
+- 检查元素的 inline style 中 `height` / `top` / `bottom` 组合是否超出 `data-slide-height`
+- 只能检测显式设置尺寸的元素，无法检测文本自然换行导致的溢出
+- 作为 `verify` 的默认附加检查，零成本
+
+### 6b. 渲染检测（Playwright，精确）
+- 添加 `--check-overflow` 标志，启用 Playwright 渲染检测
+- 对每张 slide 用 headless Chromium 渲染，检查：
+  - `document.body.scrollWidth > viewport.width` 或 `scrollHeight > viewport.height`
+  - 逐个元素检查 `element.scrollWidth > element.clientWidth` 或 `scrollHeight > clientHeight`
+- 输出每个溢出元素的选择器、溢出方向、溢出量
+- 与 `view` 命令共享 Playwright 渲染逻辑
+
+**涉及文件：**
+- `src/core/verify-deck.ts` — 添加静态 overflow 检查
+- 新建 `src/cli/verify-overflow.ts` — Playwright 渲染检测逻辑
+- `src/cli/index.ts` — 添加 `--check-overflow` 参数
+
+---
+
 ## 实现优先级建议
 
 | 优先级 | 需求 | 理由 |
@@ -171,5 +200,6 @@ HTML-native slide 编辑器中，组合的主流实现方式：
 | P0 | 2. 删除侧边栏 | 简化 UI，为后续功能腾出空间 |
 | P0 | 3. Context Menu | 基础交互，其他功能依赖它作为入口 |
 | P1 | 1. CLI view | 独立功能，不影响编辑器 |
+| P1 | 6. verify overflow | 质量保障，静态检测零成本 |
 | P1 | 5. Snap 完善 | 体验提升，增量改进 |
 | P2 | 4. 组合/解耦 | 最复杂，需要改动数据模型 |
