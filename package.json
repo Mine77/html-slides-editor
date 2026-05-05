@@ -27,6 +27,7 @@
     "starry:contract:annotate": "node skills/starry-slides-skill/tools/contract-protocol/annotate-slides.mjs",
     "starry:contract:manifest": "node skills/starry-slides-skill/tools/contract-protocol/build-manifest.mjs",
     "starry:open": "pnpm sslides open",
+    "starry:view": "pnpm sslides view",
     "test:e2e:prepare": "pnpm prepare:regression-deck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

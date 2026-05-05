@@ -5,29 +5,51 @@ import { formatVerifyDeckResult, hasVerifyErrors, verifyDeck } from "../core/ver
 import { resolveDeckPath } from "../runtime/deck-source";
 import { openBrowser } from "../runtime/open-browser";
 import { findAvailablePort } from "../runtime/ports";
+import { viewSlides } from "./view-slides";
+import { checkOverflow, formatOverflowResults } from "./verify-overflow";
 
-const COMMANDS = new Set(["open", "verify", "add-skill", "help", "--help", "-h"]);
+const COMMANDS = new Set(["open", "verify", "view", "add-skill", "help", "--help", "-h"]);
 
 function usage(): string {
   return `Usage:
   sslides [deck]
   sslides open [deck]
   sslides verify [deck]
+  sslides view [deck] [--out-dir <dir>] [--scale <factor>]
   sslides add-skill`;
 }
 
 function parseArgs(argv: string[]) {
-  const [first, second] = argv;
+  const flags: Record<string, string | boolean> = {};
+  const positional: string[] = [];
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith("--")) {
+      const key = arg.slice(2);
+      const next = argv[i + 1];
+      if (next && !next.startsWith("--")) {
+        flags[key] = next;
+        i++;
+      } else {
+        flags[key] = true;
+      }
+    } else {
+      positional.push(arg);
+    }
+  }
+
+  const [first, second] = positional;
 
   if (!first) {
-    return { command: "open", deckPath: undefined };
+    return { command: "open", deckPath: undefined, flags };
   }
 
   if (COMMANDS.has(first)) {
-    return { command: first, deckPath: second };
+    return { command: first, deckPath: second, flags };
   }
 
-  return { command: "open", deckPath: first };
+  return { command: "open", deckPath: first, flags };
 }
 
 function runVerify(deckPath: string): boolean {
@@ -77,7 +99,7 @@ async function runOpen(deckPath: string) {
 }
 
 async function main() {
-  const { command, deckPath: rawDeckPath } = parseArgs(process.argv.slice(2));
+  const { command, deckPath: rawDeckPath, flags } = parseArgs(process.argv.slice(2));
 
   if (command === "help" || command === "--help" || command === "-h") {
     console.log(usage());
@@ -92,9 +114,29 @@ async function main() {
   const deckPath = resolveDeckPath(rawDeckPath);
 
   if (command === "verify") {
-    if (!runVerify(deckPath)) {
+    const passed = runVerify(deckPath);
+    if (flags["check-overflow"]) {
+      const scale = typeof flags["scale"] === "string" ? parseInt(flags["scale"], 10) : undefined;
+      const overflowResults = await checkOverflow({ deckDir: deckPath, scale });
+      const output = formatOverflowResults(overflowResults);
+      console.log(output);
+      const hasOverflow = overflowResults.some(
+        (r) => r.bodyOverflowsHorizontally || r.bodyOverflowsVertically || r.overflowingElements.length > 0
+      );
+      if (hasOverflow) {
+        process.exitCode = 1;
+      }
+    }
+    if (!passed) {
       process.exitCode = 1;
     }
+    return;
+  }
+
+  if (command === "view") {
+    const outDir = typeof flags["out-dir"] === "string" ? flags["out-dir"] : undefined;
+    const scale = typeof flags["scale"] === "string" ? parseInt(flags["scale"], 10) : undefined;
+    await viewSlides({ deckDir: deckPath, outDir, scale });
     return;
   }
 

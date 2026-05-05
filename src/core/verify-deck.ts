@@ -106,6 +106,52 @@ function validateFile(filePath: string): VerifyDeckIssue[] {
     }
   }
 
+  // Static overflow checks: parse inline styles of [data-editable] elements
+  const slideWidth = root
+    ? parseInt(root.getAttribute("data-slide-width") ?? "1920", 10)
+    : 1920;
+  const slideHeight = root
+    ? parseInt(root.getAttribute("data-slide-height") ?? "1080", 10)
+    : 1080;
+
+  for (const node of editableNodes) {
+    const style = node.getAttribute("style");
+    if (!style) continue;
+
+    const widthMatch = style.match(/(?:^|;\s*)width\s*:\s*([\d.]+)px/i);
+    const heightMatch = style.match(/(?:^|;\s*)height\s*:\s*([\d.]+)px/i);
+    const leftMatch = style.match(/(?:^|;\s*)left\s*:\s*([\d.]+)px/i);
+    const topMatch = style.match(/(?:^|;\s*)top\s*:\s*([\d.]+)px/i);
+
+    if (widthMatch && leftMatch) {
+      const w = parseFloat(widthMatch[1]);
+      const l = parseFloat(leftMatch[1]);
+      if (w + l > slideWidth) {
+        issues.push(
+          issue(
+            filePath,
+            "warning",
+            `editable element width(${w}px) + left(${l}px) exceeds slide width(${slideWidth}px)`
+          )
+        );
+      }
+    }
+
+    if (heightMatch && topMatch) {
+      const h = parseFloat(heightMatch[1]);
+      const t = parseFloat(topMatch[1]);
+      if (h + t > slideHeight) {
+        issues.push(
+          issue(
+            filePath,
+            "warning",
+            `editable element height(${h}px) + top(${t}px) exceeds slide height(${slideHeight}px)`
+          )
+        );
+      }
+    }
+  }
+
   return issues;
 }
 
