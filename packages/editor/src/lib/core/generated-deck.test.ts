@@ -14,7 +14,7 @@ import {
 
 const regressionDeckConfig = JSON.parse(
   fs.readFileSync(
-    path.resolve(import.meta.dirname, "../../../../../testing/regression-deck/config.json"),
+    path.resolve(import.meta.dirname, "../../../e2e/fixtures/regression-deck/config.json"),
     "utf8"
   )
 ) as {
@@ -33,7 +33,7 @@ describe("generated deck import", () => {
       const url =
         typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
-      if (url.endsWith("/manifest.json")) {
+      if (url.endsWith("/manifest.json") || url.includes("/manifest.json?")) {
         return new Response(
           JSON.stringify({
             topic: "Contract Deck",
@@ -46,7 +46,7 @@ describe("generated deck import", () => {
         );
       }
 
-      if (url.endsWith("/slide-1.html")) {
+      if (url.endsWith("/slide-1.html") || url.includes("/slide-1.html?")) {
         return new Response(
           `<!DOCTYPE html>
 <html lang="en">
@@ -67,7 +67,7 @@ describe("generated deck import", () => {
     };
 
     const deck = await loadSlidesFromManifest({
-      manifestUrl: "https://example.com/generated/current/manifest.json",
+      manifestUrl: "https://example.com/sample-slides/manifest.json",
       fetchImpl,
       requestInit: {
         credentials: "same-origin",
@@ -88,6 +88,50 @@ describe("generated deck import", () => {
     });
   });
 
+  test("loadSlidesFromManifest propagates manifest cache busters to slide HTML requests", async () => {
+    const requestedUrls: string[] = [];
+    const fetchImpl: typeof fetch = async (input) => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      requestedUrls.push(url);
+
+      if (url.includes("/manifest.json")) {
+        return new Response(
+          JSON.stringify({
+            topic: "Contract Deck",
+            slides: [{ file: "slide-1.html", title: "Slide A" }],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }
+        );
+      }
+
+      return new Response(
+        `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <div class="slide-container">
+      <h1 data-editable="text">Imported title</h1>
+    </div>
+  </body>
+</html>`,
+        {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }
+      );
+    };
+
+    await loadSlidesFromManifest({
+      manifestUrl: "https://example.com/sample-slides/manifest.json?v=123",
+      fetchImpl,
+    });
+
+    expect(requestedUrls[1]).toBe("https://example.com/sample-slides/slide-1.html?v=123");
+  });
+
   test("parseSlide returns editor-compatible metadata for generated slides", () => {
     const workspaceRoot = path.resolve(import.meta.dirname, "../../../../../");
     const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hse-generated-"));
@@ -97,7 +141,7 @@ describe("generated deck import", () => {
     execFileSync(
       "node",
       [
-        path.join(workspaceRoot, "testing/regression-deck/prepare-regression-deck.mjs"),
+        path.join(workspaceRoot, "packages/editor/e2e/tools/prepare-regression-deck.mjs"),
         "--out-dir",
         outputRoot,
         "--app-out-dir",

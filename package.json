@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "node scripts/dev-with-url.mjs",
     "build": "pnpm -r build",
-    "editor:e2e:generate-deck": "node packages/editor/tools/e2e/generate-regression-deck.mjs",
-    "prepare:regression-deck": "node testing/regression-deck/prepare-regression-deck.mjs",
+    "editor:e2e:generate-deck": "node packages/editor/e2e/tools/prepare-regression-deck.mjs --app-out-dir apps/web/public/sample-slides",
+    "prepare:regression-deck": "node packages/editor/e2e/tools/prepare-regression-deck.mjs",
     "starry:contract:create-style-pack": "node skills/starry-slides-skill/tools/contract-protocol/create-style-pack.mjs",
     "starry:contract:validate": "node skills/starry-slides-skill/tools/contract-protocol/validate-slides.mjs",
     "starry:contract:annotate": "node skills/starry-slides-skill/tools/contract-protocol/annotate-slides.mjs",
@@ -18,7 +18,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "test": "pnpm -r --if-present test",
-    "test:e2e:serve": "pnpm test:e2e:prepare && pnpm build && pnpm --filter web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "test:e2e:serve": "pnpm test:e2e:prepare && pnpm build && STARRY_SLIDES_DECK_SOURCE=e2e pnpm --filter web exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "test:e2e": "playwright test",
     "verify": "pnpm lint && pnpm test && pnpm build && pnpm test:e2e"
   },

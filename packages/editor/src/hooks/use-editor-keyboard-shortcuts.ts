@@ -1,13 +1,6 @@
-import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 import {
-  type AtomicSlideOperation,
-  type EditableElement,
-  type ElementInsertOperation,
   type ElementLayoutUpdateOperation,
-  type ElementRemoveOperation,
-  type SlideModel,
-  type SlideOperation,
   captureElementLayoutStyleSnapshot,
   composeTransform,
   createElementPlacement,
@@ -18,110 +11,23 @@ import {
   querySlideElement,
   updateSlideElementHtmlIds,
 } from "../lib/core";
-
-interface ClipboardPayload {
-  elements: Array<{
-    sourceElementId: string;
-    html: string;
-    rect: SlideRect;
-    parentElementId: string | null;
-    previousSiblingElementId: string | null;
-    nextSiblingElementId: string | null;
-  }>;
-  unionRect: SlideRect;
-}
-
-interface SlideRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface UseEditorKeyboardShortcutsOptions {
-  activeSlide: SlideModel | undefined;
-  selectedElementIds: string[];
-  iframeRef: RefObject<HTMLIFrameElement | null>;
-  slideWidth: number;
-  slideHeight: number;
-  isEditingText: boolean;
-  canUndo: boolean;
-  canRedo: boolean;
-  onCommitOperation: (
-    operation:
-      | ElementInsertOperation
-      | ElementLayoutUpdateOperation
-      | ElementRemoveOperation
-      | SlideOperation
-  ) => void;
-  onSelectElementIds: (elementIds: string[]) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-}
-
-const ARROW_DELTAS: Record<string, { x: number; y: number }> = {
-  ArrowUp: { x: 0, y: -1 },
-  ArrowDown: { x: 0, y: 1 },
-  ArrowLeft: { x: -1, y: 0 },
-  ArrowRight: { x: 1, y: 0 },
-};
-
-function isEditableElementTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) {
-    return false;
-  }
-
-  return Boolean(
-    target.closest(
-      'input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"]'
-    )
-  );
-}
-
-function isLayoutEditable(element: EditableElement | undefined): boolean {
-  return element?.type === "block" || element?.type === "text";
-}
-
-function roundCssNumber(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function getShortcutStep(event: KeyboardEvent): number {
-  if (event.altKey) {
-    return 1;
-  }
-
-  if (event.shiftKey) {
-    return 10;
-  }
-
-  return 5;
-}
-
-function createIdMapForCopiedElement(html: string, sourceElementId: string, nextElementId: string) {
-  const idMap: Record<string, string> = {
-    [sourceElementId]: nextElementId,
-  };
-
-  if (typeof DOMParser === "undefined") {
-    return idMap;
-  }
-
-  const doc = new DOMParser().parseFromString(`<template>${html}</template>`, "text/html");
-  const root = doc.querySelector("template")?.content.firstElementChild;
-  if (!(root instanceof HTMLElement)) {
-    return idMap;
-  }
-
-  for (const node of root.querySelectorAll<HTMLElement>("[data-editor-id]")) {
-    const currentId = node.getAttribute("data-editor-id");
-    if (currentId) {
-      idMap[currentId] = `${nextElementId}-${currentId}`;
-    }
-  }
-
-  return idMap;
-}
+import {
+  elementRectToSlideRect,
+  getClampedPasteDelta,
+  getSlideBounds,
+  getUnionRect,
+  offsetSlideRect,
+  placeCopiedElement,
+} from "./editor-keyboard-geometry";
+import {
+  ARROW_DELTAS,
+  commitOperations,
+  createIdMapForCopiedElement,
+  getShortcutStep,
+  isEditableElementTarget,
+  isLayoutEditable,
+} from "./editor-keyboard-operations";
+import type { ClipboardPayload, UseEditorKeyboardShortcutsOptions } from "./editor-keyboard-types";
 
 function useEditorKeyboardShortcuts({
   activeSlide,
@@ -450,132 +356,6 @@ function useEditorKeyboardShortcuts({
       iframeDocument?.removeEventListener("keydown", onKeyDown);
     };
   }, [iframeRef, onCommitOperation, onRedo, onSelectElementIds, onUndo, slideHeight, slideWidth]);
-}
-
-function commitOperations(
-  slideId: string,
-  operations: AtomicSlideOperation[],
-  onCommitOperation: (operation: SlideOperation) => void
-) {
-  if (!operations.length) {
-    return false;
-  }
-
-  onCommitOperation(
-    operations.length === 1
-      ? operations[0]
-      : {
-          type: "operation.batch",
-          slideId,
-          operations,
-          timestamp: Date.now(),
-        }
-  );
-  return true;
-}
-
-function placeCopiedElement(elementHtml: string, rect: SlideRect): string {
-  if (typeof DOMParser === "undefined") {
-    return elementHtml;
-  }
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(`<template>${elementHtml}</template>`, "text/html");
-  const root = doc.querySelector("template")?.content.firstElementChild;
-  if (!(root instanceof HTMLElement)) {
-    return elementHtml;
-  }
-
-  const transformParts = parseTransformParts(root.style.transform);
-  const nextTransform = composeTransform(0, 0, transformParts.rotate);
-  root.style.position = "absolute";
-  root.style.left = `${roundCssNumber(rect.x)}px`;
-  root.style.top = `${roundCssNumber(rect.y)}px`;
-  root.style.width = `${roundCssNumber(rect.width)}px`;
-  root.style.height = `${roundCssNumber(rect.height)}px`;
-  root.style.margin = "0px";
-  root.style.boxSizing = "border-box";
-
-  if (nextTransform) {
-    root.style.transform = nextTransform;
-  } else {
-    root.style.removeProperty("transform");
-  }
-
-  if (!root.style.transformOrigin) {
-    root.style.transformOrigin = "center center";
-  }
-
-  return root.outerHTML;
-}
-
-function elementRectToSlideRect(elementRect: DOMRect, rootRect: DOMRect): SlideRect {
-  return {
-    x: elementRect.left - rootRect.left,
-    y: elementRect.top - rootRect.top,
-    width: elementRect.width,
-    height: elementRect.height,
-  };
-}
-
-function getSlideBounds(
-  iframeRef: RefObject<HTMLIFrameElement | null>,
-  activeSlide: SlideModel,
-  fallback: { width: number; height: number }
-) {
-  const doc = iframeRef.current?.contentDocument;
-  const rootNode = doc?.querySelector<HTMLElement>(activeSlide.rootSelector);
-  const rootRect = rootNode?.getBoundingClientRect();
-
-  return {
-    width: rootRect?.width || fallback.width,
-    height: rootRect?.height || fallback.height,
-  };
-}
-
-function offsetSlideRect(rect: SlideRect, offsetX: number, offsetY: number): SlideRect {
-  return {
-    x: roundCssNumber(rect.x + offsetX),
-    y: roundCssNumber(rect.y + offsetY),
-    width: rect.width,
-    height: rect.height,
-  };
-}
-
-function getUnionRect(rects: SlideRect[]): SlideRect | null {
-  if (!rects.length) {
-    return null;
-  }
-
-  return rects.reduce((accumulator, rect) => {
-    const minX = Math.min(accumulator.x, rect.x);
-    const minY = Math.min(accumulator.y, rect.y);
-    const maxX = Math.max(accumulator.x + accumulator.width, rect.x + rect.width);
-    const maxY = Math.max(accumulator.y + accumulator.height, rect.y + rect.height);
-
-    return {
-      x: minX,
-      y: minY,
-      width: maxX - minX,
-      height: maxY - minY,
-    };
-  });
-}
-
-function getClampedPasteDelta(
-  sourceRect: SlideRect,
-  preferredOffset: number,
-  slide: { width: number; height: number }
-) {
-  const maxX = Math.max(0, slide.width - sourceRect.width);
-  const maxY = Math.max(0, slide.height - sourceRect.height);
-  const nextX = Math.min(maxX, Math.max(0, sourceRect.x + preferredOffset));
-  const nextY = Math.min(maxY, Math.max(0, sourceRect.y + preferredOffset));
-
-  return {
-    x: roundCssNumber(nextX - sourceRect.x),
-    y: roundCssNumber(nextY - sourceRect.y),
-  };
 }
 
 export { useEditorKeyboardShortcuts };

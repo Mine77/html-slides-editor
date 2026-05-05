@@ -299,7 +299,7 @@ Tasks:
 
 Affected paths:
 
-- `tests/e2e/text-editing.spec.ts`
+- `packages/editor/e2e/tests/text-editing.spec.ts`
 - `DESIGN.md` if component inventories need to mention the new model
 - `ROADMAP.md` if old chat/tooling roadmap references become misleading
 

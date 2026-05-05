@@ -1,4 +1,15 @@
-import regressionDeckConfig from "../../testing/regression-deck/config.json";
+import fs from "node:fs";
+
+type RegressionDeckConfig = {
+  topic: string;
+  summary: string;
+  heroKicker: string;
+  agendaParagraph: string;
+};
+
+const regressionDeckConfig = JSON.parse(
+  fs.readFileSync(new URL("../fixtures/regression-deck/config.json", import.meta.url), "utf8")
+) as RegressionDeckConfig;
 
 export const REGRESSION_DECK_TOPIC = regressionDeckConfig.topic;
 export const REGRESSION_DECK_SUMMARY = regressionDeckConfig.summary;

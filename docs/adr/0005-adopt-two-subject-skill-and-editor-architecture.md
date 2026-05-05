@@ -286,7 +286,7 @@ This decision does not:
 6. Add or move editor delivery tools:
    `install-current-deck.mjs` and `open-editor.mjs`.
 7. Convert `skills/html-slides-generator/generate-slides.mjs` into
-   `packages/editor/tools/e2e/generate-regression-deck.mjs`.
+   `packages/editor/e2e/tools/generate-regression-deck.mjs`.
 8. Remove or deprecate `skills/html-slides-generator/SKILL.md`.
 9. Move `packages/core/src/*` into `packages/editor/src/lib/core/*`.
 10. Move `packages/core` tests into focused tests under
@@ -313,7 +313,7 @@ This decision does not:
 - [ ] `skills/html-slides-generator` is no longer exposed as a user-facing
       skill.
 - [ ] Editor E2E tests can generate their regression deck from
-      `packages/editor/tools/e2e`.
+      `packages/editor/e2e/tools`.
 - [ ] `packages/core` code has moved under `packages/editor/src/lib/core`.
 - [ ] `apps/web` no longer imports `@starry-slides/core` directly.
 - [ ] The workspace builds and tests after package and script updates.

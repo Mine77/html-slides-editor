@@ -13,13 +13,28 @@ Idea docs:
 
 ```text
 apps/
-  web/                         React + Vite app
+  web/                         React + Vite editor host
+    public/sample-slides/      App default sample deck loaded by pnpm dev
+    src/
+      use-slides-data.ts       Loads sample slides and saves edits in dev/e2e
+docs/
+  adr/                         Architecture decision records
+  roadmap/                     Split milestone plans linked from ROADMAP.md
 packages/
-  core/                        Slide contract, parser, import, update helpers
-  editor/                      Editor UI that applies core operations
+  editor/                      Editor package, slide contract, and regression suite
+    e2e/
+      fixtures/                Stable editor regression deck inputs
+      tests/                   Playwright specs and helpers
+      tools/                   Regression deck generator and reset scripts
+    src/
+      components/              Editor shell, toolbar, side panel, canvas, shadcn UI
+      hooks/                   Selection, manipulation, keyboard, editing hooks
+      lib/
+        core/                  Slide contract, parser, history, and operations
+        block-snap-*           Snap guide and target helpers
+        element-tool-*         Shared element tool model and commit helpers
 skills/
-  html-slides-generator/       Local slide generator skill
-  slides-protocol/             Headless protocol skill + tools
+  starry-slides-skill/         Agent-facing deck workflow and protocol tools
   slides-style-pack-starter/   Starter style pack package
 ```
 
@@ -30,66 +45,99 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` runs linked watch mode for `packages/core`, `packages/editor`, and `apps/web`.
+`pnpm dev` starts the local editor host and opens the generated deck from
+`apps/web/public/sample-slides/`. That directory is the App's long-lived
+default deck copy.
 
 Other useful commands:
 
 ```bash
+pnpm verify
 pnpm build
 pnpm lint
+pnpm test
 pnpm test:e2e
+pnpm editor:e2e:generate-deck
+pnpm prepare:regression-deck
 ```
 
-`pnpm test:e2e` runs the browser regression suite, including direct text editing coverage.
-It first prepares a fresh regression deck through `testing/regression-deck/prepare-regression-deck.mjs`, syncs that output into the app, then runs the editor against the generated deck end to end.
+`pnpm verify` is the full local gate: lint, unit tests, build, and Playwright e2e.
 
-The regression deck module exists to keep tests stable even if the skill surface evolves. The app still loads a single generated deck from `apps/web/public/generated/current/`.
+`pnpm test:e2e` runs the browser regression suite from `packages/editor/e2e/tests`.
+The Playwright config runs tests with one worker because the suite shares a generated
+deck reset/save cycle. Before the browser starts, it prepares a fresh temporary
+regression deck in `.e2e-test-slides/`, serves that deck for the e2e
+run, and resets it from an in-memory startup snapshot between tests.
+
+`pnpm editor:e2e:generate-deck` regenerates the same e2e deck and syncs it into
+`apps/web/public/sample-slides/` so normal `pnpm dev` starts from the current
+regression fixture.
+
+The regression deck module exists to keep tests stable even if the skill surface
+evolves. The repo intentionally keeps only two deck copies: the ignored e2e
+working copy in `.e2e-test-slides/` and the App default copy in
+`apps/web/public/sample-slides/`.
 
 ## Generate Slides
 
-The current skill is a local generator that writes standalone HTML slides and syncs the latest deck into the app.
-The default output is now a richer project-overview deck that also serves as a broad regression fixture with tables, charts, images, timelines, and other mixed-content layouts.
+The agent-facing generator workflow lives in `skills/starry-slides-skill`. A deck
+package should contain `manifest.json`, `slides/`, and optional `assets/`.
+
+Useful skill tool commands:
 
 ```bash
-pnpm generate:slides -- --topic "Your topic"
+pnpm starry:contract:validate -- --input path/to/slides
+pnpm starry:contract:annotate -- --input path/to/slides
+pnpm starry:contract:manifest -- --input-dir path/to/slides --deck-title "My Deck"
+pnpm starry:open
 ```
 
-Optional example:
+To generate the editor regression fixture directly:
 
 ```bash
-pnpm generate:slides -- \
-  --topic "Starry Slides" \
-  --summary "A starter deck with editable markers for Starry Slides." \
-  --points "Problem|Approach|First milestone"
+pnpm editor:e2e:generate-deck
 ```
 
-This command:
+Generated or installed decks are synced to `apps/web/public/sample-slides/`
+when the command is meant to update the App default deck.
+The app loads `apps/web/public/sample-slides/manifest.json` through the editor
+package import helper. A generated deck is required for the app to render slides.
 
-- writes the deck to `generated/<topic-slug>/`
-- writes `manifest.json` next to the slide files
-- syncs the latest output to `apps/web/public/generated/current/`
+## Editor Package
 
-The app loads `apps/web/public/generated/current/manifest.json` through a core import helper. A generated deck is required for the app to render slides.
+`packages/editor` now owns both the interactive editor and the slide-domain helpers
+used by the app:
+
+- `src/lib/core/` parses generated decks, enforces the slide contract, and applies
+  history-backed slide operations.
+- `src/components/` renders the editor shell, floating toolbar, sidebar tool panel,
+  stage canvas, overlays, and local UI primitives.
+- `src/hooks/` owns interaction state for selection, text editing, keyboard
+  shortcuts, block manipulation, and viewport behavior.
+- `e2e/` keeps Playwright tests, fixtures, and generator tools together with the
+  editor package.
 
 ## Protocol Skill
 
-The repo now includes a headless slide protocol package in `skills/slides-protocol`.
+The repo includes a headless slide protocol workflow in `skills/starry-slides-skill`.
 
 It contains:
 
 - `SKILL.md` for agent-facing usage
-- `references/contract-v1.md` for the single editable-slide protocol
-- `references/archetypes.md` for fixed v1 page forms
-- `references/specimen-deck.json` for canonical sample content
-- `tools/*.mjs` for validation, annotation, and manifest generation
+- `references/contract-protocol/contract-v1.md` for the single editable-slide protocol
+- `references/contract-protocol/archetypes.md` for fixed v1 page forms
+- `references/contract-protocol/specimen-deck.json` for canonical sample content
+- `tools/contract-protocol/*.mjs` for validation, annotation, style-pack creation,
+  and manifest generation
+- `tools/install-current-deck.mjs` and `tools/open-editor.mjs` for local delivery
 
 Useful commands:
 
 ```bash
-pnpm slides:protocol:create-style-pack -- --out-dir generated/my-style-pack
-pnpm slides:protocol:validate -- --input skills/slides-style-pack-starter/template/slices
-pnpm slides:protocol:annotate -- --input path/to/slides
-pnpm slides:protocol:manifest -- --input-dir skills/slides-style-pack-starter/template/slices --deck-title "Starter Minimal"
+pnpm starry:contract:create-style-pack -- --out-dir generated/my-style-pack
+pnpm starry:contract:validate -- --input skills/slides-style-pack-starter/template/slices
+pnpm starry:contract:annotate -- --input path/to/slides
+pnpm starry:contract:manifest -- --input-dir skills/slides-style-pack-starter/template/slices --deck-title "Starter Minimal"
 ```
 
 ## Style Pack Starter

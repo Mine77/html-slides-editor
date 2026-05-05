@@ -4,6 +4,12 @@ import { SidebarToolPanel } from "./components/sidebar-tool-panel";
 import { SlideSidebar } from "./components/slide-sidebar";
 import { StageCanvas } from "./components/stage-canvas";
 import { TooltipProvider } from "./components/ui/tooltip";
+import {
+  createAttributeUpdateOperation,
+  createStyleUpdateOperation,
+  getHtmlAttributeValue,
+  getInlineStyleValue,
+} from "./editor-operations";
 import { useBlockManipulation } from "./hooks/use-block-manipulation";
 import { useEditorKeyboardShortcuts } from "./hooks/use-editor-keyboard-shortcuts";
 import { useIframeTextEditing } from "./hooks/use-iframe-text-editing";
@@ -12,14 +18,10 @@ import { useSlideInspector } from "./hooks/use-slide-inspector";
 import { useSlideThumbnails } from "./hooks/use-slide-thumbnails";
 import { useStageViewport } from "./hooks/use-stage-viewport";
 import {
-  type AttributeUpdateOperation,
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
-  SELECTOR_ATTR,
   type SlideModel,
-  type StyleUpdateOperation,
   composeTransform,
-  getSlideInlineStyleValue,
   parseTransformParts,
 } from "./lib/core";
 import type { ElementToolMode } from "./lib/element-tool-model";
@@ -124,31 +126,35 @@ function SlidesEditor({
     : selectionLabel;
   const isSelectionOverlayInteractive = Boolean(manipulationOverlay);
   const hasEditableSelection = Boolean(selectedElementId);
+  const selectedTargetElementId = selectedElementId ?? "slide-root";
+  const attributeValues = {
+    locked: activeSlide
+      ? getHtmlAttributeValue(activeSlide, selectedTargetElementId, "data-editor-locked")
+      : "",
+    altText: activeSlide ? getHtmlAttributeValue(activeSlide, selectedTargetElementId, "alt") : "",
+    ariaLabel: activeSlide
+      ? getHtmlAttributeValue(activeSlide, selectedTargetElementId, "aria-label")
+      : "",
+    linkUrl: activeSlide
+      ? getHtmlAttributeValue(activeSlide, selectedTargetElementId, "data-link-url")
+      : "",
+  };
 
   function commitStyleChange(propertyName: string, nextValue: string) {
     if (!activeSlide) {
       return;
     }
 
-    const targetElementId = selectedElementId ?? "slide-root";
-    const previousValue = getInlineStyleValue(activeSlide, targetElementId, propertyName);
-    const normalizedNextValue = nextValue.trim();
-
-    if (previousValue === normalizedNextValue) {
-      return;
-    }
-
-    const operation: StyleUpdateOperation = {
-      type: "style.update",
-      slideId: activeSlide.id,
-      elementId: targetElementId,
+    const operation = createStyleUpdateOperation({
+      elementId: selectedTargetElementId,
+      nextValue,
       propertyName,
-      previousValue,
-      nextValue: normalizedNextValue,
-      timestamp: Date.now(),
-    };
+      slide: activeSlide,
+    });
 
-    commitOperation(operation);
+    if (operation) {
+      commitOperation(operation);
+    }
   }
 
   function commitAttributeChange(attributeName: string, nextValue: string) {
@@ -156,25 +162,16 @@ function SlidesEditor({
       return;
     }
 
-    const targetElementId = selectedElementId ?? "slide-root";
-    const previousValue = getHtmlAttributeValue(activeSlide, targetElementId, attributeName);
-    const normalizedNextValue = nextValue.trim();
-
-    if (previousValue === normalizedNextValue) {
-      return;
-    }
-
-    const operation: AttributeUpdateOperation = {
-      type: "attribute.update",
-      slideId: activeSlide.id,
-      elementId: targetElementId,
+    const operation = createAttributeUpdateOperation({
       attributeName,
-      previousValue,
-      nextValue: normalizedNextValue,
-      timestamp: Date.now(),
-    };
+      elementId: selectedTargetElementId,
+      nextValue,
+      slide: activeSlide,
+    });
 
-    commitOperation(operation);
+    if (operation) {
+      commitOperation(operation);
+    }
   }
 
   function commitLayerAction(action: string) {
@@ -370,28 +367,7 @@ function SlidesEditor({
               onAlignToSlide={commitArrangeAction}
               onLayerOrder={commitLayerAction}
               onModeChange={() => setElementToolMode("panel")}
-              attributeValues={{
-                locked: getHtmlAttributeValue(
-                  activeSlide,
-                  selectedElementId ?? "slide-root",
-                  "data-editor-locked"
-                ),
-                altText: getHtmlAttributeValue(
-                  activeSlide,
-                  selectedElementId ?? "slide-root",
-                  "alt"
-                ),
-                ariaLabel: getHtmlAttributeValue(
-                  activeSlide,
-                  selectedElementId ?? "slide-root",
-                  "aria-label"
-                ),
-                linkUrl: getHtmlAttributeValue(
-                  activeSlide,
-                  selectedElementId ?? "slide-root",
-                  "data-link-url"
-                ),
-              }}
+              attributeValues={attributeValues}
             />
             {elementToolMode === "panel" && hasEditableSelection ? (
               <SidebarToolPanel
@@ -401,28 +377,7 @@ function SlidesEditor({
                 canEditStyles={Boolean(activeSlide)}
                 selectedElementType={selectedElement?.type ?? "block"}
                 selectedElementLabel={selectedElementId ? unifiedSelectionLabel : "slide"}
-                attributeValues={{
-                  locked: getHtmlAttributeValue(
-                    activeSlide,
-                    selectedElementId ?? "slide-root",
-                    "data-editor-locked"
-                  ),
-                  altText: getHtmlAttributeValue(
-                    activeSlide,
-                    selectedElementId ?? "slide-root",
-                    "alt"
-                  ),
-                  ariaLabel: getHtmlAttributeValue(
-                    activeSlide,
-                    selectedElementId ?? "slide-root",
-                    "aria-label"
-                  ),
-                  linkUrl: getHtmlAttributeValue(
-                    activeSlide,
-                    selectedElementId ?? "slide-root",
-                    "data-link-url"
-                  ),
-                }}
+                attributeValues={attributeValues}
                 selectedElementId={selectedElementId}
                 onStyleChange={commitStyleChange}
                 onAttributeChange={commitAttributeChange}
@@ -436,20 +391,6 @@ function SlidesEditor({
       </div>
     </TooltipProvider>
   );
-}
-
-function getInlineStyleValue(slide: SlideModel, elementId: string, propertyName: string) {
-  return getSlideInlineStyleValue(slide, elementId, propertyName);
-}
-
-function getHtmlAttributeValue(slide: SlideModel, elementId: string, attributeName: string) {
-  if (typeof DOMParser === "undefined") {
-    return "";
-  }
-
-  const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
-  const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${elementId}"]`);
-  return node?.getAttribute(attributeName)?.trim() ?? "";
 }
 
 export { SlidesEditor };

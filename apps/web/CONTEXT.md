@@ -16,13 +16,18 @@ This package is responsible for:
 
 ## Content Sources
 
-The app prefers generated decks from:
+The app loads its default sample deck from:
 
-- `apps/web/public/generated/current/manifest.json`
+- `apps/web/public/sample-slides/manifest.json`
 
-`packages/core` provides import helpers for reading manifest-driven decks.
+`@starry-slides/editor` provides import helpers for reading manifest-driven decks.
 
-The app does not maintain a sample-slide fallback. A generated deck is required.
+Editor e2e runs use an ignored temporary deck in `.e2e-test-slides/`.
+That directory is served only when the Vite process runs with
+`STARRY_SLIDES_DECK_SOURCE=e2e`. Normal `pnpm dev` serves
+`apps/web/public/sample-slides/`.
+
+The app does not maintain a fallback deck. Sample slides or an installed deck are required.
 
 ## Package Boundary
 
@@ -30,7 +35,7 @@ The app does not maintain a sample-slide fallback. A generated deck is required.
 
 - app composition
 - generated-deck loading policy
-- runtime integration with `packages/core` and `packages/editor`
+- runtime integration with `@starry-slides/editor`
 
 `apps/web` does not own:
 

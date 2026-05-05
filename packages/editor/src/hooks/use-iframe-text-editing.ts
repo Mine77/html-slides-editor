@@ -1,57 +1,16 @@
-import type { Dispatch, RefObject, SetStateAction } from "react";
+import type { SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SELECTOR_ATTR, getSlideElementSelector, querySlideElement } from "../lib/core";
 import {
-  SELECTOR_ATTR,
-  type SlideModel,
-  type TextUpdateOperation,
-  getSlideElementSelector,
-  querySlideElement,
-} from "../lib/core";
-
-interface TextEditingState {
-  slideId: string;
-  elementId: string;
-  initialText: string;
-}
-
-interface UseIframeTextEditingOptions {
-  activeSlide: SlideModel | undefined;
-  iframeRef: RefObject<HTMLIFrameElement | null>;
-  onCommitOperation: (operation: TextUpdateOperation) => void;
-}
-
-interface UseIframeTextEditingResult {
-  selectedElementId: string | null;
-  selectedElementIds: string[];
-  isEditingText: boolean;
-  setSelectedElementId: Dispatch<SetStateAction<string | null>>;
-  setSelectedElementIds: Dispatch<SetStateAction<string[]>>;
-  beginTextEditing: (elementId: string) => void;
-  clearSelection: () => void;
-}
-
-const EDITING_TEXT_STYLE_ID = "hse-editing-text-style";
-const EDITING_TEXT_STYLE = `
-[data-hse-editing="true"] {
-  outline: none !important;
-  box-shadow: none !important;
-  overflow: visible;
-  caret-color: currentColor;
-  white-space: pre-wrap;
-  user-select: text;
-  -webkit-user-select: text;
-}
-
-[data-hse-editing="true"]:focus,
-[data-hse-editing="true"]:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-`;
-
-function getEditableSelectionTarget(target: Element): HTMLElement | null {
-  return target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
-}
+  ensureEditingTextStyle,
+  getEditableSelectionTarget,
+  selectEditableNodeEnd,
+} from "./iframe-text-editing-dom";
+import type {
+  TextEditingState,
+  UseIframeTextEditingOptions,
+  UseIframeTextEditingResult,
+} from "./iframe-text-editing-types";
 
 function useIframeTextEditing({
   activeSlide,
@@ -188,12 +147,7 @@ function useIframeTextEditing({
     doc.write(activeSlide.htmlSource);
     doc.close();
 
-    if (!doc.getElementById(EDITING_TEXT_STYLE_ID)) {
-      const style = doc.createElement("style");
-      style.id = EDITING_TEXT_STYLE_ID;
-      style.textContent = EDITING_TEXT_STYLE;
-      doc.head.appendChild(style);
-    }
+    ensureEditingTextStyle(doc);
 
     const commitNodeText = (node: HTMLElement) => {
       const elementId = node.getAttribute(SELECTOR_ATTR);
@@ -349,12 +303,7 @@ function useIframeTextEditing({
 
     editableNode.focus();
 
-    const selection = editableNode.ownerDocument.getSelection();
-    const range = editableNode.ownerDocument.createRange();
-    range.selectNodeContents(editableNode);
-    range.collapse(false);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
+    selectEditableNodeEnd(editableNode);
 
     editableNode.onkeydown = (event) => {
       if (event.key === "Enter" && !event.shiftKey) {

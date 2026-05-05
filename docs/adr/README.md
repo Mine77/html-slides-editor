@@ -35,3 +35,4 @@ Update this directory whenever a change affects:
 | [0004](./0004-deepen-core-document-modules.md)                    | Deepen core by splitting document, history, geometry, and import modules | superseded |
 | [0005](./0005-adopt-two-subject-skill-and-editor-architecture.md) | Adopt two-subject architecture for Starry Slides Skill and Editor        | accepted   |
 | [0006](./0006-unify-element-tooling-into-shared-toolbar-model.md) | Unify element tooling into a shared toolbar model                        | accepted   |
+| [0007](./0007-limit-generated-deck-copies.md)                     | Limit generated deck copies                                              | accepted   |

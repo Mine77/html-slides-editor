@@ -35,12 +35,17 @@ export async function loadSlidesFromManifest({
   }
 
   const manifestBaseUrl = manifestResponse.url || manifestUrl;
+  const manifestUrlObject = new URL(manifestBaseUrl);
   const slides = await Promise.all(
     manifest.slides.map(async (slide, index) => {
-      const slideResponse = await activeFetch(
-        new URL(slide.file, manifestBaseUrl).toString(),
-        effectiveRequestInit
-      );
+      const slideUrl = new URL(slide.file, manifestBaseUrl);
+      for (const [key, value] of manifestUrlObject.searchParams) {
+        if (!slideUrl.searchParams.has(key)) {
+          slideUrl.searchParams.set(key, value);
+        }
+      }
+
+      const slideResponse = await activeFetch(slideUrl.toString(), effectiveRequestInit);
       if (!slideResponse.ok) {
         throw new Error(`Failed to load slide HTML: ${slide.file}`);
       }

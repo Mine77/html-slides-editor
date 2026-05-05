@@ -15,7 +15,7 @@ interface SlidesDataResult {
   saveSlides: (slides: SlideModel[]) => void;
 }
 
-const GENERATED_MANIFEST_URL = "/generated/current/manifest.json";
+const GENERATED_MANIFEST_URL = "/sample-slides/manifest.json";
 const GENERATED_SAVE_URL = "/__editor/save-generated-deck";
 const SAVE_DEBOUNCE_MS = 800;
 
@@ -37,7 +37,7 @@ export function useSlidesData(): SlidesDataResult {
   useEffect(() => {
     let cancelled = false;
     loadSlidesFromManifest({
-      manifestUrl: GENERATED_MANIFEST_URL,
+      manifestUrl: `${GENERATED_MANIFEST_URL}?v=${Date.now()}`,
     })
       .then((importedDeck) => {
         if (cancelled) {
@@ -48,7 +48,7 @@ export function useSlidesData(): SlidesDataResult {
           setDeckTitle("Generated deck");
           setSlides([]);
           setSourceLabel("Generated deck unavailable");
-          setErrorMessage("No generated deck was found at /generated/current/manifest.json.");
+          setErrorMessage("No sample slides were found at /sample-slides/manifest.json.");
           setIsLoading(false);
           return;
         }

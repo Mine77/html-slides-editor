@@ -8,6 +8,7 @@
       "coverage",
       ".vite",
       "generated",
+      ".e2e-test-slides",
       ".tmp",
       "docs/agents",
       ".scratch",

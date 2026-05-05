@@ -4,110 +4,22 @@ import {
   composeTransform,
   parseTransformParts,
 } from "./layout";
-import type { SlideModel } from "./slide-contract";
 import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
-import { parseSlide, querySlideElement } from "./slide-document";
+import { querySlideElement } from "./slide-document";
+import { parseHtmlDocument, updateHtmlSource } from "./slide-html-document";
 
-export interface TextUpdateOperation {
-  type: "text.update";
-  slideId: string;
-  elementId: string;
-  previousText: string;
-  nextText: string;
-  timestamp: number;
-}
-
-export interface StyleUpdateOperation {
-  type: "style.update";
-  slideId: string;
-  elementId: string;
-  propertyName: string;
-  previousValue: string;
-  nextValue: string;
-  timestamp: number;
-}
-
-export interface AttributeUpdateOperation {
-  type: "attribute.update";
-  slideId: string;
-  elementId: string;
-  attributeName: string;
-  previousValue: string;
-  nextValue: string;
-  timestamp: number;
-}
-
-export interface ElementLayoutUpdateOperation {
-  type: "element.layout.update";
-  slideId: string;
-  elementId: string;
-  previousStyle: ElementLayoutStyleSnapshot;
-  nextStyle: ElementLayoutStyleSnapshot;
-  timestamp: number;
-}
-
-export interface ElementInsertOperation {
-  type: "element.insert";
-  slideId: string;
-  elementId: string;
-  parentElementId: string | null;
-  previousSiblingElementId: string | null;
-  nextSiblingElementId: string | null;
-  html: string;
-  timestamp: number;
-}
-
-export interface ElementRemoveOperation {
-  type: "element.remove";
-  slideId: string;
-  elementId: string;
-  parentElementId: string | null;
-  previousSiblingElementId: string | null;
-  nextSiblingElementId: string | null;
-  html: string;
-  timestamp: number;
-}
-
-export type AtomicSlideOperation =
-  | TextUpdateOperation
-  | StyleUpdateOperation
-  | AttributeUpdateOperation
-  | ElementLayoutUpdateOperation
-  | ElementInsertOperation
-  | ElementRemoveOperation;
-
-export interface SlideBatchOperation {
-  type: "operation.batch";
-  slideId: string;
-  operations: AtomicSlideOperation[];
-  timestamp: number;
-}
-
-export type SlideOperation = AtomicSlideOperation | SlideBatchOperation;
-
-function parseHtmlDocument(html: string): Document | null {
-  if (typeof DOMParser === "undefined") {
-    return null;
-  }
-
-  const parser = new DOMParser();
-  return parser.parseFromString(html, "text/html");
-}
-
-function serializeHtmlDocument(doc: Document): string {
-  return `<!DOCTYPE html>
-${doc.documentElement.outerHTML}`;
-}
-
-function updateHtmlSource(html: string, updater: (doc: Document) => void): string {
-  const doc = parseHtmlDocument(html);
-  if (!doc) {
-    return html;
-  }
-
-  updater(doc);
-  return serializeHtmlDocument(doc);
-}
+export type {
+  AtomicSlideOperation,
+  AttributeUpdateOperation,
+  ElementInsertOperation,
+  ElementLayoutUpdateOperation,
+  ElementRemoveOperation,
+  SlideBatchOperation,
+  SlideOperation,
+  StyleUpdateOperation,
+  TextUpdateOperation,
+} from "./slide-operation-types";
+import type { ElementInsertOperation, SlideOperation } from "./slide-operation-types";
 
 export function updateSlideText(html: string, elementId: string, value: string): string {
   return updateHtmlSource(html, (doc) => {
@@ -386,135 +298,4 @@ export function updateSlideElementTransform(
   });
 }
 
-function preserveSlideSource(sourceSlide: SlideModel, nextSlide: SlideModel): SlideModel {
-  return {
-    ...nextSlide,
-    sourceFile: sourceSlide.sourceFile,
-  };
-}
-
-export function applySlideOperation(slide: SlideModel, operation: SlideOperation): SlideModel {
-  if (slide.id !== operation.slideId) {
-    return slide;
-  }
-
-  switch (operation.type) {
-    case "operation.batch":
-      return operation.operations.reduce(
-        (currentSlide, childOperation) => applySlideOperation(currentSlide, childOperation),
-        slide
-      );
-    case "text.update":
-      return preserveSlideSource(
-        slide,
-        parseSlide(
-          updateSlideText(slide.htmlSource, operation.elementId, operation.nextText),
-          slide.id
-        )
-      );
-    case "style.update":
-      return preserveSlideSource(
-        slide,
-        parseSlide(
-          updateSlideStyle(
-            slide.htmlSource,
-            operation.elementId,
-            operation.propertyName,
-            operation.nextValue
-          ),
-          slide.id
-        )
-      );
-    case "attribute.update":
-      return preserveSlideSource(
-        slide,
-        parseSlide(
-          updateSlideAttribute(
-            slide.htmlSource,
-            operation.elementId,
-            operation.attributeName,
-            operation.nextValue
-          ),
-          slide.id
-        )
-      );
-    case "element.layout.update":
-      return preserveSlideSource(
-        slide,
-        parseSlide(
-          updateSlideElementLayout(slide.htmlSource, operation.elementId, operation.nextStyle),
-          slide.id
-        )
-      );
-    case "element.insert":
-      return preserveSlideSource(
-        slide,
-        parseSlide(insertSlideElement(slide.htmlSource, operation), slide.id)
-      );
-    case "element.remove":
-      return preserveSlideSource(
-        slide,
-        parseSlide(removeSlideElement(slide.htmlSource, operation.elementId), slide.id)
-      );
-  }
-}
-
-export function invertSlideOperation(operation: SlideOperation): SlideOperation {
-  switch (operation.type) {
-    case "operation.batch":
-      return {
-        type: "operation.batch",
-        slideId: operation.slideId,
-        operations: operation.operations
-          .map((childOperation) => invertSlideOperation(childOperation) as AtomicSlideOperation)
-          .reverse(),
-        timestamp: operation.timestamp,
-      };
-    case "text.update":
-      return {
-        ...operation,
-        previousText: operation.nextText,
-        nextText: operation.previousText,
-      };
-    case "style.update":
-      return {
-        ...operation,
-        previousValue: operation.nextValue,
-        nextValue: operation.previousValue,
-      };
-    case "attribute.update":
-      return {
-        ...operation,
-        previousValue: operation.nextValue,
-        nextValue: operation.previousValue,
-      };
-    case "element.layout.update":
-      return {
-        ...operation,
-        previousStyle: operation.nextStyle,
-        nextStyle: operation.previousStyle,
-      };
-    case "element.insert":
-      return {
-        type: "element.remove",
-        slideId: operation.slideId,
-        elementId: operation.elementId,
-        parentElementId: operation.parentElementId,
-        previousSiblingElementId: operation.previousSiblingElementId,
-        nextSiblingElementId: operation.nextSiblingElementId,
-        html: operation.html,
-        timestamp: operation.timestamp,
-      };
-    case "element.remove":
-      return {
-        type: "element.insert",
-        slideId: operation.slideId,
-        elementId: operation.elementId,
-        parentElementId: operation.parentElementId,
-        previousSiblingElementId: operation.previousSiblingElementId,
-        nextSiblingElementId: operation.nextSiblingElementId,
-        html: operation.html,
-        timestamp: operation.timestamp,
-      };
-  }
-}
+export { applySlideOperation, invertSlideOperation } from "./slide-operation-reducer";

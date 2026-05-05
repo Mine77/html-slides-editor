@@ -1,21 +1,14 @@
 import { PanelRightOpen } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { useId } from "react";
-import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
+import { commitElementToolFeature } from "../lib/element-tool-commit";
 import {
   ELEMENT_TOOL_GROUPS,
   type ElementToolFeature,
   type ElementToolSubgroup,
 } from "../lib/element-tool-model";
-import {
-  getElementToolValue,
-  getFeatureOptions,
-  getTextDecorationCommitValue,
-  isFeatureActive,
-  normalizeFeatureCommitValue,
-} from "../lib/element-tool-values";
+import { getElementToolValue, isFeatureActive } from "../lib/element-tool-values";
 import {
   EDITOR_MOTION_MS,
   editorMotionClassName,
@@ -23,18 +16,17 @@ import {
   editorPanelExitClassName,
 } from "../lib/motion";
 import { cn } from "../lib/utils";
-import { ColorPicker } from "./color-picker";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { renderFloatingToolbarFeature } from "./floating-toolbar-feature";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Separator } from "./ui/separator";
+  Divider,
+  IconButton,
+  PanelTitle,
+  ToolbarIcon,
+  ToolbarPanel,
+  ToolbarTrigger,
+  getPanelWidth,
+  shouldUpdateOffset,
+} from "./floating-toolbar-parts";
 
 interface FloatingToolbarProps {
   inspectedStyles: CssPropertyRow[];
@@ -158,41 +150,16 @@ function FloatingToolbar({
   }
 
   function commitFeature(feature: ElementToolFeature, nextValue: string) {
-    if (feature.target === "style" && feature.propertyName) {
-      const currentValue = getElementToolValue({ feature, inspectedStyles, attributeValues });
-
-      if (feature.id === "font-underline") {
-        onStyleChange(
-          feature.propertyName,
-          getTextDecorationCommitValue(currentValue, "underline", nextValue === "")
-        );
-        return;
-      }
-
-      if (feature.id === "font-strikethrough") {
-        onStyleChange(
-          feature.propertyName,
-          getTextDecorationCommitValue(currentValue, "line-through", nextValue === "")
-        );
-        return;
-      }
-
-      onStyleChange(feature.propertyName, normalizeFeatureCommitValue(feature, nextValue));
-      return;
-    }
-
-    if (feature.target === "attribute" && feature.attributeName) {
-      onAttributeChange(feature.attributeName, normalizeFeatureCommitValue(feature, nextValue));
-      return;
-    }
-
-    if (feature.id === "align-to-slide") {
-      onAlignToSlide(nextValue);
-    }
-
-    if (feature.id === "layer-order") {
-      onLayerOrder(nextValue);
-    }
+    commitElementToolFeature({
+      attributeValues,
+      feature,
+      inspectedStyles,
+      nextValue,
+      onAlignToSlide,
+      onAttributeChange,
+      onLayerOrder,
+      onStyleChange,
+    });
   }
 
   return (
@@ -266,392 +233,14 @@ function FloatingToolbar({
   }
 
   function renderFeature(feature: ElementToolFeature) {
-    const currentValue = getElementToolValue({ feature, inspectedStyles, attributeValues });
-    const fieldId = `floating-${feature.id}`;
-
-    if (feature.controlType === "select") {
-      return (
-        <div key={feature.id} className="grid gap-1">
-          <FieldLabel htmlFor={fieldId}>{feature.label}</FieldLabel>
-          <Select
-            value={currentValue || EMPTY_SELECT_VALUE}
-            onValueChange={(nextValue) =>
-              commitFeature(feature, nextValue === EMPTY_SELECT_VALUE ? "" : nextValue)
-            }
-          >
-            <SelectTrigger
-              id={fieldId}
-              aria-label={feature.label}
-              size="sm"
-              className="h-8 rounded-md border-transparent bg-foreground/[0.03] px-2 text-xs shadow-none hover:bg-foreground/[0.06]"
-              data-value={currentValue}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {getFeatureOptions(feature, currentValue).map((option) => (
-                  <SelectItem
-                    key={option.value || EMPTY_SELECT_VALUE}
-                    value={option.value || EMPTY_SELECT_VALUE}
-                    data-value={option.value}
-                    style={
-                      feature.id === "font-family" && option.value
-                        ? { fontFamily: option.value }
-                        : undefined
-                    }
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      );
-    }
-
-    if (feature.controlType === "color") {
-      return (
-        <div key={feature.id} className="grid gap-1">
-          <FieldLabel>{feature.label}</FieldLabel>
-          <ColorPicker
-            value={currentValue}
-            includeGradients={feature.id === "background-color"}
-            onChange={(nextValue) => commitFeature(feature, nextValue)}
-          />
-        </div>
-      );
-    }
-
-    if (feature.controlType === "toggle") {
-      const active = isFeatureActive(feature, currentValue);
-      return (
-        <Button
-          key={feature.id}
-          type="button"
-          variant={active ? "secondary" : "outline"}
-          aria-pressed={active}
-          onClick={() => commitFeature(feature, active ? "" : "true")}
-        >
-          {feature.label}
-        </Button>
-      );
-    }
-
-    if (feature.controlType === "slider" || feature.controlType === "number") {
-      return (
-        <div key={feature.id} className="grid gap-1">
-          <FieldLabel htmlFor={fieldId}>{feature.label}</FieldLabel>
-          <Input
-            id={fieldId}
-            type="number"
-            min={feature.min}
-            max={feature.max}
-            step={feature.step}
-            value={currentValue}
-            onChange={(event) => commitFeature(feature, event.target.value)}
-            className="h-8 rounded-md bg-foreground/[0.03] px-2 text-[13px] tabular-nums"
-          />
-        </div>
-      );
-    }
-
-    if (feature.controlType === "action-group") {
-      return (
-        <div key={feature.id} className="grid gap-1">
-          <FieldLabel>{feature.label}</FieldLabel>
-          <div className="grid gap-1">
-            {(feature.options ?? []).map((option) => {
-              const Icon = option.icon;
-              return (
-                <ToolbarOption
-                  key={option.value}
-                  title={option.label}
-                  onClick={() => {
-                    commitFeature(feature, option.value);
-                    setActiveSubgroupId(null);
-                  }}
-                >
-                  {Icon ? <ToolbarIcon icon={Icon} /> : null}
-                  <span>{option.label}</span>
-                </ToolbarOption>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    if (feature.controlType === "custom-css") {
-      return <CustomCssControl key={feature.id} onCommit={onStyleChange} />;
-    }
-
-    return (
-      <div key={feature.id} className="grid gap-1">
-        <FieldLabel htmlFor={fieldId}>{feature.label}</FieldLabel>
-        <Input
-          id={fieldId}
-          type="text"
-          value={currentValue}
-          placeholder={feature.placeholder}
-          onChange={(event) => commitFeature(feature, event.target.value)}
-          className="h-8 rounded-md bg-foreground/[0.03] px-2 text-[13px]"
-        />
-      </div>
-    );
+    return renderFloatingToolbarFeature({
+      currentValue: getElementToolValue({ feature, inspectedStyles, attributeValues }),
+      feature,
+      onClosePanel: () => setActiveSubgroupId(null),
+      onCommitFeature: commitFeature,
+      onStyleChange,
+    });
   }
-}
-
-function CustomCssControl({
-  onCommit,
-}: {
-  onCommit: (propertyName: string, nextValue: string) => void;
-}) {
-  const propertyNameId = useId();
-  const propertyValueId = useId();
-  const [propertyName, setPropertyName] = useState("");
-  const [propertyValue, setPropertyValue] = useState("");
-
-  function apply() {
-    const normalizedPropertyName = propertyName.trim();
-    if (!normalizedPropertyName) {
-      return;
-    }
-
-    onCommit(normalizedPropertyName, propertyValue.trim());
-    setPropertyValue("");
-  }
-
-  return (
-    <div className="grid gap-2">
-      <div className="grid gap-1">
-        <FieldLabel htmlFor={propertyNameId}>Property name</FieldLabel>
-        <Input
-          id={propertyNameId}
-          type="text"
-          value={propertyName}
-          placeholder="e.g. justify-content"
-          onChange={(event) => setPropertyName(event.target.value)}
-        />
-      </div>
-      <div className="grid gap-1">
-        <FieldLabel htmlFor={propertyValueId}>Property value</FieldLabel>
-        <Input
-          id={propertyValueId}
-          type="text"
-          value={propertyValue}
-          placeholder="e.g. space-between"
-          onChange={(event) => setPropertyValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              apply();
-            }
-          }}
-        />
-      </div>
-      <Button type="button" variant="outline" disabled={!propertyName.trim()} onClick={apply}>
-        Apply property
-      </Button>
-    </div>
-  );
-}
-
-function ToolbarTrigger({
-  children,
-  active = false,
-  label,
-  onClick,
-}: {
-  children: ReactNode;
-  active?: boolean;
-  label: string;
-  onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
-}) {
-  return (
-    <Button
-      variant={active ? "secondary" : "ghost"}
-      size="icon-sm"
-      className={cn(
-        "h-8 w-8 rounded-md text-foreground/60 hover:text-foreground",
-        active && "bg-foreground/[0.06] text-foreground"
-      )}
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-    >
-      {children}
-    </Button>
-  );
-}
-
-function IconButton({
-  children,
-  active = false,
-  label,
-  onClick,
-}: {
-  children: ReactNode;
-  active?: boolean;
-  label: string;
-  onClick?: () => void;
-}) {
-  return (
-    <Button
-      variant={active ? "secondary" : "ghost"}
-      size="icon-sm"
-      className={cn(
-        "h-8 w-8 rounded-md text-foreground/60 hover:text-foreground",
-        active && "bg-foreground/[0.06] text-foreground"
-      )}
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-    >
-      {children}
-    </Button>
-  );
-}
-
-function ToolbarPanel({
-  children,
-  left,
-  width = "default",
-}: {
-  children: ReactNode;
-  left: number;
-  width?: "default" | "medium" | "wide";
-}) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  useLayoutEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) {
-      return;
-    }
-
-    const rect = panel.getBoundingClientRect();
-    const toolbar = panel.closest('[data-testid="floating-toolbar-anchor"]');
-    const toolbarRect = toolbar instanceof HTMLElement ? toolbar.getBoundingClientRect() : null;
-    const baseLeft = toolbarRect ? toolbarRect.left + left : rect.left - offset.x;
-    const baseTop = toolbarRect ? toolbarRect.bottom + 8 : rect.top - offset.y;
-    const baseRect = {
-      bottom: baseTop + rect.height,
-      left: baseLeft,
-      right: baseLeft + rect.width,
-      top: baseTop,
-    };
-    const viewportPadding = 16;
-    let nextX = 0;
-    let nextY = 0;
-
-    if (baseRect.right > window.innerWidth - viewportPadding) {
-      nextX = window.innerWidth - viewportPadding - baseRect.right;
-    }
-    if (baseRect.left + nextX < viewportPadding) {
-      nextX += viewportPadding - (baseRect.left + nextX);
-    }
-    if (baseRect.bottom > window.innerHeight - viewportPadding) {
-      nextY = window.innerHeight - viewportPadding - baseRect.bottom;
-    }
-    if (baseRect.top + nextY < viewportPadding) {
-      nextY += viewportPadding - (baseRect.top + nextY);
-    }
-
-    if (shouldUpdateOffset(offset.x, nextX) || shouldUpdateOffset(offset.y, nextY)) {
-      setOffset({ x: nextX, y: nextY });
-    }
-  }, [left, offset.x, offset.y]);
-
-  const widthClassName =
-    width === "wide"
-      ? "w-80 max-w-[min(320px,calc(100vw-40px))] max-h-[calc(100vh-36px)] overflow-y-auto"
-      : width === "medium"
-        ? "w-[272px]"
-        : "w-64";
-
-  return (
-    <div
-      className={cn(
-        "absolute z-50 grid gap-1.5 rounded-md border border-foreground/[0.08] bg-white p-1.5 text-popover-foreground shadow-[0_4px_20px_rgba(0,0,0,0.06),0_12px_40px_rgba(0,0,0,0.08)] max-[1200px]:max-w-[calc(100vw-40px)]",
-        editorMotionClassName,
-        editorPanelEnterClassName,
-        widthClassName
-      )}
-      ref={panelRef}
-      style={{ left: left + offset.x, top: `calc(100% + 8px + ${offset.y}px)` }}
-      role="menu"
-    >
-      {children}
-    </div>
-  );
-}
-
-function getPanelWidth(subgroup: ElementToolSubgroup): "default" | "medium" | "wide" {
-  if (subgroup.features.some((feature) => feature.controlType === "color")) {
-    return "wide";
-  }
-  if (subgroup.features.some((feature) => feature.controlType === "action-group")) {
-    return "medium";
-  }
-  return "default";
-}
-
-function shouldUpdateOffset(current: number, next: number) {
-  return Math.abs(current - next) >= 0.5;
-}
-
-function Divider() {
-  return <Separator orientation="vertical" className="mx-1 h-4 bg-foreground/10" />;
-}
-
-function PanelTitle({ children }: { children: ReactNode }) {
-  return (
-    <div className="inline-flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
-      {children}
-    </div>
-  );
-}
-
-function FieldLabel({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className="text-[10px] font-medium uppercase tracking-wider text-foreground/50"
-    >
-      {children}
-    </label>
-  );
-}
-
-function ToolbarIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return <Icon className="size-3.5" />;
-}
-
-function ToolbarOption({
-  children,
-  onClick,
-  title,
-}: {
-  children: ReactNode;
-  onClick: () => void;
-  title?: string;
-}) {
-  return (
-    <Button
-      variant="ghost"
-      className="min-h-8 w-full justify-start gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-normal text-foreground/70 hover:text-foreground"
-      type="button"
-      title={title}
-      onClick={onClick}
-    >
-      {children}
-    </Button>
-  );
 }
 
 export { FloatingToolbar };
