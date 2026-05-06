@@ -81,6 +81,8 @@ Use these repo terms consistently:
 - context `CONTEXT.md` files should reference the roadmap when needed, but
   should only define module boundaries, module-specific constraints, and local
   terminology
+- Do not look for or rely on `REQUIREMENTS.md`. Confirmed implementation
+  decisions live in ADRs and context docs.
 
 ## Contexts
 

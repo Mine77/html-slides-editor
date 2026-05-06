@@ -78,6 +78,13 @@ deck violates the contract.
 Starry Slides skill. Its exact agent-specific installation behavior can be
 defined later without changing the package boundary.
 
+## Amendment note
+
+ADR-0011 supersedes the CLI naming and verify/view workflow details in this
+ADR. The current agent-facing command target is `starry-slides`, `view` is a
+subcommand of that CLI, and overflow detection is part of the normal verify
+workflow.
+
 Use these internal module boundaries:
 
 ```text
