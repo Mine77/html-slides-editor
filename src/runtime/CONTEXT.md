@@ -24,9 +24,12 @@ The root `vite.config.ts` owns the dev and preview middleware that serves:
 
 ## Content Sources
 
-Normal local development serves:
+Normal local development serves the ignored local sample deck:
 
 - `sample-slides/`
+
+If that directory is missing in a fresh checkout, create it with
+`pnpm editor:e2e:generate-deck`.
 
 CLI opening uses `STARRY_SLIDES_DECK_DIR` to mount the deck passed to
 `starry-slides open`.

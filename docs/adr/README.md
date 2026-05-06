@@ -40,3 +40,4 @@ Update this directory whenever a change affects:
 | [0009](./0009-use-floating-toolbar-as-the-only-element-tooling-surface.md) | Use Floating Toolbar as the only element tooling surface                 | accepted   |
 | [0010](./0010-represent-groups-as-nested-dom-containers.md)        | Represent groups as nested DOM containers                                | accepted   |
 | [0011](./0011-adopt-starry-slides-agent-facing-cli.md)             | Adopt starry-slides as the agent-facing CLI                              | accepted   |
+| [0012](./0012-keep-sample-slides-out-of-project-git.md)            | Keep sample slides out of project Git                                    | accepted   |

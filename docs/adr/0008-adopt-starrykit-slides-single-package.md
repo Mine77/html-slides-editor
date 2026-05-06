@@ -62,7 +62,7 @@ sslides add-skill
 
 `sslides open` must:
 
-1. resolve the target deck path, defaulting to the built-in sample deck when no
+1. resolve the target deck path, defaulting to the local sample deck when no
    path is provided
 2. run the same validation path used by `sslides verify`
 3. print validation errors and exit non-zero when validation fails
@@ -84,6 +84,10 @@ ADR-0011 supersedes the CLI naming and verify/view workflow details in this
 ADR. The current agent-facing command target is `starry-slides`, `view` is a
 subcommand of that CLI, and overflow detection is part of the normal verify
 workflow.
+
+ADR-0012 supersedes the sample deck tracking assumption in this ADR. The default
+sample deck path remains `sample-slides/`, but that directory is ignored local
+working data and must not be tracked by this project repository's Git index.
 
 Use these internal module boundaries:
 
@@ -187,7 +191,7 @@ This decision does not:
 ## Verification
 
 - [ ] `pnpm install` succeeds after removing workspace-only package references.
-- [ ] `pnpm sslides verify sample-slides` validates the built-in sample deck.
+- [ ] `pnpm sslides verify sample-slides` validates the local sample deck.
 - [ ] `pnpm sslides sample-slides` verifies and opens the local editor runtime.
 - [ ] `pnpm build` builds the CLI and browser editor app.
 - [ ] `pnpm test` runs core/editor unit tests after path migration.

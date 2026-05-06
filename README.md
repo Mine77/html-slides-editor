@@ -88,13 +88,19 @@ Install dependencies:
 pnpm install
 ```
 
-Validate the built-in sample deck:
+Create or refresh the ignored local sample deck:
+
+```bash
+pnpm editor:e2e:generate-deck
+```
+
+Validate the local sample deck:
 
 ```bash
 pnpm starry-slides verify sample-slides
 ```
 
-Open the built-in sample deck:
+Open the local sample deck:
 
 ```bash
 pnpm starry-slides open sample-slides
@@ -112,7 +118,8 @@ pnpm dev
 sample-slides/
 ```
 
-Local edits are saved back into that deck while the dev server is running.
+Local edits are saved back into that ignored deck while the dev server is
+running.
 
 ## Common Commands
 
@@ -138,7 +145,7 @@ pnpm lint && pnpm test && pnpm build && pnpm test:e2e
 ```
 
 The browser regression suite uses a temporary ignored deck in
-`.e2e-test-slides/`. Normal development uses the long-lived sample deck in
+`.e2e-test-slides/`. Normal development uses the ignored local sample deck in
 `sample-slides/`.
 
 ## Generate Or Install A Deck
@@ -166,7 +173,7 @@ pnpm starry-slides view path/to/deck --all
 pnpm starry-slides open path/to/deck
 ```
 
-To refresh the built-in sample deck from the editor regression generator:
+To refresh the ignored local sample deck from the editor regression generator:
 
 ```bash
 pnpm editor:e2e:generate-deck
@@ -227,7 +234,7 @@ src/
   core/                        Contract, parser, history, operations, import helpers
 
 e2e/                           Playwright tests, fixtures, and deck generator
-sample-slides/                 built-in sample deck for local dev and CLI default
+sample-slides/                 ignored local sample deck for dev and CLI default
 
 skills/
   starry-slides-skill/         agent-facing deck workflow and protocol tools

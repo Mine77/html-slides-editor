@@ -2,6 +2,8 @@
 
 - Status: accepted
 - Date: 2026-05-05
+- Amendment: [ADR-0012](./0012-keep-sample-slides-out-of-project-git.md)
+  supersedes the `sample-slides/` Git tracking guidance in this ADR.
 
 ## Context
 
@@ -28,10 +30,11 @@ Keep only two generated deck copies:
    - reset between e2e tests from an in-memory startup snapshot
 
 2. `sample-slides/`
-   - the App's long-lived default deck
+   - the App's ignored local default deck
    - loaded by normal `pnpm dev`
    - updated by `pnpm editor:e2e:generate-deck` when the e2e fixture should
-     become the App default deck
+     become the local App default deck
+   - not tracked by this project repository's Git index
 
 Do not create additional generated deck mirrors such as
 `generated/starry-slides-project-overview/` or `.tmp/generated-deck-baseline/`.
@@ -44,12 +47,15 @@ Benefits:
 - e2e runs can mutate and reset their own ignored working copy without touching
   the App default deck
 - updating the App default deck is explicit through one command
+- browser editor edits to `sample-slides/` do not create project source diffs
 - local cleanup is simpler because there is no extra `.tmp` or source mirror
 
 Costs:
 
 - e2e reset uses an in-memory snapshot captured when Vite starts, so
   `pnpm test:e2e:prepare` must run before the e2e server starts
+- a fresh checkout may need to generate the ignored App default deck before
+  running workflows that expect `sample-slides/`
 - the App default deck must be intentionally refreshed when the e2e fixture
   changes
 
@@ -101,17 +107,18 @@ Steps:
 4. Make `test:e2e:serve` run Vite with `STARRY_SLIDES_DECK_SOURCE=e2e`.
 5. Make `editor:e2e:generate-deck` generate `.e2e-test-slides/` and
    sync the result to `sample-slides/`.
-6. Keep `.e2e-test-slides/` ignored while allowing
-   `sample-slides/` to be tracked.
+6. Keep both `.e2e-test-slides/` and `sample-slides/` ignored by this project
+   repository.
 7. Update README and app context docs to describe the two-copy policy.
 
 ## Verification
 
-- [ ] `pnpm editor:e2e:generate-deck` writes `.e2e-test-slides/` and
-      `sample-slides/`.
+- [ ] `pnpm editor:e2e:generate-deck` writes `.e2e-test-slides/` and the ignored
+      local `sample-slides/`.
 - [ ] `pnpm prepare:regression-deck` writes `.e2e-test-slides/` only by
       default.
 - [ ] `pnpm dev` serves `sample-slides/`.
+- [ ] `git ls-files sample-slides` prints no tracked files.
 - [ ] `pnpm test:e2e` serves `.e2e-test-slides/` and passes.
 - [ ] No code or docs reference `.tmp/generated-deck-baseline/` or
       `generated/starry-slides-project-overview/`.
