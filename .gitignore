@@ -25,3 +25,5 @@ docs/agents/
 !.env.example
 
 .tmp
+
+sample-slides/
