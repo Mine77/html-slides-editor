@@ -1,38 +1,25 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, describe, expect, test } from "vitest";
+import { createTempDeck, writeDeck } from "../helpers/deck-fixtures";
 
 const repo = process.cwd();
 const distCli = path.join(repo, "dist", "cli", "index.js");
-const decks: string[] = [];
+const decks: Array<{ cleanup: () => void }> = [];
 
 function createDeck() {
-  const deck = fs.mkdtempSync(path.join(os.tmpdir(), "starry-slides-packaged-"));
+  const deck = createTempDeck("starry-slides-packaged-");
   decks.push(deck);
-  fs.mkdirSync(path.join(deck, "slides"), { recursive: true });
-  fs.writeFileSync(
-    path.join(deck, "manifest.json"),
-    JSON.stringify({ slides: [{ file: "slides/01.html", title: "One" }] }, null, 2)
-  );
-  fs.writeFileSync(path.join(deck, "slides/01.html"), slideHtml());
-  return deck;
+  writeDeck(deck.root, [{ file: "slides/01.html", title: "One" }]);
+  return deck.root;
 }
 
 function createBrokenDeck() {
-  const deck = fs.mkdtempSync(path.join(os.tmpdir(), "starry-slides-packaged-broken-"));
+  const deck = createTempDeck("starry-slides-packaged-broken-");
   decks.push(deck);
-  fs.writeFileSync(path.join(deck, "manifest.json"), JSON.stringify({ slides: [] }));
-  return deck;
-}
-
-function slideHtml(content = '<h1 data-editable="text" data-editor-id="text-1">Hello</h1>') {
-  return `<!DOCTYPE html><html><head><style>
-html,body{margin:0;width:800px;height:600px;overflow:hidden}
-[data-slide-root]{position:relative;width:800px;height:600px;overflow:hidden;background:#fff}
-[data-editable]{position:absolute;box-sizing:border-box;left:20px;top:20px;width:240px;height:80px;margin:0}
-</style></head><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root">${content}</main></body></html>`;
+  fs.writeFileSync(path.join(deck.root, "manifest.json"), JSON.stringify({ slides: [] }));
+  return deck.root;
 }
 
 function runBuiltCli(args: string[], env: NodeJS.ProcessEnv = {}) {
@@ -55,7 +42,7 @@ beforeAll(() => {
 
 afterEach(() => {
   for (const deck of decks.splice(0)) {
-    fs.rmSync(deck, { recursive: true, force: true });
+    deck.cleanup();
   }
 });
 

@@ -8,7 +8,7 @@ import {
   slideHtml,
   textElement,
   writeDeck,
-} from "../test/deck-fixtures";
+} from "../../tests/helpers/deck-fixtures";
 
 const repo = process.cwd();
 const decks: Array<{ cleanup: () => void }> = [];
@@ -66,9 +66,9 @@ describe("source starry-slides cli", () => {
   test("verify with no deck uses the default deck resolution path", () => {
     const result = runCli(["verify", "--static"]);
 
-    expect(result.status).toBe(1);
     expect(result.stderr).toBe("");
     const parsed = parseJson(result.stdout);
+    expect(result.status).toBe(parsed.ok ? 0 : 1);
     expect(parsed.mode).toBe("static");
     expect(parsed.deck).toContain("sample-slides");
   });

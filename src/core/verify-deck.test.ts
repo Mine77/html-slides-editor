@@ -8,7 +8,7 @@ import {
   slideHtmlWithoutDimensions,
   textElement,
   writeDeck,
-} from "../test/deck-fixtures";
+} from "../../tests/helpers/deck-fixtures";
 import { type VerifyIssue, createVerifyIssue, verifyDeck } from "./verify-deck";
 
 const decks: Array<{ cleanup: () => void }> = [];

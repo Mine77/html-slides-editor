@@ -7,7 +7,7 @@ import {
   slideHtml,
   textElement,
   writeDeck,
-} from "../test/deck-fixtures";
+} from "../../tests/helpers/deck-fixtures";
 import { getManifestSlides, renderPreviewManifest, verifyRenderedOverflow } from "./view-renderer";
 
 const decks: Array<{ cleanup: () => void }> = [];

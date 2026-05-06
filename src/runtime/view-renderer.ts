@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { type VerifyIssue, createVerifyIssue, loadVerifyDeckSource } from "../core/verify-deck";
 
@@ -315,10 +316,8 @@ async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasuremen
 }
 
 async function loadChromium(): Promise<ChromiumLauncher> {
-  const importRuntime = new Function("specifier", "return import(specifier)") as (
-    specifier: string
-  ) => Promise<typeof import("@playwright/test")>;
-  const playwright = await importRuntime("@playwright/test");
+  const require = createRequire(import.meta.url);
+  const playwright = require("@playwright/test") as typeof import("@playwright/test");
   return playwright.chromium;
 }
 
