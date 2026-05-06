@@ -41,3 +41,4 @@ Update this directory whenever a change affects:
 | [0010](./0010-represent-groups-as-nested-dom-containers.md)        | Represent groups as nested DOM containers                                | accepted   |
 | [0011](./0011-adopt-starry-slides-agent-facing-cli.md)             | Adopt starry-slides as the agent-facing CLI                              | accepted   |
 | [0012](./0012-keep-sample-slides-out-of-project-git.md)            | Keep sample slides out of project Git                                    | accepted   |
+| [0013](./0013-adopt-editing-e2e-coverage-contract.md)              | Adopt editing E2E coverage contract                                      | proposed   |
