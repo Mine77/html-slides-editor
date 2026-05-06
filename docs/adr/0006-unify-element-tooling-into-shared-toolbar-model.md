@@ -1,7 +1,14 @@
 # ADR-0006: Unify element tooling into a shared toolbar model
 
-- Status: accepted
+- Status: superseded
 - Date: 2026-05-05
+- Superseded by: [ADR-0009](./0009-use-floating-toolbar-as-the-only-element-tooling-surface.md)
+
+## Supersession note
+
+ADR-0009 supersedes the two-surface element tooling decision. The current
+editor direction is to remove the Sidebar Tool Panel from the active editor
+model and use the Floating Toolbar as the only element tooling surface.
 
 ## Context
 
