@@ -35,6 +35,7 @@ export async function gotoEditor(page: Page) {
 export function getHistoryControls(page: Page) {
   return {
     editingHint: page.getByText(EDITING_HINT),
+    preselectionOverlay: page.getByTestId("preselection-overlay"),
     selectionOverlay: page.getByTestId("selection-overlay"),
   };
 }

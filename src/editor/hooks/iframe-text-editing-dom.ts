@@ -37,6 +37,20 @@ export function getEditableSelectionTarget(target: Element): HTMLElement | null 
   return target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
 }
 
+export function getDeepestEditableElementFromPoint(
+  doc: Document,
+  x: number,
+  y: number,
+  activeGroupScopeId: string | null
+): HTMLElement | null {
+  const pointedElement = doc.elementFromPoint(x, y);
+  if (!pointedElement) {
+    return null;
+  }
+
+  return getEditableSelectionTargetInScope(pointedElement, activeGroupScopeId);
+}
+
 export function applyGroupScopeFocus(doc: Document, activeGroupScopeId: string | null): void {
   const editableNodes = Array.from(doc.querySelectorAll<HTMLElement>("[data-editable]"));
   for (const node of editableNodes) {
@@ -76,11 +90,10 @@ export function getEditableSelectionTargetInScope(
   }
 
   if (!activeGroupScopeId) {
-    return (
-      editableTarget.closest<HTMLElement>(
-        `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}]`
-      ) ?? editableTarget
+    const groupTarget = editableTarget.closest<HTMLElement>(
+      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}]`
     );
+    return groupTarget ?? editableTarget;
   }
 
   const activeGroup = editableTarget.closest<HTMLElement>(

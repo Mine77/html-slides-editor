@@ -79,10 +79,17 @@ function SlidesEditor({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageViewportRef = useRef<HTMLDivElement>(null);
   const selectionOverlayRef = useRef<HTMLDivElement>(null);
+  const overlayPointerDownRef = useRef<{
+    clientX: number;
+    clientY: number;
+    additive: boolean;
+    targetElementId: string | null;
+  } | null>(null);
   const thumbnails = useSlideThumbnails(slides);
   const {
     selectedElementId,
     selectedElementIds,
+    preselectedElementId,
     isEditingText,
     activeGroupScopeId,
     setSelectedElementId,
@@ -90,6 +97,9 @@ function SlidesEditor({
     beginTextEditing,
     beginGroupEditingScope,
     clearSelection,
+    clearPreselection,
+    updatePointerPreselection,
+    retargetPointerSelection,
   } = useIframeTextEditing({
     activeSlide,
     iframeRef,
@@ -126,17 +136,19 @@ function SlidesEditor({
     slideWidth,
     slideHeight,
   });
-  const { selectedStageRect, selectionOverlay, inspectedStyles } = useSlideInspector({
-    iframeRef,
-    activeSlide,
-    selectedElement,
-    selectedElementIds,
-    scale,
-    offsetX,
-    offsetY,
-    slideWidth,
-    slideHeight,
-  });
+  const { selectedStageRect, preselectionOverlay, selectionOverlay, inspectedStyles } =
+    useSlideInspector({
+      iframeRef,
+      activeSlide,
+      selectedElement,
+      selectedElementIds,
+      preselectedElementId,
+      scale,
+      offsetX,
+      offsetY,
+      slideWidth,
+      slideHeight,
+    });
   const {
     manipulationOverlay,
     isManipulating,
@@ -745,6 +757,7 @@ function SlidesEditor({
               offsetX={offsetX}
               offsetY={offsetY}
               scale={scale}
+              preselectionOverlay={preselectionOverlay}
               selectionOverlay={unifiedSelectionOverlay}
               toolbarKey={
                 selectedElementIds.length
@@ -766,6 +779,25 @@ function SlidesEditor({
                   return;
                 }
 
+                const additive = event.shiftKey || event.metaKey || event.ctrlKey;
+                const targetElementId = updatePointerPreselection(event.clientX, event.clientY);
+
+                overlayPointerDownRef.current = {
+                  clientX: event.clientX,
+                  clientY: event.clientY,
+                  additive,
+                  targetElementId,
+                };
+
+                if (targetElementId && targetElementId !== selectedElementId) {
+                  event.stopPropagation();
+                  return;
+                }
+
+                if (targetElementId && targetElementId === selectedElementId) {
+                  event.stopPropagation();
+                }
+
                 beginMove({
                   clientX: event.clientX,
                   clientY: event.clientY,
@@ -773,6 +805,45 @@ function SlidesEditor({
                   stopPropagation: () => event.stopPropagation(),
                 });
               }}
+              onSelectionOverlayMouseMove={(event) => {
+                const pointerDown = overlayPointerDownRef.current;
+                updatePointerPreselection(event.clientX, event.clientY);
+
+                if (!pointerDown || pointerDown.targetElementId === selectedElementId) {
+                  return;
+                }
+
+                const deltaX = event.clientX - pointerDown.clientX;
+                const deltaY = event.clientY - pointerDown.clientY;
+                if (Math.hypot(deltaX, deltaY) <= 4) {
+                  return;
+                }
+
+                overlayPointerDownRef.current = null;
+                beginMove({
+                  clientX: pointerDown.clientX,
+                  clientY: pointerDown.clientY,
+                  preventDefault: () => event.preventDefault(),
+                  stopPropagation: () => event.stopPropagation(),
+                });
+              }}
+              onSelectionOverlayMouseUp={(event) => {
+                const pointerDown = overlayPointerDownRef.current;
+                overlayPointerDownRef.current = null;
+
+                if (!pointerDown) {
+                  return;
+                }
+
+                const deltaX = event.clientX - pointerDown.clientX;
+                const deltaY = event.clientY - pointerDown.clientY;
+                if (Math.hypot(deltaX, deltaY) > 4) {
+                  return;
+                }
+
+                retargetPointerSelection(event.clientX, event.clientY, pointerDown.additive);
+              }}
+              onStageMouseLeave={clearPreselection}
               onResizeHandleMouseDown={(corner, event) => {
                 if (!selectedElementIds.length) {
                   return;

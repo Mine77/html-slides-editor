@@ -7,6 +7,11 @@ import { SelectionContextMenu } from "./context-menu";
 import { FloatingToolbar, type SelectionCommandAvailability } from "./floating-toolbar";
 
 type ResizeHandleCorner = "top-left" | "top-right" | "bottom-right" | "bottom-left";
+const SELECTION_CHROME_STYLE = {
+  borderColor: "#facc15",
+  backgroundColor: "rgba(250, 204, 21, 0.08)",
+  boxShadow: "0 0 0 1px rgba(24, 24, 27, 0.2)",
+} as const;
 
 interface StageCanvasProps {
   slideWidth: number;
@@ -14,6 +19,7 @@ interface StageCanvasProps {
   offsetX: number;
   offsetY: number;
   scale: number;
+  preselectionOverlay: StageRect | null;
   selectionOverlay: StageRect | null;
   toolbarKey: string | null;
   inspectedStyles: CssPropertyRow[];
@@ -47,6 +53,9 @@ interface StageCanvasProps {
   selectionOverlayRef: RefObject<HTMLDivElement | null>;
   isManipulating: boolean;
   onSelectionOverlayMouseDown: (event: ReactMouseEvent<HTMLDivElement>) => void;
+  onSelectionOverlayMouseUp: (event: ReactMouseEvent<HTMLDivElement>) => void;
+  onSelectionOverlayMouseMove: (event: ReactMouseEvent<HTMLDivElement>) => void;
+  onStageMouseLeave: () => void;
   onResizeHandleMouseDown: (
     corner: ResizeHandleCorner,
     event: ReactMouseEvent<HTMLButtonElement>
@@ -71,6 +80,7 @@ function StageCanvas({
   offsetX,
   offsetY,
   scale,
+  preselectionOverlay,
   selectionOverlay,
   toolbarKey,
   inspectedStyles,
@@ -85,6 +95,9 @@ function StageCanvas({
   selectionOverlayRef,
   isManipulating,
   onSelectionOverlayMouseDown,
+  onSelectionOverlayMouseUp,
+  onSelectionOverlayMouseMove,
+  onStageMouseLeave,
   onResizeHandleMouseDown,
   onRotateHandleMouseDown,
   onSelectionOverlayDoubleClick,
@@ -124,6 +137,7 @@ function StageCanvas({
           clearSelectionIfBackground(event.target, event.currentTarget);
         }
       }}
+      onMouseLeave={onStageMouseLeave}
     >
       {selectionOverlay && !isManipulating && !isEditingText ? (
         <div
@@ -172,6 +186,19 @@ function StageCanvas({
           data-testid="slide-iframe"
         />
       </div>
+      {preselectionOverlay && !isEditingText && !isManipulating ? (
+        <div
+          data-testid="preselection-overlay"
+          className="pointer-events-none absolute z-[2] border border-dashed"
+          style={{
+            ...SELECTION_CHROME_STYLE,
+            left: `${preselectionOverlay.x}px`,
+            top: `${preselectionOverlay.y}px`,
+            width: `${preselectionOverlay.width}px`,
+            height: `${preselectionOverlay.height}px`,
+          }}
+        />
+      ) : null}
       {selectionOverlay && !isEditingText ? (
         <SelectionContextMenu
           selectionCommandAvailability={selectionCommandAvailability}
@@ -187,16 +214,19 @@ function StageCanvas({
             ref={selectionOverlayRef}
             data-testid="selection-overlay"
             className={cn(
-              "absolute z-[3] border border-dashed border-foreground/55 bg-foreground/[0.02]",
+              "absolute z-[3] border border-dashed",
               groupScopeOverlayPassive ? "pointer-events-none" : "pointer-events-auto"
             )}
             style={{
+              ...SELECTION_CHROME_STYLE,
               left: `${selectionOverlay.x}px`,
               top: `${selectionOverlay.y}px`,
               width: `${selectionOverlay.width}px`,
               height: `${selectionOverlay.height}px`,
             }}
             onMouseDown={onSelectionOverlayMouseDown}
+            onMouseMove={onSelectionOverlayMouseMove}
+            onMouseUp={onSelectionOverlayMouseUp}
             onDoubleClick={(event) => {
               onSelectionOverlayDoubleClick(event);
             }}

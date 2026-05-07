@@ -16,6 +16,7 @@ export interface UseIframeTextEditingOptions {
 export interface UseIframeTextEditingResult {
   selectedElementId: string | null;
   selectedElementIds: string[];
+  preselectedElementId: string | null;
   activeGroupScopeId: string | null;
   isEditingText: boolean;
   setSelectedElementId: Dispatch<SetStateAction<string | null>>;
@@ -24,4 +25,7 @@ export interface UseIframeTextEditingResult {
   beginGroupEditingScope: (elementId: string) => void;
   exitGroupEditingScope: () => void;
   clearSelection: () => boolean;
+  clearPreselection: () => void;
+  updatePointerPreselection: (clientX: number, clientY: number) => string | null;
+  retargetPointerSelection: (clientX: number, clientY: number, additive: boolean) => string | null;
 }

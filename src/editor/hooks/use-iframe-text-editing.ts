@@ -4,6 +4,7 @@ import { SELECTOR_ATTR, getSlideElementSelector, querySlideElement } from "../..
 import {
   applyGroupScopeFocus,
   ensureEditingTextStyle,
+  getDeepestEditableElementFromPoint,
   getEditableSelectionTargetInScope,
   selectEditableNodeEnd,
 } from "./iframe-text-editing-dom";
@@ -19,6 +20,7 @@ function useIframeTextEditing({
   onCommitOperation,
 }: UseIframeTextEditingOptions): UseIframeTextEditingResult {
   const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
+  const [preselectedElementId, setPreselectedElementId] = useState<string | null>(null);
   const [activeGroupScopeId, setActiveGroupScopeId] = useState<string | null>(null);
   const [textEditing, setTextEditing] = useState<TextEditingState | null>(null);
   const textEditingRef = useRef<TextEditingState | null>(null);
@@ -26,6 +28,10 @@ function useIframeTextEditing({
   const commitTextEditRef = useRef<(elementId: string, nextText: string) => void>(() => {});
   const cancelTextEditRef = useRef<() => void>(() => {});
   const selectedElementId = selectedElementIds[selectedElementIds.length - 1] ?? null;
+
+  const clearPreselection = useCallback(() => {
+    setPreselectedElementId((currentId) => (currentId === null ? currentId : null));
+  }, []);
 
   function setSelectedElementId(value: SetStateAction<string | null>) {
     setSelectedElementIds((currentIds) => {
@@ -44,6 +50,57 @@ function useIframeTextEditing({
       return [...currentIds, elementId];
     });
   }, []);
+
+  const getPointerEditableTargetId = useCallback(
+    (clientX: number, clientY: number) => {
+      const iframe = iframeRef.current;
+      const doc = iframe?.contentDocument;
+      if (!iframe || !doc || textEditingRef.current) {
+        return null;
+      }
+
+      const iframeRect = iframe.getBoundingClientRect();
+      const iframeScaleX = iframeRect.width > 0 ? iframe.clientWidth / iframeRect.width : 1;
+      const iframeScaleY = iframeRect.height > 0 ? iframe.clientHeight / iframeRect.height : 1;
+      const target = getDeepestEditableElementFromPoint(
+        doc,
+        (clientX - iframeRect.left) * iframeScaleX,
+        (clientY - iframeRect.top) * iframeScaleY,
+        activeGroupScopeIdRef.current
+      );
+
+      return target?.getAttribute(SELECTOR_ATTR) ?? null;
+    },
+    [iframeRef]
+  );
+
+  const updatePointerPreselection = useCallback(
+    (clientX: number, clientY: number) => {
+      const targetId = getPointerEditableTargetId(clientX, clientY);
+      setPreselectedElementId((currentId) => (currentId === targetId ? currentId : targetId));
+      return targetId;
+    },
+    [getPointerEditableTargetId]
+  );
+
+  const retargetPointerSelection = useCallback(
+    (clientX: number, clientY: number, additive: boolean) => {
+      const targetId = getPointerEditableTargetId(clientX, clientY);
+
+      if (!targetId) {
+        return null;
+      }
+
+      if (additive) {
+        toggleSelectedElementId(targetId);
+      } else {
+        setSelectedElementIds([targetId]);
+      }
+
+      return targetId;
+    },
+    [getPointerEditableTargetId, toggleSelectedElementId]
+  );
 
   const beginTextEditing = useCallback(
     (elementId: string) => {
@@ -214,6 +271,7 @@ function useIframeTextEditing({
 
       const activeEditing = textEditingRef.current;
       if (activeEditing) {
+        clearPreselection();
         const editingNode = querySlideElement<HTMLElement>(doc, activeEditing.elementId);
 
         if (editingNode && !editingNode.contains(target)) {
@@ -245,11 +303,31 @@ function useIframeTextEditing({
       }
     };
 
+    doc.onmousemove = (event) => {
+      if (textEditingRef.current) {
+        clearPreselection();
+        return;
+      }
+
+      const editableTarget = getDeepestEditableElementFromPoint(
+        doc,
+        event.clientX,
+        event.clientY,
+        activeGroupScopeIdRef.current
+      );
+      const targetId = editableTarget?.getAttribute(SELECTOR_ATTR) ?? null;
+      setPreselectedElementId((currentId) => (currentId === targetId ? currentId : targetId));
+    };
+
+    doc.onmouseleave = () => {
+      clearPreselection();
+    };
+
     const nodes = Array.from(
       doc.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
     );
     for (const node of nodes) {
-      node.style.cursor = "pointer";
+      node.style.cursor = "default";
       node.ondblclick = null;
       node.onblur = null;
       node.onkeydown = null;
@@ -312,7 +390,14 @@ function useIframeTextEditing({
         }
       };
     }
-  }, [activeSlide, beginGroupEditingScope, beginTextEditing, iframeRef, toggleSelectedElementId]);
+  }, [
+    activeSlide,
+    beginGroupEditingScope,
+    beginTextEditing,
+    clearPreselection,
+    iframeRef,
+    toggleSelectedElementId,
+  ]);
 
   useEffect(() => {
     const doc = iframeRef.current?.contentDocument;
@@ -345,6 +430,7 @@ function useIframeTextEditing({
     const originalInlineDisplay = editableNode.style.display;
     const originalInlineAlignItems = editableNode.style.alignItems;
     const originalInlineOverflow = editableNode.style.overflow;
+    const originalInlineCursor = editableNode.style.cursor;
     const computedStyles = editableNode.ownerDocument.defaultView?.getComputedStyle(editableNode);
     const computedDisplay = computedStyles?.display ?? "";
 
@@ -435,7 +521,7 @@ function useIframeTextEditing({
       editableNode.removeAttribute("contenteditable");
       editableNode.removeAttribute("spellcheck");
       editableNode.removeAttribute("data-hse-editing");
-      editableNode.style.cursor = "pointer";
+      editableNode.style.cursor = originalInlineCursor;
       editableNode.style.display = originalInlineDisplay;
       editableNode.style.alignItems = originalInlineAlignItems;
       editableNode.style.overflow = originalInlineOverflow;
@@ -450,6 +536,7 @@ function useIframeTextEditing({
   return {
     selectedElementId,
     selectedElementIds,
+    preselectedElementId,
     activeGroupScopeId,
     isEditingText: Boolean(activeSlide && textEditing?.slideId === activeSlide.id),
     setSelectedElementId,
@@ -458,6 +545,9 @@ function useIframeTextEditing({
     beginGroupEditingScope,
     exitGroupEditingScope,
     clearSelection,
+    clearPreselection,
+    updatePointerPreselection,
+    retargetPointerSelection,
   };
 }
 

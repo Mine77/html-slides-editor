@@ -14,6 +14,7 @@ interface UseSlideInspectorOptions {
   activeSlide: SlideModel | undefined;
   selectedElement: EditableElement | undefined;
   selectedElementIds: string[];
+  preselectedElementId: string | null;
   scale: number;
   offsetX: number;
   offsetY: number;
@@ -23,9 +24,15 @@ interface UseSlideInspectorOptions {
 
 interface SlideInspectorResult {
   selectedStageRect: StageRect | null;
+  preselectionOverlay: StageRect | null;
   selectionOverlay: StageRect | null;
   selectionLabel: string;
   inspectedStyles: CssPropertyRow[];
+}
+
+interface KeyedStageRect {
+  key: string;
+  rect: StageRect | null;
 }
 
 function useSlideInspector({
@@ -33,22 +40,42 @@ function useSlideInspector({
   activeSlide,
   selectedElement,
   selectedElementIds,
+  preselectedElementId,
   scale,
   offsetX,
   offsetY,
   slideWidth,
   slideHeight,
 }: UseSlideInspectorOptions): SlideInspectorResult {
-  const [selectedStageRect, setSelectedStageRect] = useState<StageRect | null>(null);
-  const [selectionOverlay, setSelectionOverlay] = useState<StageRect | null>(null);
+  const selectionKey = selectedElementIds.join("\u0000");
+  const preselectionKey = preselectedElementId ?? "";
+  const [selectedStageRectState, setSelectedStageRectState] = useState<KeyedStageRect>({
+    key: "",
+    rect: null,
+  });
+  const [preselectionOverlayState, setPreselectionOverlayState] = useState<KeyedStageRect>({
+    key: "",
+    rect: null,
+  });
+  const [selectionOverlayState, setSelectionOverlayState] = useState<KeyedStageRect>({
+    key: "",
+    rect: null,
+  });
   const [inspectedStyles, setInspectedStyles] = useState<CssPropertyRow[]>([]);
+  const selectedStageRect =
+    selectedStageRectState.key === selectionKey ? selectedStageRectState.rect : null;
+  const preselectionOverlay =
+    preselectionOverlayState.key === preselectionKey ? preselectionOverlayState.rect : null;
+  const selectionOverlay =
+    selectionOverlayState.key === selectionKey ? selectionOverlayState.rect : null;
 
   useEffect(() => {
     const iframe = iframeRef.current;
     const doc = iframe?.contentDocument;
     if (!iframe || !doc || !activeSlide) {
-      setSelectedStageRect(null);
-      setSelectionOverlay(null);
+      setSelectedStageRectState({ key: selectionKey, rect: null });
+      setPreselectionOverlayState({ key: preselectionKey, rect: null });
+      setSelectionOverlayState({ key: selectionKey, rect: null });
       setInspectedStyles([]);
       return;
     }
@@ -59,8 +86,9 @@ function useSlideInspector({
       : rootNode;
 
     if (!inspectedNode) {
-      setSelectedStageRect(null);
-      setSelectionOverlay(null);
+      setSelectedStageRectState({ key: selectionKey, rect: null });
+      setPreselectionOverlayState({ key: preselectionKey, rect: null });
+      setSelectionOverlayState({ key: selectionKey, rect: null });
       setInspectedStyles([]);
       return;
     }
@@ -72,68 +100,98 @@ function useSlideInspector({
         : nextInspectedStyles
     );
 
-    if (!selectedElementIds.length || !rootNode) {
-      setSelectedStageRect((currentRect) => (currentRect === null ? currentRect : null));
-      setSelectionOverlay((currentRect) => (currentRect === null ? currentRect : null));
-      return;
+    const rootRect = rootNode?.getBoundingClientRect();
+    let nextSelectionRect: StageRect | null = null;
+    if (!selectedElementIds.length || !rootNode || !rootRect) {
+      nextSelectionRect = null;
+    } else {
+      const elementRects = selectedElementIds
+        .map((elementId) => querySlideElement<HTMLElement>(doc, elementId))
+        .filter((node): node is HTMLElement => Boolean(node))
+        .map((node) =>
+          elementRectToStageRect(node.getBoundingClientRect(), rootRect, {
+            scale,
+            offsetX,
+            offsetY,
+            slideWidth,
+            slideHeight,
+          })
+        );
+
+      if (elementRects.length) {
+        nextSelectionRect = elementRects.reduce((accumulator, rect) => {
+          const minX = Math.min(accumulator.x, rect.x);
+          const minY = Math.min(accumulator.y, rect.y);
+          const maxX = Math.max(accumulator.x + accumulator.width, rect.x + rect.width);
+          const maxY = Math.max(accumulator.y + accumulator.height, rect.y + rect.height);
+          return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+          };
+        });
+      }
     }
 
-    const rootRect = rootNode.getBoundingClientRect();
-    const elementRects = selectedElementIds
-      .map((elementId) => querySlideElement<HTMLElement>(doc, elementId))
-      .filter((node): node is HTMLElement => Boolean(node))
-      .map((node) =>
-        elementRectToStageRect(node.getBoundingClientRect(), rootRect, {
-          scale,
-          offsetX,
-          offsetY,
-          slideWidth,
-          slideHeight,
-        })
-      );
-
-    if (!elementRects.length) {
-      setSelectedStageRect((currentRect) => (currentRect === null ? currentRect : null));
-      setSelectionOverlay((currentRect) => (currentRect === null ? currentRect : null));
-      return;
-    }
-
-    const stageRect = elementRects.reduce((accumulator, rect) => {
-      const minX = Math.min(accumulator.x, rect.x);
-      const minY = Math.min(accumulator.y, rect.y);
-      const maxX = Math.max(accumulator.x + accumulator.width, rect.x + rect.width);
-      const maxY = Math.max(accumulator.y + accumulator.height, rect.y + rect.height);
-      return {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY,
-      };
-    });
-
-    setSelectedStageRect((currentRect) =>
-      areStageRectsEqual(currentRect, stageRect) ? currentRect : stageRect
+    setSelectedStageRectState((currentState) =>
+      areKeyedStageRectsEqual(currentState, selectionKey, nextSelectionRect)
+        ? currentState
+        : { key: selectionKey, rect: nextSelectionRect }
     );
-    setSelectionOverlay((currentRect) =>
-      areStageRectsEqual(currentRect, stageRect) ? currentRect : stageRect
+    setSelectionOverlayState((currentState) =>
+      areKeyedStageRectsEqual(currentState, selectionKey, nextSelectionRect)
+        ? currentState
+        : { key: selectionKey, rect: nextSelectionRect }
+    );
+
+    const preselectionNode = preselectedElementId
+      ? querySlideElement<HTMLElement>(doc, preselectedElementId)
+      : null;
+    const preselectionRect =
+      preselectionNode && rootRect
+        ? elementRectToStageRect(preselectionNode.getBoundingClientRect(), rootRect, {
+            scale,
+            offsetX,
+            offsetY,
+            slideWidth,
+            slideHeight,
+          })
+        : null;
+    setPreselectionOverlayState((currentState) =>
+      areKeyedStageRectsEqual(currentState, preselectionKey, preselectionRect)
+        ? currentState
+        : { key: preselectionKey, rect: preselectionRect }
     );
   }, [
     activeSlide,
     iframeRef,
     offsetX,
     offsetY,
+    preselectedElementId,
+    preselectionKey,
     scale,
     selectedElementIds,
+    selectionKey,
     slideHeight,
     slideWidth,
   ]);
 
   return {
     selectedStageRect,
+    preselectionOverlay,
     selectionOverlay,
     selectionLabel: selectedElement?.type || "element",
     inspectedStyles,
   };
+}
+
+function areKeyedStageRectsEqual(
+  currentState: KeyedStageRect,
+  key: string,
+  rect: StageRect | null
+): boolean {
+  return currentState.key === key && areStageRectsEqual(currentState.rect, rect);
 }
 
 function areStageRectsEqual(left: StageRect | null, right: StageRect | null): boolean {
