@@ -4,7 +4,6 @@ import { type SlideDeckManifest, type SlideModel, loadSlidesFromManifest } from 
 interface SlidesDataResult {
   deckTitle: string;
   slides: SlideModel[];
-  sourceLabel: string;
   errorMessage: string | null;
   isLoading: boolean;
   isSaving: boolean;
@@ -18,7 +17,6 @@ const SAVE_DEBOUNCE_MS = 800;
 export function useSlidesData(): SlidesDataResult {
   const [deckTitle, setDeckTitle] = useState("Generated deck");
   const [slides, setSlides] = useState<SlideModel[]>([]);
-  const [sourceLabel, setSourceLabel] = useState("Generated deck");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,7 +41,6 @@ export function useSlidesData(): SlidesDataResult {
         if (!importedDeck) {
           setDeckTitle("Generated deck");
           setSlides([]);
-          setSourceLabel("Generated deck unavailable");
           setErrorMessage("No slides were found at /deck/manifest.json.");
           setIsLoading(false);
           return;
@@ -53,11 +50,6 @@ export function useSlidesData(): SlidesDataResult {
         setDeckTitle(importedDeck.manifest.topic || "Generated deck");
         setSlides(importedDeck.slides);
         loadedSlidesRef.current = importedDeck.slides;
-        setSourceLabel(
-          importedDeck.manifest.topic
-            ? `Generated deck: ${importedDeck.manifest.topic}`
-            : "Generated deck from Starry Slides Editor e2e generator"
-        );
         setErrorMessage(null);
         setIsLoading(false);
       })
@@ -68,7 +60,6 @@ export function useSlidesData(): SlidesDataResult {
 
         setDeckTitle("Generated deck");
         setSlides([]);
-        setSourceLabel("Generated deck unavailable");
         setErrorMessage("The app could not load the generated deck.");
         setIsLoading(false);
       });
@@ -161,5 +152,5 @@ export function useSlidesData(): SlidesDataResult {
     }, SAVE_DEBOUNCE_MS);
   };
 
-  return { deckTitle, slides, sourceLabel, errorMessage, isLoading, isSaving, saveSlides };
+  return { deckTitle, slides, errorMessage, isLoading, isSaving, saveSlides };
 }

@@ -79,7 +79,7 @@ This decision does not:
 
 - **Affected paths**: `packages/core/src/index.ts`, `packages/core/src/index.test.ts`, `packages/editor/src/index.tsx`, `packages/editor/`, `apps/web/src/`, `package.json`, `README.md`, `CONTEXT.md`, `docs/adr/README.md`
 - **Core changes**: expose manifest import helpers, reusable slide operations, and a shared history reducer/state model that can be called by both editor UI and future automation flows
-- **Editor changes**: accept `slides` and `sourceLabel` as props; do not fetch decks or define sample slides internally; keep only transient interaction state such as selection and in-progress text editing
+- **Editor changes**: accept `slides` as props; do not fetch decks or define sample slides internally; keep only transient interaction state such as selection and in-progress text editing
 - **App changes**: load generated decks through core helpers and surface an error state when no generated deck is available
 - **Removal**: delete `packages/react`
 - **Naming**: replace `stage package` references with `editor package` where they refer to package/module boundaries

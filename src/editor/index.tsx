@@ -48,7 +48,6 @@ import { useStageViewport } from "./hooks/use-stage-viewport";
 export interface SlidesEditorProps {
   slides: SlideModel[];
   deckTitle?: string;
-  sourceLabel: string;
   isSaving?: boolean;
   onSlidesChange?: (slides: SlideModel[]) => void;
 }
@@ -56,7 +55,6 @@ export interface SlidesEditorProps {
 function SlidesEditor({
   slides: loadedSlides,
   deckTitle,
-  sourceLabel,
   isSaving = false,
   onSlidesChange,
 }: SlidesEditorProps) {
@@ -592,7 +590,7 @@ function SlidesEditor({
   return (
     <TooltipProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-        <EditorHeader deckTitle={resolvedDeckTitle} sourceLabel={sourceLabel} isSaving={isSaving} />
+        <EditorHeader deckTitle={resolvedDeckTitle} isSaving={isSaving} />
 
         <div className="flex min-h-0 flex-auto gap-3 overflow-hidden max-[1200px]:block">
           <SlideSidebar

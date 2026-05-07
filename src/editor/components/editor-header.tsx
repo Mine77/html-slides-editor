@@ -2,16 +2,15 @@ import { Button } from "./ui/button";
 
 interface EditorHeaderProps {
   deckTitle: string;
-  sourceLabel: string;
   isSaving: boolean;
 }
 
-function EditorHeader({ deckTitle, sourceLabel, isSaving }: EditorHeaderProps) {
+function EditorHeader({ deckTitle, isSaving }: EditorHeaderProps) {
   return (
     <header className="flex min-h-14 items-center justify-between gap-4 border-b border-foreground/[0.08] bg-white px-5 py-2.5 max-[1200px]:flex-col max-[1200px]:items-start">
       <div className="grid min-w-0 gap-1">
         <div className="flex min-w-0 items-center gap-4">
-          <h1 className="min-w-0 flex-1 truncate text-[16px] font-semibold leading-tight text-foreground">
+          <h1 className="min-w-0 flex-1 truncate text-xl font-semibold leading-tight text-foreground">
             {deckTitle}
           </h1>
           {isSaving ? (
@@ -22,9 +21,6 @@ function EditorHeader({ deckTitle, sourceLabel, isSaving }: EditorHeaderProps) {
               saving...
             </span>
           ) : null}
-        </div>
-        <div className="flex min-w-0 items-center gap-3">
-          <p className="m-0 min-w-0 truncate text-[12px] text-foreground/45">{sourceLabel}</p>
         </div>
       </div>
 

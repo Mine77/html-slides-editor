@@ -31,7 +31,7 @@ function StatusScreen({ title, body }: { title: string; body: string }) {
 }
 
 function App() {
-  const { deckTitle, slides, sourceLabel, errorMessage, isLoading, isSaving, saveSlides } =
+  const { deckTitle, slides, errorMessage, isLoading, isSaving, saveSlides } =
     useSlidesData();
 
   if (isLoading) {
@@ -51,7 +51,6 @@ function App() {
     <SlidesEditor
       slides={slides}
       deckTitle={deckTitle}
-      sourceLabel={sourceLabel}
       isSaving={isSaving}
       onSlidesChange={saveSlides}
     />
