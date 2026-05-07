@@ -35,28 +35,20 @@ test("selecting another element after clearing selection keeps the app mounted",
   expect(pageErrors).toEqual([]);
 });
 
-test("sidebar scrolls with overflow and expands on hover without shifting the stage", async ({
-  page,
-}) => {
+test("sidebar renders fixed thumbnail list chrome and slide actions", async ({ page }) => {
   await gotoEditor(page);
 
   const sidebar = page.getByTestId("slide-sidebar");
   const sidebarPanel = page.getByTestId("slide-sidebar-panel");
-  const slideList = page
-    .getByTestId("slide-list")
-    .locator('[data-slot="scroll-area-viewport"]')
-    .first();
+  const slideList = page.getByTestId("slide-list");
   const stagePanel = page.getByTestId("stage-panel");
 
   await expect(sidebar).toBeVisible();
   await expect(sidebarPanel).toBeVisible();
+  await expect(page.getByText("14 slides")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add slide" })).toBeVisible();
 
-  const collapsedSidebarWidth = await sidebar.evaluate(
-    (node) => node.getBoundingClientRect().width
-  );
-  const collapsedPanelWidth = await sidebarPanel.evaluate(
-    (node) => node.getBoundingClientRect().width
-  );
+  const sidebarWidth = await sidebar.evaluate((node) => node.getBoundingClientRect().width);
   const stageWidthBeforeHover = await stagePanel.evaluate(
     (node) => node.getBoundingClientRect().width
   );
@@ -67,26 +59,20 @@ test("sidebar scrolls with overflow and expands on hover without shifting the st
   }));
 
   expect(["auto", "scroll"]).toContain(overflowState.overflowY);
+  expect(sidebarWidth).toBeGreaterThanOrEqual(210);
+  expect(sidebarWidth).toBeLessThanOrEqual(214);
 
   await sidebar.hover();
 
-  await expect
-    .poll(async () => {
-      return sidebar.evaluate((node) => node.getBoundingClientRect().width);
-    })
-    .toBeGreaterThan(collapsedSidebarWidth + 20);
-
-  const expandedSidebarWidth = await sidebar.evaluate((node) => node.getBoundingClientRect().width);
-  const expandedPanelWidth = await sidebarPanel.evaluate(
+  const sidebarWidthAfterHover = await sidebar.evaluate(
     (node) => node.getBoundingClientRect().width
   );
   const stageWidthAfterHover = await stagePanel.evaluate(
     (node) => node.getBoundingClientRect().width
   );
 
-  expect(expandedSidebarWidth).toBeGreaterThan(collapsedSidebarWidth + 20);
-  expect(expandedPanelWidth).toBeGreaterThan(collapsedPanelWidth + 20);
-  expect(stageWidthAfterHover).toBeLessThan(stageWidthBeforeHover - 20);
+  expect(sidebarWidthAfterHover).toBe(sidebarWidth);
+  expect(stageWidthAfterHover).toBe(stageWidthBeforeHover);
 
   const slideTwoButton = page.getByLabel("Slide 2");
   await slideTwoButton.click();
@@ -104,9 +90,17 @@ test("sidebar scrolls with overflow and expands on hover without shifting the st
       });
     })
     .not.toEqual({
-      borderTopWidth: "2px",
+      borderTopWidth: "0px",
       borderTopColor: "rgba(0, 0, 0, 0)",
     });
+
+  const slideTwoCard = page.getByTestId("slide-card").nth(1);
+  await slideTwoCard.hover();
+  await expect(slideTwoCard.getByRole("button", { name: "Drag to reorder" })).toBeVisible();
+  await slideTwoCard.locator('button[aria-haspopup="menu"]').click();
+  await expect(page.getByRole("button", { name: "Duplicate" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hide" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
 
   if (overflowState.scrollHeight > overflowState.clientHeight) {
     await page.getByLabel("Slide 8").click();
