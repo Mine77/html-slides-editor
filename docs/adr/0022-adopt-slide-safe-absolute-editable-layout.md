@@ -1,0 +1,402 @@
+# ADR-0022: Adopt slide-safe absolute editable layout
+
+- Status: proposed
+- Date: 2026-05-08
+- Amends: [ADR-0001](./0001-editing-pipeline-and-versioning.md)
+- Amends: [ADR-0010](./0010-represent-groups-as-nested-dom-containers.md)
+- Related: [ADR-0013](./0013-adopt-editing-e2e-coverage-contract.md)
+- Related: [ADR-0020](./0020-adopt-block-flatten-through-ungroup.md)
+
+## Context
+
+Starry Slides keeps HTML as the source of truth. That remains the right product
+direction, but the current v1 Contract allows editable elements to participate
+in ordinary browser flow layout. In normal HTML this is expected: flex, grid,
+inline, block flow, margins, and document order can reposition sibling elements
+when one element changes size, moves, is removed, or is promoted out of a
+container.
+
+That behavior is not acceptable for a freeform slide editor. In a slide editing
+environment, moving or resizing one editable object must not cause neighboring
+objects to fill the old space, collapse upward, reflow, or otherwise change
+position unless the user invokes an explicit arrangement command.
+
+The current implementation already has mixed assumptions:
+
+- some generated and test slides use `position: absolute` for editable blocks
+- the blank slide template already creates an absolute editable title
+- direct manipulation move paths write `transform: translate(...)`, leaving the
+  element in its original flow position
+- resize, group, ungroup, and paste paths increasingly convert geometry into
+  absolute `left`, `top`, `width`, and `height`
+- the Contract guide and agent-facing protocol still show flow-based editable
+  text and blocks as valid minimum markup
+- verification checks structure and overflow, but does not reject or warn about
+  editable elements whose sibling positions are controlled by browser flow
+
+The core architectural problem is not that slides are HTML. The problem is that
+the same DOM currently tries to be both an authored web layout and a stable
+slide object model. Freeform editing requires a stable editable layout contract
+inside the HTML.
+
+## Decision
+
+Adopt a **slide-safe absolute editable layout** contract.
+
+HTML remains the source of truth. Starry Slides will not introduce a separate
+proprietary slide document model. Instead, the HTML Contract will require every
+top-level editable object on an editable layer to be represented as an
+independent geometry box in that layer's coordinate system.
+
+### Editable layer rules
+
+Every slide root must establish the page coordinate system:
+
+- `position: relative`
+- fixed rendered dimensions matching `data-slide-width` and
+  `data-slide-height`
+- `overflow: hidden` unless the slide or element explicitly opts into overflow
+  with the existing `data-allow-overflow="true"` mechanism
+
+Every editable element that is a direct child of the slide root must have stable
+box geometry:
+
+- `position: absolute`
+- `left`
+- `top`
+- `width`
+- `height`
+- `box-sizing: border-box`
+- `margin: 0` unless a later Contract revision explicitly models margin as
+  part of editable geometry
+
+Every editable element that is a direct child of a **Group Container** or a
+normal **Block** that owns nested editable children must follow the same rule,
+but its `left` and `top` are relative to that parent editable layer.
+
+Flex, grid, and normal flow layout remain allowed only inside an editable box
+for non-layer internal content, or inside a non-editable decorative structure.
+They must not determine the position of sibling editable objects on the same
+editable layer.
+
+### Object movement semantics
+
+Committed move, align, distribute, keyboard movement, duplicate, paste, group,
+ungroup, and block-flatten operations must express object placement through
+box geometry (`left`, `top`, `width`, `height`) in the relevant editable layer.
+
+`transform` is reserved for visual transforms that do not define primary layer
+position, especially rotation. During live pointer manipulation, the editor may
+use transient transforms for performance, but committed source HTML should
+canonicalize object placement back to `left` and `top` while preserving
+rotation.
+
+### Canonicalization on import or annotation
+
+Flow-authored decks are still useful input, but they are not directly safe for
+freeform editing. Starry Slides should provide a layout canonicalization path
+that freezes rendered editable geometry into the absolute editable layout
+contract.
+
+Canonicalization is a rendered operation because static HTML parsing cannot
+reliably resolve browser layout. It should measure editable bounding boxes
+against the slide root and editable parent layers, then write absolute geometry
+into the editable elements. It should preserve internal markup and styling
+inside each editable box.
+
+The canonicalization path may start as an explicit tool or import-time warning.
+It must become the path used by agent-generated decks before they are opened
+for editing.
+
+### Contract compatibility
+
+Existing v1 Contract-compatible decks that use flow layout may continue to load
+during the migration, but they should be treated as legacy or non-canonical for
+freeform editing. The verifier should warn first, then later fail in complete
+verification once the migration path and fixtures are updated.
+
+The Contract documentation must distinguish:
+
+- valid HTML slide documents that can render
+- canonical editable slides that are safe for freeform editing
+
+The editor should make editing behavior correct for canonical slides first. It
+should not keep adding compensating behavior for arbitrary flow-authored
+editable siblings.
+
+## Implementation Plan
+
+### Contract and documentation
+
+- Update `docs/slide-contract.md` so the minimum editable example uses absolute
+  geometry for slide-root children and explains editable layers.
+- Update
+  `skills/starry-slides-skill/references/contract-protocol/contract-v1.md` with
+  the canonical editable layout rules, including the limited role of flex/grid
+  inside editable boxes.
+- Update `src/core/CONTEXT.md` and `src/editor/CONTEXT.md` with terms for
+  **editable layer**, **canonical editable geometry**, and **slide-safe
+  layout**.
+- Update the Starry Slides Skill instructions in
+  `skills/starry-slides-skill/SKILL.md` so generated decks target canonical
+  editable geometry by default.
+- Update `skills/slides-style-pack-starter/template/slices/*.html` so starter
+  style packs do not teach flow-positioned editable siblings.
+
+### Core layout model and operations
+
+- Add core helpers in `src/core/layout.ts` or a new focused core module to:
+  - identify editable layer parents
+  - read and write canonical editable geometry
+  - convert rendered rects to parent-layer coordinates
+  - preserve rotation while clearing committed translate movement
+- Keep committed edits flowing through operation results as required by
+  ADR-0001.
+- Update `src/core/slide-operations-helpers.ts` so
+  `updateSlideElementTransform(...)` is deprecated or narrowed. Object movement
+  should no longer persist position primarily as `translate(...)`.
+- Update `src/core/group-operations.ts` to rely on the shared canonical geometry
+  helpers instead of local numeric `left`/`top` assumptions where possible.
+- Update `src/core/slide-operations.test.ts`,
+  `src/core/slide-operation-reducer.test.ts`, and `src/core/layout.test.ts` so
+  move, align, distribute, group, ungroup, flatten, duplicate, paste, and undo
+  preserve canonical geometry.
+- Keep `src/core/deck-slide-operations.ts` aligned with the new contract. The
+  current blank slide already follows most of the target shape, but should add
+  any missing canonical properties such as `box-sizing` and `margin`.
+
+### Editor interaction chain
+
+- Update `src/editor/hooks/use-block-manipulation.ts` so committed drag
+  movement updates `left` and `top` in parent-layer coordinates instead of
+  adding persistent `translate(...)`.
+- Update resize behavior in `src/editor/hooks/use-block-manipulation.ts` and
+  `src/editor/hooks/block-manipulation-geometry.ts` to use the same canonical
+  geometry helper as move, not a separate geometry path.
+- Update `src/editor/hooks/use-editor-keyboard-shortcuts.ts` so arrow movement
+  updates `left` and `top`, with normal, Shift, and Alt step sizes preserved.
+- Update `src/editor/index.tsx` arrangement paths:
+  - `commitArrangeAction(...)` should align by writing canonical geometry
+  - `distributeSelection(...)` should distribute by writing canonical geometry
+  - group/ungroup rect maps should use the shared geometry helper
+- Update `src/editor/hooks/editor-keyboard-geometry.ts` and
+  `src/editor/hooks/object-clipboard-commands.ts` so duplicate and paste always
+  place new objects with canonical geometry and clear movement translate.
+- Ensure the Floating Toolbar and Context Menu continue to dispatch the same
+  user-facing commands. This ADR changes layout semantics, not the command
+  surfaces established by ADR-0009 and ADR-0013.
+- Selection overlays and snap targets may continue to use rendered bounding
+  boxes, but committed operation payloads should carry canonical geometry
+  snapshots.
+
+### Verification and canonicalization tools
+
+- Update `src/core/verify-deck.ts` with structural checks for canonical editable
+  geometry:
+  - slide root establishes a positioned fixed-size coordinate system
+  - direct editable children of an editable layer are absolute
+  - direct editable children have `left`, `top`, `width`, and `height`
+  - editable layer siblings are not positioned by flex/grid/flow
+- Start these checks as warnings for legacy compatibility. Promote them to
+  errors in complete verification after fixtures and generation tools are
+  migrated.
+- Update `skills/starry-slides-skill/tools/contract-protocol/validate-slides.mjs`
+  with the same warning vocabulary used by the CLI verifier.
+- Extend `skills/starry-slides-skill/tools/contract-protocol/annotate-slides.mjs`
+  or add a sibling canonicalization tool that can freeze rendered editable
+  geometry into absolute layout. Because this requires browser layout, a new
+  Playwright-backed or runtime-backed tool may be more accurate than extending
+  the existing static `jsdom` annotation script.
+- Update `src/node/view-renderer.ts` only if the canonicalization tool reuses
+  the existing rendered slide runtime.
+
+### Generated decks, fixtures, and starter content
+
+- Update `e2e/tools/templates/base-slide.html` so the basic fixture template is
+  canonical.
+- Update regression deck generators under `e2e/tools/regression-deck/*.mjs`.
+  Several fixtures already use absolute editable cards, but slides with
+  editable headings, lists, problem cards, flow cards, rails, or nested text
+  should be reviewed so every editable layer child has explicit geometry.
+- Update `e2e/fixtures/regression-deck/` only through the existing regression
+  deck generation path.
+- Update `skills/slides-style-pack-starter/template/slices/*.html`; these
+  templates currently contain grid/flex layout at editable sibling layers and
+  should be rewritten to canonical editable boxes.
+- Update any tests in `src/core/generated-deck.test.ts`,
+  `src/core/slide-document.test.ts`, and `src/core/verify-deck.test.ts` that
+  use flow-only editable markup as the default example. Flow-only fixtures may
+  remain when explicitly testing legacy warnings.
+
+## Affected Files and Chains
+
+### Contract chain
+
+- `docs/slide-contract.md`
+- `skills/starry-slides-skill/references/contract-protocol/contract-v1.md`
+- `skills/starry-slides-skill/SKILL.md`
+- `skills/starry-slides-skill/tools/contract-protocol/validate-slides.mjs`
+- `skills/starry-slides-skill/tools/contract-protocol/annotate-slides.mjs`
+- `src/core/verify-deck.ts`
+- `src/core/verify-deck.test.ts`
+
+### Import and document chain
+
+- `src/core/slide-contract.ts`
+- `src/core/slide-document.ts`
+- `src/core/generated-deck.ts`
+- `src/core/generated-deck.test.ts`
+- `src/editor/app/use-slides-data.ts`
+
+### Operation and history chain
+
+- `src/core/layout.ts`
+- `src/core/group-operations.ts`
+- `src/core/slide-operation-types.ts`
+- `src/core/slide-operations.ts`
+- `src/core/slide-operations-helpers.ts`
+- `src/core/slide-operation-reducer.ts`
+- `src/core/layout.test.ts`
+- `src/core/slide-operations.test.ts`
+- `src/core/slide-operation-reducer.test.ts`
+
+### Editor interaction chain
+
+- `src/editor/hooks/use-block-manipulation.ts`
+- `src/editor/hooks/block-manipulation-geometry.ts`
+- `src/editor/hooks/block-manipulation-operations.ts`
+- `src/editor/hooks/use-editor-keyboard-shortcuts.ts`
+- `src/editor/hooks/editor-keyboard-geometry.ts`
+- `src/editor/hooks/object-clipboard-commands.ts`
+- `src/editor/index.tsx`
+- `src/editor/lib/block-snap-targets.ts`
+- `src/editor/lib/block-snapping.ts`
+- `src/editor/lib/element-tool-commit.ts`
+- `src/editor/lib/element-tool-values.ts`
+- `src/editor/lib/collect-css-properties.ts`
+
+### Fixtures and E2E chain
+
+- `e2e/tools/templates/base-slide.html`
+- `e2e/tools/regression-deck/*.mjs`
+- `e2e/tools/prepare-regression-deck.mjs`
+- `e2e/tests/block-manipulation.spec.ts`
+- `e2e/tests/keyboard-and-multiselect.spec.ts`
+- `e2e/tests/context-menu.spec.ts`
+- `e2e/tests/floating-toolbar.spec.ts`
+- `e2e/tests/selection.spec.ts`
+- `e2e/tests/text-editing.spec.ts`
+- `docs/editing-e2e-coverage-matrix.md`
+- `docs/adr/0013-adopt-editing-e2e-coverage-contract.md`
+
+## E2E Impact
+
+Existing E2E tests that assert movement through inline `transform` must be
+updated to assert canonical geometry instead:
+
+- `keyboard-and-multiselect.spec.ts` currently expects arrow movement to write
+  `transform: translate(...)`; it should expect `left` and `top` deltas while
+  preserving rotation.
+- object copy, paste, and repeated paste tests should assert the copy receives
+  absolute `left`, `top`, `width`, and `height`, not only rendered offset.
+- multi-select keyboard and overlay drag tests should assert every selected
+  object moves by the same geometry delta and undo restores exact geometry.
+- block manipulation tests should add a regression fixture where editable
+  siblings would previously reflow. Dragging or resizing one object must leave
+  sibling rendered rects unchanged.
+- context menu align and distribute tests should assert geometry write-back, not
+  transform-only motion.
+- group, ungroup, and Block Flatten tests should continue asserting rendered
+  dimension preservation, and should additionally assert promoted children are
+  canonical absolute boxes in the parent layer.
+- floating toolbar layout controls should assert canonical geometry write-back
+  for width, height, rotation, align, and distribution interactions.
+- selection and text editing tests should include at least one nested editable
+  box whose internal layout uses flex/grid, proving internal layout remains
+  allowed while sibling editable geometry is stable.
+
+Update `docs/editing-e2e-coverage-matrix.md` so the Layout, Transform, Direct
+Manipulation, Object Clipboard, Grouping, Alignment, and Distribution rows refer
+to canonical geometry rather than persistent translate movement.
+
+## Verification
+
+- [ ] Contract docs define editable layers and canonical absolute editable
+      geometry.
+- [ ] Starry Slides Skill generation instructions produce canonical editable
+      geometry by default.
+- [ ] CLI verification warns or fails for non-canonical editable layer
+      children, depending on migration phase.
+- [ ] Static contract validation uses the same issue vocabulary as
+      `src/core/verify-deck.ts`.
+- [ ] A canonicalization path exists for flow-authored legacy slides or the
+      editor clearly warns before freeform editing them.
+- [ ] Dragging one editable object does not change sibling editable rendered
+      rects.
+- [ ] Resizing one editable object does not cause sibling editable objects to
+      collapse, fill space, or reflow.
+- [ ] Keyboard arrow movement updates `left` and `top` while preserving undo and
+      redo.
+- [ ] Align and distribute update canonical geometry while preserving undo and
+      redo.
+- [ ] Duplicate and paste create canonical absolute boxes with unique editor
+      ids and stable offsets.
+- [ ] Group, Ungroup, Flatten and Group, and Block Flatten preserve rendered
+      geometry and canonicalize promoted children.
+- [ ] Rotation remains represented as `transform: rotate(...)` and is preserved
+      when movement translate is canonicalized into `left` and `top`.
+- [ ] `pnpm test -- src/core/layout.test.ts src/core/slide-operations.test.ts src/core/slide-operation-reducer.test.ts src/core/verify-deck.test.ts`
+      passes.
+- [ ] `pnpm test:e2e -- e2e/tests/block-manipulation.spec.ts e2e/tests/keyboard-and-multiselect.spec.ts e2e/tests/context-menu.spec.ts e2e/tests/floating-toolbar.spec.ts`
+      passes.
+- [ ] `pnpm verify` passes after fixture and generator migration.
+
+## Consequences
+
+Freeform editing becomes stable because every editable object owns its position
+and size independently of neighboring editable objects. The editor can still
+render real HTML, preserve source inspectability, and keep operation-based
+history without introducing a second document format.
+
+The Contract becomes stricter. Some existing flow-authored decks will need a
+canonicalization step before they are safe to edit. This is an intentional
+tradeoff: arbitrary web layout is too dynamic to provide a predictable slide
+editing experience.
+
+The implementation should become simpler over time. Move, resize, keyboard,
+align, distribute, paste, group, and ungroup should share one geometry model
+instead of mixing persistent translate movement with absolute layout updates.
+
+Deck authors and agents can still use flex and grid for rich internal layout
+inside an editable object. They cannot rely on flex/grid to arrange sibling
+editable objects that users expect to drag independently.
+
+## Alternatives considered
+
+### Keep arbitrary HTML flow layout editable
+
+Rejected. It preserves maximum HTML flexibility, but browser flow semantics
+make sibling movement unavoidable. Every editor feature would need special
+compensation for flex, grid, margins, collapse, intrinsic sizing, and DOM
+promotion. That complexity would still fail to match freeform slide editing
+expectations.
+
+### Introduce a proprietary slide document model
+
+Rejected. It would make freeform editing straightforward, but it contradicts
+the project rule that HTML remains the source of truth and would reduce
+inspectability for agents and users.
+
+### Persist movement only as `transform: translate(...)`
+
+Rejected as the long-term model. It can visually move an element without
+immediate reflow, but the element's original flow slot remains in the document.
+That creates confusing source geometry, complicates alignment and grouping, and
+does not prevent sibling flow changes when size, removal, flattening, or DOM
+structure changes.
+
+### Render slides to images or canvas for editing
+
+Rejected. It would stabilize visual output but would destroy direct text,
+image, and DOM-level editing. It also conflicts with the source-native deck
+workflow.

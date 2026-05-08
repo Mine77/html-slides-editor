@@ -51,3 +51,4 @@ Update this directory whenever a change affects:
 | [0019](./0019-adopt-progressive-pdf-export-dialog.md)                           | Adopt a progressive PDF export dialog in the editor                             | accepted              |
 | [0020](./0020-adopt-block-flatten-through-ungroup.md)                           | Adopt block flatten through Ungroup                                             | accepted              |
 | [0021](./0021-adopt-reusable-present-mode-and-single-html-export.md)            | Adopt reusable Present mode and single HTML export                              | accepted              |
+| [0022](./0022-adopt-slide-safe-absolute-editable-layout.md)                     | Adopt slide-safe absolute editable layout                                       | proposed              |
