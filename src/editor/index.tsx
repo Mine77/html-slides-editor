@@ -86,6 +86,17 @@ function SlidesEditor({
   const stageViewportRef = useRef<HTMLDivElement>(null);
   const selectionOverlayRef = useRef<HTMLDivElement>(null);
   const selectionContextMenuTriggerRef = useRef<HTMLSpanElement>(null);
+  const beginPointerMoveRef = useRef<
+    (
+      elementId: string,
+      clientX: number,
+      clientY: number,
+      pointerOptions?: {
+        sourceWindow?: Window | null;
+        toStagePoint?: (clientX: number, clientY: number) => { x: number; y: number };
+      }
+    ) => void
+  >(() => {});
   const overlayPointerDownRef = useRef<{
     clientX: number;
     clientY: number;
@@ -133,6 +144,20 @@ function SlidesEditor({
     iframeRef,
     onCommitOperation: commitOperation,
     onOpenSelectionContextMenu: openSelectionContextMenu,
+    onBeginPointerMove: useCallback(
+      (
+        elementId: string,
+        clientX: number,
+        clientY: number,
+        pointerOptions?: {
+          sourceWindow?: Window | null;
+          toStagePoint?: (clientX: number, clientY: number) => { x: number; y: number };
+        }
+      ) => {
+        beginPointerMoveRef.current(elementId, clientX, clientY, pointerOptions);
+      },
+      []
+    ),
   });
 
   const selectedElement = activeSlide?.elements.find((element) => element.id === selectedElementId);
@@ -209,6 +234,18 @@ function SlidesEditor({
     isEditingText,
     onCommitOperation: commitOperation,
   });
+  beginPointerMoveRef.current = (elementId, clientX, clientY, pointerOptions) => {
+    beginMove(
+      {
+        clientX,
+        clientY,
+        ...pointerOptions,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      },
+      elementId
+    );
+  };
   const unifiedSelectionOverlay = manipulationOverlay?.selectionBounds ?? selectionOverlay;
   const selectedTargetElementId = selectedElementId ?? "slide-root";
   const attributeValues = {
