@@ -23,6 +23,7 @@ function useIframeTextEditing({
   activeSlide,
   iframeRef,
   onCommitOperation,
+  isElementLocked,
   onOpenSelectionContextMenu,
   onBeginPointerMove,
 }: UseIframeTextEditingOptions): UseIframeTextEditingResult {
@@ -65,7 +66,6 @@ function useIframeTextEditing({
         (clientY - iframeRect.top) * iframeScaleY,
         activeGroupScopeIdRef.current
       );
-
       return target?.getAttribute(SELECTOR_ATTR) ?? null;
     },
     [iframeRef]
@@ -436,6 +436,9 @@ function useIframeTextEditing({
         if (!targetId) {
           return;
         }
+        if (isElementLocked?.(targetId)) {
+          return;
+        }
 
         const iframeRect = iframe.getBoundingClientRect();
         const iframeScaleX = iframeRect.width > 0 ? iframe.clientWidth / iframeRect.width : 1;
@@ -493,8 +496,14 @@ function useIframeTextEditing({
         const scopedTextTarget =
           getEditableTextTargetFromEvent(event, activeGroupScopeIdRef.current) ??
           getEditableSelectionTargetInScope(event.target as Element, activeGroupScopeIdRef.current);
+        const scopedTextId = scopedTextTarget?.getAttribute(SELECTOR_ATTR);
+        if (scopedTextId && isElementLocked?.(scopedTextId)) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+
         if (scopedTextTarget?.getAttribute("data-editable") === "text") {
-          const scopedTextId = scopedTextTarget.getAttribute(SELECTOR_ATTR);
           if (scopedTextId) {
             event.preventDefault();
             event.stopPropagation();
@@ -543,6 +552,7 @@ function useIframeTextEditing({
     beginGroupEditingScope,
     beginTextEditing,
     clearPreselection,
+    isElementLocked,
     iframeRef,
     onBeginPointerMove,
     openPointerSelectionContextMenu,
