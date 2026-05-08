@@ -70,8 +70,8 @@ test("selected block can be moved by dragging the same selection overlay and kee
   }
 
   const start = {
-    x: overlayBefore.x + overlayBefore.width / 2,
-    y: overlayBefore.y + overlayBefore.height / 2,
+    x: overlayBefore.x + 12,
+    y: overlayBefore.y + 12,
   };
   const end = {
     x: start.x + 80,
@@ -161,11 +161,15 @@ test("dragging a selected block snaps its edge to a sibling edge guide", async (
 
   const siblingBefore = await getRequiredBoundingBox(siblingBlock, "sibling block");
   const movingBefore = await getRequiredBoundingBox(movingBlock, "moving block before snapping");
-  const overlayBefore = await getRequiredBoundingBox(selectionOverlay, "selection overlay");
+  await getRequiredBoundingBox(selectionOverlay, "selection overlay");
+  const dragSurface = await getRequiredBoundingBox(
+    movingBlock.locator(".snap-drag-surface"),
+    "moving block drag surface"
+  );
   const siblingRightEdge = siblingBefore.x + siblingBefore.width;
   const start = {
-    x: overlayBefore.x + overlayBefore.width / 2,
-    y: overlayBefore.y + overlayBefore.height / 2,
+    x: dragSurface.x + dragSurface.width / 2,
+    y: dragSurface.y + dragSurface.height / 2,
   };
   const target = {
     x: start.x + (siblingRightEdge - movingBefore.x) + 24,
@@ -217,11 +221,15 @@ test("dragging a selected block snaps to the nearest sibling anywhere on the sli
   const movingBefore = await getRequiredBoundingBox(movingBlock, "moving block before snapping");
   const nearerBefore = await getRequiredBoundingBox(nearerBlock, "nearer block before snapping");
   const fartherBefore = await getRequiredBoundingBox(fartherBlock, "farther block before snapping");
-  const overlayBefore = await getRequiredBoundingBox(selectionOverlay, "selection overlay");
+  await getRequiredBoundingBox(selectionOverlay, "selection overlay");
+  const dragSurface = await getRequiredBoundingBox(
+    movingBlock.locator(".snap-drag-surface"),
+    "moving block drag surface"
+  );
 
   const start = {
-    x: overlayBefore.x + overlayBefore.width / 2,
-    y: overlayBefore.y + overlayBefore.height / 2,
+    x: dragSurface.x + dragSurface.width / 2,
+    y: dragSurface.y + dragSurface.height / 2,
   };
   const target = {
     x: start.x - (movingBefore.x - (nearerBefore.x + nearerBefore.width)),
@@ -270,8 +278,8 @@ test("spacing guides render capped end markers in the guide color", async ({ pag
   const existingGap = secondBefore.x - (firstBefore.x + firstBefore.width);
   const desiredMovingLeft = secondBefore.x + secondBefore.width + existingGap;
   const start = {
-    x: overlayBefore.x + overlayBefore.width / 2,
-    y: overlayBefore.y + overlayBefore.height / 2,
+    x: overlayBefore.x + 12,
+    y: overlayBefore.y + 12,
   };
   const target = {
     x: start.x - (movingBefore.x - desiredMovingLeft),
@@ -302,10 +310,14 @@ test("floating toolbar hides while dragging a selected element", async ({ page }
   const blockCard = frame.locator('[data-editor-id="block-4"]');
   const { selectionOverlay } = getHistoryControls(page);
   const { floatingToolbarAnchor } = getHeaderControls(page);
+  const resizeHandle = page.getByTestId("block-resize-handle-bottom-right");
+  const rotateHandle = page.getByTestId("block-rotate-handle");
 
   await blockCard.click({ position: { x: 12, y: 12 } });
   await expect(selectionOverlay).toBeVisible();
   await expect(floatingToolbarAnchor).toBeVisible();
+  await expect(resizeHandle).toBeVisible();
+  await expect(rotateHandle).toBeVisible();
 
   const overlayBefore = await selectionOverlay.boundingBox();
   if (!overlayBefore) {
@@ -313,16 +325,21 @@ test("floating toolbar hides while dragging a selected element", async ({ page }
   }
 
   const start = {
-    x: overlayBefore.x + overlayBefore.width / 2,
-    y: overlayBefore.y + overlayBefore.height / 2,
+    x: overlayBefore.x + 12,
+    y: overlayBefore.y + 12,
   };
 
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();
   await expect(floatingToolbarAnchor).toBeHidden();
+  await page.mouse.move(start.x + 8, start.y + 6, { steps: 2 });
+  await expect(resizeHandle).toHaveCount(0);
+  await expect(rotateHandle).toHaveCount(0);
   await page.mouse.move(start.x + 40, start.y + 30, { steps: 4 });
   await page.mouse.up();
   await expect(floatingToolbarAnchor).toBeVisible();
+  await expect(resizeHandle).toBeVisible();
+  await expect(rotateHandle).toBeVisible();
 });
 
 test("after dragging and clearing selection, clicking the same element selects it again", async ({
@@ -358,6 +375,69 @@ test("after dragging and clearing selection, clicking the same element selects i
 
   await blockCard.click({ position: { x: 12, y: 12 } });
   await expect(selectionOverlay).toBeVisible();
+});
+
+test("dragging a different element immediately after a drag moves the pointer target", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  await page.getByLabel("Slide 12").click();
+  const firstBlock = frame.locator('[data-editor-id="snap-card-a"]');
+  const secondBlock = frame.locator('[data-editor-id="snap-card-b"]');
+  const { selectionOverlay } = getHistoryControls(page);
+
+  await firstBlock.locator(".snap-drag-surface").click();
+  await expect(selectionOverlay).toBeVisible();
+
+  const firstBefore = await getRequiredBoundingBox(firstBlock, "first block before first drag");
+  await getRequiredBoundingBox(selectionOverlay, "first block overlay");
+  const firstDragSurface = await getRequiredBoundingBox(
+    firstBlock.locator(".snap-drag-surface"),
+    "first block drag surface"
+  );
+  const firstDragStart = {
+    x: firstDragSurface.x + firstDragSurface.width / 2,
+    y: firstDragSurface.y + firstDragSurface.height / 2,
+  };
+
+  await page.mouse.move(firstDragStart.x, firstDragStart.y);
+  await page.mouse.down();
+  await page.mouse.move(firstDragStart.x + 70, firstDragStart.y + 25, { steps: 6 });
+  await page.mouse.up();
+
+  const firstAfterFirstDrag = await getRequiredBoundingBox(
+    firstBlock,
+    "first block after first drag"
+  );
+  const secondBefore = await getRequiredBoundingBox(secondBlock, "second block before direct drag");
+  expect(firstAfterFirstDrag.x).toBeGreaterThan(firstBefore.x + 35);
+
+  const secondDragSurface = await getRequiredBoundingBox(
+    secondBlock.locator(".snap-drag-surface"),
+    "second block drag surface"
+  );
+  const secondDragStart = {
+    x: secondDragSurface.x + secondDragSurface.width / 2,
+    y: secondDragSurface.y + secondDragSurface.height / 2,
+  };
+
+  await page.mouse.move(secondDragStart.x, secondDragStart.y);
+  await page.mouse.down();
+  await page.mouse.move(secondDragStart.x + 85, secondDragStart.y + 30, { steps: 8 });
+  await page.mouse.up();
+
+  const firstAfterSecondDrag = await getRequiredBoundingBox(
+    firstBlock,
+    "first block after second drag"
+  );
+  const secondAfter = await getRequiredBoundingBox(secondBlock, "second block after direct drag");
+
+  expect(secondAfter.x).toBeGreaterThan(secondBefore.x + 40);
+  expect(secondAfter.y).toBeGreaterThan(secondBefore.y + 12);
+  expect(Math.abs(firstAfterSecondDrag.x - firstAfterFirstDrag.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(firstAfterSecondDrag.y - firstAfterFirstDrag.y)).toBeLessThanOrEqual(2);
 });
 
 test("all four resize handles are visible for a selected element", async ({ page }) => {

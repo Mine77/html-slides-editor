@@ -1049,12 +1049,20 @@ function SlidesEditor({
                   }
 
                   overlayPointerDownRef.current = null;
-                  beginMove({
-                    clientX: pointerDown.clientX,
-                    clientY: pointerDown.clientY,
-                    preventDefault: () => event.preventDefault(),
-                    stopPropagation: () => event.stopPropagation(),
-                  });
+                  retargetPointerSelection(
+                    pointerDown.clientX,
+                    pointerDown.clientY,
+                    pointerDown.additive
+                  );
+                  beginMove(
+                    {
+                      clientX: pointerDown.clientX,
+                      clientY: pointerDown.clientY,
+                      preventDefault: () => event.preventDefault(),
+                      stopPropagation: () => event.stopPropagation(),
+                    },
+                    pointerDown.targetElementId ?? undefined
+                  );
                 }}
                 onSelectionOverlayContextMenu={(event) => {
                   event.preventDefault();

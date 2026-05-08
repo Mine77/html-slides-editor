@@ -135,17 +135,19 @@ function BlockManipulationOverlay({
           </div>
         );
       })}
-      <button
-        type="button"
-        className={`${handleClassName} cursor-alias`}
-        data-testid="block-rotate-handle"
-        aria-label="Rotate selected element"
-        style={{
-          left: `${rotationHandle.x}px`,
-          top: `${rotationHandle.y}px`,
-        }}
-        onMouseDown={onRotateHandleMouseDown}
-      />
+      {resizeHandles.length ? (
+        <button
+          type="button"
+          className={`${handleClassName} cursor-alias`}
+          data-testid="block-rotate-handle"
+          aria-label="Rotate selected element"
+          style={{
+            left: `${rotationHandle.x}px`,
+            top: `${rotationHandle.y}px`,
+          }}
+          onMouseDown={onRotateHandleMouseDown}
+        />
+      ) : null}
       {resizeHandles.map((handle) => (
         <button
           key={handle.corner}

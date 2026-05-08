@@ -463,7 +463,9 @@ function getManipulationElementIds({
   });
 
   if (mode === "move") {
-    return selectedLayoutElementIds.length ? selectedLayoutElementIds : [selectedElementId];
+    return selectedLayoutElementIds.includes(selectedElementId)
+      ? selectedLayoutElementIds
+      : [selectedElementId];
   }
 
   if (mode === "rotate") {
