@@ -22,6 +22,7 @@ export type {
   GroupCreateOperation,
   GroupUngroupOperation,
   SlideBatchOperation,
+  SlideTitleUpdateOperation,
   SlideOperation,
   StyleUpdateOperation,
   TextUpdateOperation,

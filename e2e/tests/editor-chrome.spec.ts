@@ -102,10 +102,10 @@ test("sidebar renders fixed thumbnail list chrome and slide actions", async ({ p
   await slideTwoButton.click();
   await expect(slideTwoButton).toHaveAttribute("aria-current", "true");
 
-  const inactiveSlideButton = page.getByRole("button", { name: "Slide 1", exact: true });
+  const inactiveSlideCard = page.getByTestId("slide-card").first().locator("> div").nth(1);
   await expect
     .poll(async () => {
-      return inactiveSlideButton.evaluate((node) => window.getComputedStyle(node).boxShadow);
+      return inactiveSlideCard.evaluate((node) => window.getComputedStyle(node).boxShadow);
     })
     .not.toBe("none");
 
@@ -136,6 +136,7 @@ test("sidebar renders fixed thumbnail list chrome and slide actions", async ({ p
   await expect(slideMenu.getByRole("menuitem", { name: "Add Slide Above" })).toBeVisible();
   await expect(slideMenu.getByRole("menuitem", { name: "Add Slide Below" })).toBeVisible();
   await expect(slideMenu.getByRole("menuitem", { name: "Duplicate" })).toBeVisible();
+  await expect(slideMenu.getByRole("menuitem", { name: "Rename" })).toBeVisible();
   await expect(slideMenu.getByRole("menuitem", { name: "Hide" })).toBeVisible();
   await expect(slideMenu.getByRole("menuitem", { name: "Delete" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -181,6 +182,51 @@ test("sidebar context menu adds slides above and below the clicked slide", async
   await expect(page.getByText(`${REGRESSION_DECK_SLIDE_COUNT + 2} slides`)).toBeVisible();
   await expect(page.getByLabel("Slide 5")).toHaveAttribute("aria-current", "true");
   await expect(coverFrame(page).locator('[data-editor-id="text-1"]')).toHaveText("Untitled Slide");
+});
+
+test("sidebar context menu renames a slide and persists after refresh", async ({ page }) => {
+  await gotoEditor(page);
+
+  const nextTitle = "Renamed Sidebar Slide";
+  const slideTwoCard = page.getByTestId("slide-card").nth(1);
+
+  await slideTwoCard.click({ button: "right" });
+  await page.getByRole("menu", { name: "Slide actions" }).getByText("Rename").click();
+
+  const dialog = page.getByRole("dialog", { name: "Rename slide" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Save" })).toBeVisible();
+
+  const renameInput = dialog.getByLabel("Slide name");
+  await expect(renameInput).toBeVisible();
+  await renameInput.fill("Canceled Rename");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("button", { name: "Slide title: Canceled Rename" })).toHaveCount(0);
+
+  await slideTwoCard.click({ button: "right" });
+  await page.getByRole("menu", { name: "Slide actions" }).getByText("Rename").click();
+  await renameInput.fill(nextTitle);
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByRole("button", { name: `Slide title: ${nextTitle}` })).toBeVisible();
+  await expect(page.getByText("saving...")).toBeVisible();
+  await expect(page.getByText("saving...")).toBeHidden();
+
+  await expect
+    .poll(async () => {
+      const manifestResponse = await page.request.get(`/deck/manifest.json?v=${Date.now()}`);
+      expect(manifestResponse.ok()).toBeTruthy();
+      const manifest = (await manifestResponse.json()) as {
+        slides?: Array<{ title?: string }>;
+      };
+      return manifest.slides?.[1]?.title;
+    })
+    .toBe(nextTitle);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: `Slide title: ${nextTitle}` })).toBeVisible();
 });
 
 test("sidebar slide actions add duplicate hide and delete slides", async ({ page }) => {

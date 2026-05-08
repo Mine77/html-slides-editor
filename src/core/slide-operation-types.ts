@@ -136,11 +136,20 @@ export interface SlideVisibilityUpdateOperation {
   timestamp: number;
 }
 
+export interface SlideTitleUpdateOperation {
+  type: "slide.title.update";
+  slideId: string;
+  previousTitle: string;
+  nextTitle: string;
+  timestamp: number;
+}
+
 export type DeckSlideOperation =
   | SlideCreateOperation
   | SlideDeleteOperation
   | SlideDuplicateOperation
   | SlideReorderOperation
-  | SlideVisibilityUpdateOperation;
+  | SlideVisibilityUpdateOperation
+  | SlideTitleUpdateOperation;
 
 export type SlideOperation = AtomicSlideOperation | SlideBatchOperation | DeckSlideOperation;

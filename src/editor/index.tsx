@@ -498,6 +498,22 @@ function SlidesEditor({
     });
   }
 
+  function renameSlide(slideId: string, nextTitle: string) {
+    const slide = slides.find((item) => item.id === slideId);
+    const normalizedTitle = nextTitle.trim() || "Untitled Slide";
+    if (!slide || slide.title === normalizedTitle) {
+      return;
+    }
+
+    commitOperation({
+      type: "slide.title.update",
+      slideId,
+      previousTitle: slide.title,
+      nextTitle: normalizedTitle,
+      timestamp: Date.now(),
+    });
+  }
+
   function reorderSlide(slideId: string, targetIndex: number) {
     const fromIndex = slides.findIndex((slide) => slide.id === slideId);
     if (fromIndex < 0 || fromIndex === targetIndex) {
@@ -850,6 +866,7 @@ function SlidesEditor({
               onDuplicate={duplicateSlide}
               onDelete={deleteSlide}
               onToggleHidden={toggleSlideHidden}
+              onRename={renameSlide}
               onReorder={reorderSlide}
             />
 

@@ -27,6 +27,14 @@ export function applySlideOperation(slide: SlideModel, operation: SlideOperation
     return { ...slide, hidden: operation.nextHidden };
   }
 
+  if (operation.type === "slide.title.update") {
+    if (slide.id !== operation.slideId) {
+      return slide;
+    }
+
+    return { ...slide, title: operation.nextTitle };
+  }
+
   if (!("slideId" in operation) || operation.type === "slide.reorder") {
     return slide;
   }
@@ -208,6 +216,12 @@ export function invertSlideOperation(operation: SlideOperation): SlideOperation 
         ...operation,
         previousHidden: operation.nextHidden,
         nextHidden: operation.previousHidden,
+      };
+    case "slide.title.update":
+      return {
+        ...operation,
+        previousTitle: operation.nextTitle,
+        nextTitle: operation.previousTitle,
       };
   }
 }

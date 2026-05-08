@@ -168,7 +168,7 @@ describe("history reducer", () => {
     expect(resetState.slides[0]?.id).toBe("slide-2");
   });
 
-  test("deck slide operations add duplicate delete reorder and toggle visibility", () => {
+  test("deck slide operations add duplicate delete reorder rename and toggle visibility", () => {
     const slideOne = fixtureSlide("slide-1", "One");
     const slideTwo = fixtureSlide("slide-2", "Two");
     const createdSlide = createBlankSlide([slideOne, slideTwo], 1);
@@ -214,16 +214,27 @@ describe("history reducer", () => {
         timestamp: 4,
       },
     });
-    const deletedState = reduceHistory(reorderedState, {
+    const renamedState = reduceHistory(reorderedState, {
+      type: "history.commit",
+      operation: {
+        type: "slide.title.update",
+        slideId: slideTwo.id,
+        previousTitle: "Two",
+        nextTitle: "Renamed",
+        timestamp: 5,
+      },
+    });
+    const deletedState = reduceHistory(renamedState, {
       type: "history.commit",
       operation: {
         type: "slide.delete",
         slide: createdSlide,
         index: 2,
-        timestamp: 5,
+        timestamp: 6,
       },
     });
     const undoneDeleteState = reduceHistory(deletedState, { type: "history.undo" });
+    const undoneRenameState = reduceHistory(renamedState, { type: "history.undo" });
 
     expect(createdState.slides.map((slide) => slide.id)).toEqual([
       "slide-1",
@@ -233,6 +244,8 @@ describe("history reducer", () => {
     expect(duplicatedState.slides[3]?.id).toBe(duplicatedSlide.id);
     expect(hiddenState.slides.find((slide) => slide.id === slideTwo.id)?.hidden).toBe(true);
     expect(reorderedState.slides[0]?.id).toBe(slideTwo.id);
+    expect(renamedState.slides[0]?.title).toBe("Renamed");
+    expect(undoneRenameState.slides[0]?.title).toBe("Two");
     expect(deletedState.slides.some((slide) => slide.id === createdSlide.id)).toBe(false);
     expect(undoneDeleteState.slides.map((slide) => slide.id)).toEqual(
       reorderedState.slides.map((slide) => slide.id)
