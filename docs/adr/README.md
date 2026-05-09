@@ -52,3 +52,4 @@ Update this directory whenever a change affects:
 | [0020](./0020-adopt-block-flatten-through-ungroup.md)                           | Adopt block flatten through Ungroup                                             | accepted              |
 | [0021](./0021-adopt-reusable-present-mode-and-single-html-export.md)            | Adopt reusable Present mode and single HTML export                              | accepted              |
 | [0023](./0023-delegate-skill-installation-to-skills-cli.md)                     | Delegate skill installation to the skills CLI                                   | proposed              |
+| [0024](./0024-adopt-marquee-selection-for-stage-elements.md)                    | Adopt marquee selection for stage elements                                      | accepted              |

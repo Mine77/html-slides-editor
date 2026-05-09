@@ -2,6 +2,13 @@ import { SELECTOR_ATTR } from "../../core";
 
 const EDITING_TEXT_STYLE_ID = "hse-editing-text-style";
 const EDITING_TEXT_STYLE = `
+html:not([data-hse-allow-native-selection]),
+html:not([data-hse-allow-native-selection]) body,
+html:not([data-hse-allow-native-selection]) [data-editable] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 [data-hse-editing="true"] {
   outline: none !important;
   box-shadow: none !important;
@@ -49,6 +56,42 @@ export function getDeepestEditableElementFromPoint(
   }
 
   return getEditableSelectionTargetInScope(pointedElement, activeGroupScopeId);
+}
+
+export function getOutermostSelectedAncestorFromPoint(
+  doc: Document,
+  x: number,
+  y: number,
+  activeGroupScopeId: string | null,
+  selectedElementIds: string[]
+): HTMLElement | null {
+  const pointedElement = doc.elementFromPoint(x, y);
+  if (!pointedElement) {
+    return null;
+  }
+
+  const editableTarget = getEditableSelectionTargetInScope(pointedElement, activeGroupScopeId);
+  if (!editableTarget) {
+    return null;
+  }
+
+  const selectedIdSet = new Set(selectedElementIds);
+  let current: HTMLElement | null = editableTarget;
+  let selectedAncestor: HTMLElement | null = null;
+
+  while (current) {
+    const currentId = current.getAttribute(SELECTOR_ATTR);
+    if (
+      current.matches(`[data-editable][${SELECTOR_ATTR}]`) &&
+      currentId &&
+      selectedIdSet.has(currentId)
+    ) {
+      selectedAncestor = current;
+    }
+    current = current.parentElement;
+  }
+
+  return selectedAncestor;
 }
 
 export function applyGroupScopeFocus(doc: Document, activeGroupScopeId: string | null): void {
@@ -112,6 +155,10 @@ export function ensureEditingTextStyle(doc: Document): void {
   style.id = EDITING_TEXT_STYLE_ID;
   style.textContent = EDITING_TEXT_STYLE;
   doc.head.appendChild(style);
+}
+
+export function setNativeTextSelectionEnabled(doc: Document, enabled: boolean): void {
+  doc.documentElement.toggleAttribute("data-hse-allow-native-selection", enabled);
 }
 
 export function selectEditableNodeEnd(editableNode: HTMLElement): void {

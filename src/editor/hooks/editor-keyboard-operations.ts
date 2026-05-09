@@ -1,4 +1,9 @@
-import type { AtomicSlideOperation, EditableElement, SlideOperation } from "../../core";
+import {
+  type AtomicSlideOperation,
+  type EditableElement,
+  SELECTOR_ATTR,
+  type SlideOperation,
+} from "../../core";
 
 export const ARROW_DELTAS: Record<string, { x: number; y: number }> = {
   ArrowUp: { x: 0, y: -1 },
@@ -33,6 +38,17 @@ export function getShortcutStep(event: KeyboardEvent): number {
   }
 
   return 5;
+}
+
+export function getAllSelectableElementIds(doc: Document | null | undefined): string[] {
+  if (!doc) {
+    return [];
+  }
+
+  return Array.from(doc.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`))
+    .filter((node) => !node.parentElement?.closest(`[data-editable][${SELECTOR_ATTR}]`))
+    .map((node) => node.getAttribute(SELECTOR_ATTR))
+    .filter((elementId): elementId is string => Boolean(elementId));
 }
 
 export function createIdMapForCopiedElement(
