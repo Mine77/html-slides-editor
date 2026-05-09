@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { commitElementToolFeature } from "../lib/element-tool-commit";
 import { ELEMENT_TOOL_GROUPS, type ElementToolFeature } from "../lib/element-tool-model";
 import { getElementToolValue } from "../lib/element-tool-values";
@@ -14,6 +14,8 @@ import { shouldUpdateOffset } from "./floating-toolbar-parts";
 import { FloatingToolbarSections } from "./floating-toolbar-sections";
 import type { EditableAttributeId, FloatingToolbarProps } from "./floating-toolbar-types";
 export type { SelectionCommandAvailability } from "./floating-toolbar-types";
+
+type OptimisticStyles = Record<string, string | null>;
 
 const FEATURE_BY_ID = new Map(
   ELEMENT_TOOL_GROUPS.flatMap((group) =>
@@ -43,8 +45,30 @@ function FloatingToolbar({
     null
   );
   const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+  const [optimisticStyles, setOptimisticStyles] = useState<OptimisticStyles>({});
   const showMultiTools = selectedElementType === "multi";
   const showGroupTool = showMultiTools || selectionCommandAvailability.ungroup;
+  const previewStyle = useCallback(
+    (propertyName: string, nextValue: string | null) => {
+      if (!shouldOptimisticallyTrackStyle(propertyName)) {
+        onStylePreview(propertyName, nextValue);
+        return;
+      }
+
+      setOptimisticStyles((currentStyles) => {
+        if (currentStyles[propertyName] === nextValue) {
+          return currentStyles;
+        }
+
+        return {
+          ...currentStyles,
+          [propertyName]: nextValue,
+        };
+      });
+      onStylePreview(propertyName, nextValue);
+    },
+    [onStylePreview]
+  );
 
   useEffect(() => {
     const node = toolbarRef.current;
@@ -162,8 +186,23 @@ function FloatingToolbar({
       return;
     }
     if (feature.id === "background-color" && nextValue.startsWith("linear-gradient")) {
+      setOptimisticStyles((currentStyles) => ({
+        ...currentStyles,
+        "background-image": nextValue,
+      }));
       onStyleChange("background-image", nextValue);
       return;
+    }
+
+    if (
+      feature.target === "style" &&
+      feature.propertyName &&
+      shouldOptimisticallyTrackStyle(feature.propertyName)
+    ) {
+      setOptimisticStyles((currentStyles) => ({
+        ...currentStyles,
+        [feature.propertyName ?? ""]: nextValue,
+      }));
     }
 
     commitElementToolFeature({
@@ -185,6 +224,8 @@ function FloatingToolbar({
         editorMotionClassName,
         editorPanelEnterClassName
       )}
+      onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
       ref={toolbarRef}
       style={{ marginLeft: toolbarOffsetX }}
     >
@@ -201,7 +242,7 @@ function FloatingToolbar({
           commitFeature={commitFeature}
           getCurrentValue={getCurrentValue}
           getFeature={getFeature}
-          onStylePreview={onStylePreview}
+          onStylePreview={previewStyle}
           setActiveAttributeDialog={setActiveAttributeDialog}
           setActivePopoverId={setActivePopoverId}
         />
@@ -221,8 +262,30 @@ function FloatingToolbar({
   );
 
   function getCurrentValue(feature: ElementToolFeature) {
+    if (feature.propertyName && feature.propertyName in optimisticStyles) {
+      return (
+        optimisticStyles[feature.propertyName] ??
+        getElementToolValue({
+          attributeValues,
+          feature,
+          inspectedStyles,
+        })
+      );
+    }
+
     return getElementToolValue({ attributeValues, feature, inspectedStyles });
   }
+}
+
+function shouldOptimisticallyTrackStyle(propertyName: string) {
+  return (
+    propertyName === "border" ||
+    propertyName === "border-style" ||
+    propertyName === "border-color" ||
+    propertyName === "border-width" ||
+    propertyName === "border-radius" ||
+    propertyName === "box-shadow"
+  );
 }
 
 function getFeature(featureId: ElementToolFeature["id"]) {

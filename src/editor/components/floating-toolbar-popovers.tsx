@@ -1,5 +1,11 @@
 import { AlignCenter, AlignLeft, AlignRight } from "lucide-react";
-import type { ComponentProps, Dispatch, ReactNode, SetStateAction } from "react";
+import {
+  type ComponentProps,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useRef,
+} from "react";
 import type { ElementToolFeature, ElementToolOption } from "../lib/element-tool-model";
 import { cn } from "../lib/utils";
 import { ColorPicker } from "./color-picker";
@@ -20,6 +26,7 @@ export interface PopoverSectionProps {
   commitFeature: (feature: ElementToolFeature, nextValue: string) => void;
   getCurrentValue: (feature: ElementToolFeature) => string;
   getFeature: (featureId: ElementToolFeature["id"]) => ElementToolFeature;
+  onStylePreview: (propertyName: string, nextValue: string | null) => void;
   setActivePopoverId: Dispatch<SetStateAction<string | null>>;
 }
 
@@ -50,7 +57,12 @@ function ColorPopover({
       onOpenChange={(open) => setActivePopoverId(open ? popoverId : null)}
     >
       <PopoverTrigger asChild>
-        <ToolbarPopoverButton active={activePopoverId === popoverId} icon={icon} label={label} />
+        <ToolbarPopoverButton
+          active={activePopoverId === popoverId}
+          data-testid={`floating-${popoverId}-trigger`}
+          icon={icon}
+          label={label}
+        />
       </PopoverTrigger>
       <PopoverContent className="w-80 max-h-[calc(100vh-40px)] overflow-y-auto p-2">
         <ColorPicker
@@ -77,6 +89,7 @@ function OptionsPopover({
   popoverId,
   selectionCommandAvailability,
   setActivePopoverId,
+  onStylePreview,
 }: OptionsSectionProps & {
   custom?: ReactNode;
   feature: ElementToolFeature;
@@ -87,26 +100,49 @@ function OptionsPopover({
 }) {
   const currentValue = getCurrentValue(feature);
   const triggerIcon = feature.id === "text-align" ? getTextAlignIcon(currentValue) : icon;
+  const isStylePreviewMenu = shouldShowOptionPreviewAfterLabel(feature);
+  const skipNextPreviewClearRef = useRef(false);
+
+  function clearOptionPreview() {
+    if (skipNextPreviewClearRef.current) {
+      return;
+    }
+
+    if (isStylePreviewMenu && feature.propertyName) {
+      onStylePreview(feature.propertyName, null);
+    }
+  }
+
   return (
     <Popover
       open={activePopoverId === popoverId}
-      onOpenChange={(open) => setActivePopoverId(open ? popoverId : null)}
+      onOpenChange={(open) => {
+        if (open) {
+          skipNextPreviewClearRef.current = false;
+        }
+        if (!open) {
+          clearOptionPreview();
+        }
+        setActivePopoverId(open ? popoverId : null);
+      }}
     >
       <PopoverTrigger asChild>
         <ToolbarPopoverButton
           active={activePopoverId === popoverId}
+          data-testid={`floating-${popoverId}-trigger`}
           icon={triggerIcon}
           label={label}
         />
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-1.5">
-        <div className="grid gap-1">
+      <PopoverContent className={cn("p-1.5", isStylePreviewMenu ? "w-40" : "w-64")}>
+        <div className={cn("grid", isStylePreviewMenu ? "gap-0.5" : "gap-1")}>
           {options.map((option) => {
             const Icon = option.icon;
             const disabled =
               feature.target === "operation" &&
               feature.id === "distribute" &&
               !selectionCommandAvailability.group;
+            const showOptionPreviewAfterLabel = shouldShowOptionPreviewAfterLabel(feature);
             return (
               <button
                 key={option.value}
@@ -116,17 +152,46 @@ function OptionsPopover({
                   currentValue === option.value && "bg-foreground/[0.06]"
                 )}
                 disabled={disabled}
+                data-value={option.value}
+                onBlur={clearOptionPreview}
                 onClick={() => {
+                  skipNextPreviewClearRef.current = true;
                   commitFeature(feature, option.value);
                   setActivePopoverId(null);
                 }}
+                onMouseDown={() => {
+                  skipNextPreviewClearRef.current = true;
+                }}
+                onPointerDown={() => {
+                  skipNextPreviewClearRef.current = true;
+                }}
+                onFocus={() => {
+                  if (feature.propertyName) {
+                    onStylePreview(feature.propertyName, option.value);
+                  }
+                }}
+                onMouseEnter={() => {
+                  if (feature.propertyName) {
+                    onStylePreview(feature.propertyName, option.value);
+                  }
+                }}
+                onMouseLeave={clearOptionPreview}
               >
-                {Icon ? (
-                  <ToolbarIcon icon={Icon} />
+                {showOptionPreviewAfterLabel ? (
+                  <>
+                    <span className="min-w-0 truncate">{option.label}</span>
+                    <OptionSwatch feature={feature} option={option} />
+                  </>
                 ) : (
-                  <OptionSwatch feature={feature} option={option} />
+                  <>
+                    {Icon ? (
+                      <ToolbarIcon icon={Icon} />
+                    ) : (
+                      <OptionSwatch feature={feature} option={option} />
+                    )}
+                    <span className="truncate">{option.label}</span>
+                  </>
                 )}
-                <span className="truncate">{option.label}</span>
               </button>
             );
           })}
@@ -200,30 +265,64 @@ function OptionSwatch({
   if (feature.id === "border") {
     return (
       <span
-        className="size-4 rounded bg-white"
+        className="h-4 w-9 shrink-0 rounded bg-white"
+        data-testid="floating-toolbar-option-preview"
         style={{
-          border: option.value === "none" ? "1px solid rgba(15,23,42,.12)" : option.value,
+          borderColor: "rgba(15,23,42,.5)",
+          borderStyle: option.value === "none" ? "solid" : option.value,
+          borderWidth: option.value === "none" ? "1px" : "2px",
+          opacity: option.value === "none" ? 0.32 : 1,
         }}
+        aria-hidden="true"
       />
     );
   }
   if (feature.id === "border-radius") {
     return (
       <span
-        className="size-4 border border-foreground/15 bg-foreground/[0.04]"
+        className="h-4 w-9 shrink-0 border border-foreground/15 bg-foreground/[0.04]"
+        data-testid="floating-toolbar-option-preview"
         style={{ borderRadius: option.value }}
+        aria-hidden="true"
       />
+    );
+  }
+  if (feature.id === "border-width") {
+    return (
+      <span className="flex h-4 w-9 shrink-0 items-center justify-center" aria-hidden="true">
+        <span
+          className="w-full rounded-full bg-foreground/65"
+          data-testid="floating-toolbar-option-preview"
+          style={{
+            height: option.value === "0px" ? "1px" : option.value,
+            opacity: option.value === "0px" ? 0.22 : 1,
+          }}
+        />
+      </span>
     );
   }
   if (feature.id === "box-shadow") {
     return (
-      <span
-        className="size-4 rounded border border-foreground/10 bg-white"
-        style={{ boxShadow: option.value === "none" ? undefined : option.value }}
-      />
+      <span className="flex h-5 w-10 shrink-0 items-center justify-center" aria-hidden="true">
+        <span
+          className="h-3.5 w-8 rounded border border-foreground/10 bg-white"
+          data-testid="floating-toolbar-option-preview"
+          style={{ boxShadow: option.value === "none" ? undefined : option.value }}
+        />
+      </span>
     );
   }
   return <span className="size-1.5 rounded-full bg-foreground/35" />;
+}
+
+function shouldShowOptionPreviewAfterLabel(feature: ElementToolFeature) {
+  return (
+    feature.id === "border" ||
+    feature.id === "border-color" ||
+    feature.id === "border-radius" ||
+    feature.id === "border-width" ||
+    feature.id === "box-shadow"
+  );
 }
 
 function getTextAlignIcon(currentValue: string) {

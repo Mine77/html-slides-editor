@@ -95,28 +95,79 @@ test("full floating editor applies color and border controls", async ({ page }) 
     "linear-gradient(135deg, rgb(168, 85, 247), rgb(236, 72, 153))"
   );
 
-  await toolbar.getByRole("button", { name: "Border style", exact: true }).click();
-  const strongBorder = page.getByRole("button", { name: "Strong", exact: true });
-  await expect(strongBorder).toBeVisible();
-  await strongBorder.click();
-  await expectInlineStyle(editableHeading, "border", "2px solid rgba(15, 23, 42, 0.22)");
-  await toolbar.getByRole("button", { name: "Border radius", exact: true }).click();
-  const roundRadius = page.getByRole("button", { name: "Round", exact: true });
-  await expect(roundRadius).toBeVisible();
-  await roundRadius.click();
-  await expectInlineStyle(editableHeading, "border-radius", "18px");
-  await toolbar.getByRole("button", { name: "Border radius", exact: true }).click();
-  const customRadius = page.getByLabel("Custom radius", { exact: true });
-  await expect(customRadius).toBeVisible();
-  await customRadius.fill("24");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expectInlineStyle(editableHeading, "border-radius", "24px");
+  await toolbar.getByTestId("floating-border-trigger").click();
+  await expect(page.getByRole("tab", { name: "Style", exact: true })).toHaveAttribute(
+    "data-state",
+    "active"
+  );
+  await expect(page.getByText("Stroke Style", { exact: true })).toBeVisible();
+  const solidBorder = page.getByRole("button", { name: "Solid", exact: true });
+  await expect(solidBorder).toBeVisible();
+  await expect(solidBorder).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Dashed", exact: true }).hover();
+  await expectInlineStyle(editableHeading, "border-style", "dashed");
+  await solidBorder.click();
+  await expectInlineStyle(editableHeading, "border-style", "solid");
+  await expect(solidBorder).toHaveAttribute("aria-pressed", "true");
 
-  await toolbar.getByRole("button", { name: "Shadow", exact: true }).click();
-  const liftedShadow = page.getByRole("button", { name: "Lifted", exact: true });
-  await expect(liftedShadow).toBeVisible();
-  await liftedShadow.click();
-  await expectInlineStyle(editableHeading, "box-shadow", "rgba(15, 23, 42, 0.18) 0px 18px 42px");
+  const strokeWeight = page.getByLabel("Stroke weight", { exact: true });
+  await expect(strokeWeight).toBeVisible();
+  await strokeWeight.fill("4");
+  await expectInlineStyle(editableHeading, "border-width", "4px");
+  const borderTriggerLine = toolbar.getByTestId("floating-border-trigger-line");
+  await expect(borderTriggerLine).toHaveCSS("border-top-width", "4px");
+
+  const cornerRadius = page.getByLabel("Corner radius", { exact: true });
+  await cornerRadius.fill("18");
+  await expectInlineStyle(editableHeading, "border-radius", "18px");
+
+  const shadow = page.getByLabel("Shadow", { exact: true });
+  await shadow.fill("12");
+  await expectInlineStyle(editableHeading, "box-shadow", "rgba(15, 23, 42, 0.17) 0px 12px 28px");
+
+  await page.getByRole("tab", { name: "Color", exact: true }).click();
+  const blueBorderColor = page.getByRole("button", {
+    name: "Use Border color #3B82F6",
+    exact: true,
+  });
+  await expect(blueBorderColor).toBeVisible();
+  await blueBorderColor.click();
+  await expectInlineStyle(editableHeading, "border-color", "rgb(59, 130, 246)");
+  await expect(borderTriggerLine).toHaveCSS("border-top-color", "rgb(59, 130, 246)");
+});
+
+test("floating border menu reflects selected element styles on first open", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const toolbar = page.getByTestId("floating-toolbar-anchor");
+
+  await editableHeading.click();
+  await editableHeading.evaluate((node) => {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+
+    node.style.border = "14px dashed rgb(197, 157, 157)";
+    node.style.borderRadius = "22px";
+    node.style.boxShadow = "0 12px 28px rgba(15, 23, 42, 0.17)";
+  });
+  await toolbar.getByTestId("floating-border-trigger").click();
+
+  const noneBorder = page.getByRole("button", { name: "None", exact: true });
+  const dashedBorder = page.getByRole("button", { name: "Dashed", exact: true });
+  await expect(noneBorder.locator('[data-testid="floating-toolbar-option-preview"]')).toHaveCount(
+    0
+  );
+  await expect(dashedBorder).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Stroke weight", { exact: true })).toHaveValue("14");
+  await expect(page.getByLabel("Corner radius", { exact: true })).toHaveValue("22");
+  await expect(page.getByLabel("Shadow", { exact: true })).toHaveValue("12");
+  const borderTriggerLine = toolbar.getByTestId("floating-border-trigger-line");
+  await expect(borderTriggerLine).toHaveCSS("border-top-style", "dashed");
+  await expect(borderTriggerLine).toHaveCSS("border-top-width", "5px");
+  await expect(borderTriggerLine).toHaveCSS("border-top-color", "rgb(197, 157, 157)");
 });
 
 test("floating toolbar font family select changes the selected text font", async ({ page }) => {
