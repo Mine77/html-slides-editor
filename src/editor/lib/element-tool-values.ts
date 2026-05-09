@@ -48,7 +48,10 @@ export function getElementToolValue({
     return "";
   }
 
-  const rawValue = getStyleValue(inspectedStyles, feature.propertyName);
+  const rawValue =
+    feature.id === "background-color"
+      ? getBackgroundColorToolValue(inspectedStyles)
+      : getStyleValue(inspectedStyles, feature.propertyName);
   if (feature.id === "font-family") {
     return (
       feature.options?.find((option) => isFontFamilySelected(rawValue, option.value))?.value ??
@@ -63,6 +66,9 @@ export function getElementToolValue({
   }
   if (feature.id === "rotation") {
     return String(parseTransformParts(rawValue).rotate);
+  }
+  if (feature.id === "background-color" && rawValue.trim().startsWith("linear-gradient")) {
+    return rawValue;
   }
   if (feature.controlType === "color") {
     return getColorInputValue(rawValue);
@@ -192,6 +198,15 @@ export function getFeatureOptions(
 
 function getStyleValue(styles: CssPropertyRow[], propertyName: string): string {
   return styles.find((property) => property.name === propertyName)?.value ?? "";
+}
+
+function getBackgroundColorToolValue(styles: CssPropertyRow[]): string {
+  const backgroundImage = getStyleValue(styles, "background-image");
+  if (backgroundImage.trim().toLowerCase().startsWith("linear-gradient")) {
+    return backgroundImage;
+  }
+
+  return getStyleValue(styles, "background-color");
 }
 
 function normalizeSizePreset(featureId: ElementToolFeature["id"], nextValue: string): string {
