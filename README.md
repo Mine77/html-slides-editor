@@ -60,29 +60,9 @@ starry-slides verify [deck] --static
 starry-slides view [deck] --slide <manifest-file>
 starry-slides view [deck] --all
 starry-slides view [deck] --all --out-dir <directory>
-starry-slides add-skill [skills-options...]
 ```
 
 `starry-slides [deck]` defaults to `starry-slides open [deck]`.
-
-Install the Agent Skill with the branded wrapper:
-
-```bash
-npx starry-slides add-skill
-```
-
-The wrapper delegates to the standard Agent Skills installer and passes through
-additional options, for example:
-
-```bash
-npx starry-slides add-skill --agent codex -y
-```
-
-The equivalent standard installer command is:
-
-```bash
-npx skills add StarryKit/starry-slides --skill starry-slides
-```
 
 ## Roadmap
 
@@ -95,7 +75,6 @@ npx skills add StarryKit/starry-slides --skill starry-slides
 | Element selection and styling | Done | Supports editable text, image, block, and group elements through toolbar controls. |
 | Block move, resize, rotate | Done | Persists supported layout edits through shared operations. |
 | Slide sidebar operations | Done | Add, duplicate, delete, hide/show, reorder, and rename slides. |
-| PDF and HTML export | Done | Exports visible deck output from the local runtime. |
 | Editing-only release gate | In progress | Full `pnpm verify` release path and final release notes remain active work. |
 | Deeper manipulation coverage | Planned | Broader resize/rotate regression coverage and UX polish. |
 | Agent-backed generation UI | Planned | Product UI for prompt-to-deck generation. |
@@ -111,11 +90,9 @@ Detailed planning lives in [ROADMAP.md](./ROADMAP.md).
 - [Contributing guide](./docs/contributing.md): expectations for changes,
   verification, and review.
 - [Slide Contract guide](./docs/slide-contract.md): deck package shape and
-  required HTML attributes.
+  required HTML attributes and rules.
 - [Context map](./CONTEXT-MAP.md): where to read before changing a subsystem.
 - [Architecture decisions](./docs/adr/): accepted ADRs and ADR template.
-- [Agent-facing skill](./skills/starry-slides/SKILL.md): generation
-  workflow and protocol tools for agents.
 
 ## License
 
