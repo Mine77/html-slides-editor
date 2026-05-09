@@ -1,8 +1,8 @@
 import {
   Accessibility,
   AlignCenter,
+  Baseline,
   Bold,
-  CaseSensitive,
   Circle,
   CircleDashed,
   Ellipsis,
@@ -12,7 +12,6 @@ import {
   Link2,
   Lock,
   LockOpen,
-  Palette,
   Rows3,
   Square,
   Strikethrough,
@@ -251,26 +250,69 @@ function TextStyleSection({
 }
 
 function ColorSection(props: PopoverSectionProps) {
+  const textColorFeature = props.getFeature("text-color");
+  const backgroundColorFeature = props.getFeature("background-color");
+
   return (
     <ToolbarSection>
       <ColorPopover
         {...props}
-        feature={props.getFeature("text-color")}
-        icon={<Palette className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
-        includeGradients
+        feature={textColorFeature}
+        icon={
+          <TextColorIcon colorValue={props.getCurrentValue(textColorFeature)} label="Text color" />
+        }
+        includeGradients={false}
         label="Text color"
         popoverId="text-color"
       />
       <ColorPopover
         {...props}
-        feature={props.getFeature("background-color")}
-        icon={<Square className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
+        feature={backgroundColorFeature}
+        icon={
+          <BackgroundColorIcon
+            colorValue={props.getCurrentValue(backgroundColorFeature)}
+            label="Background color"
+          />
+        }
         includeGradients
         label="Background color"
         popoverId="background-color"
       />
     </ToolbarSection>
   );
+}
+
+function TextColorIcon({ colorValue, label }: { colorValue: string; label: string }) {
+  return (
+    <span
+      className="relative inline-grid size-4 place-items-center"
+      aria-hidden="true"
+      data-testid="floating-toolbar-text-color-icon"
+      title={label}
+    >
+      <Baseline className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
+      <span
+        className="absolute bottom-0 h-1.5 w-4 rounded-[3px] border border-white/80 shadow-[0_0_0_1px_rgba(15,23,42,0.14)]"
+        style={{ background: getColorIndicatorBackground(colorValue) }}
+      />
+    </span>
+  );
+}
+
+function BackgroundColorIcon({ colorValue, label }: { colorValue: string; label: string }) {
+  return (
+    <span
+      className="inline-block size-4 rounded-[4px] border border-white/85 shadow-[0_0_0_1px_rgba(15,23,42,0.16),inset_0_0_0_1px_rgba(255,255,255,0.45)]"
+      aria-hidden="true"
+      data-testid="floating-toolbar-background-color-icon"
+      title={label}
+      style={{ background: getColorIndicatorBackground(colorValue) }}
+    />
+  );
+}
+
+function getColorIndicatorBackground(value: string) {
+  return value.trim() || "transparent";
 }
 
 function ParagraphSection(props: OptionsSectionProps) {

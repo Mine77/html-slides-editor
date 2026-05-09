@@ -74,6 +74,7 @@ test("full floating editor applies color and border controls", async ({ page }) 
 
   await editableHeading.click();
   await toolbar.getByRole("button", { name: "Text color", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Gradient", exact: true })).toHaveCount(0);
   const blueTextColor = page.getByRole("button", {
     name: "Use Text color #3B82F6",
     exact: true,
@@ -83,6 +84,8 @@ test("full floating editor applies color and border controls", async ({ page }) 
   await expectInlineStyle(editableHeading, "color", "rgb(59, 130, 246)");
 
   await toolbar.getByRole("button", { name: "Background color", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Color", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Gradient", exact: true }).click();
   const backgroundGradient = page.getByRole("button", {
     name: "Use Background color gradient 1",
     exact: true,
