@@ -122,3 +122,39 @@ export function selectEditableNodeEnd(editableNode: HTMLElement): void {
   selection?.removeAllRanges();
   selection?.addRange(range);
 }
+
+export function getEditableTextTargetFromPoint(
+  doc: Document,
+  point: { x: number; y: number },
+  activeScopeId: string | null
+): HTMLElement | null {
+  const candidates = Array.from(
+    doc.querySelectorAll<HTMLElement>(`[data-editable="text"][${SELECTOR_ATTR}]`)
+  ).filter(
+    (candidate) => getEditableSelectionTargetInScope(candidate, activeScopeId) === candidate
+  );
+  const directHit = candidates.find((candidate) => {
+    const rect = candidate.getBoundingClientRect();
+    return (
+      point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom
+    );
+  });
+
+  if (directHit) {
+    return directHit;
+  }
+
+  const nearest = candidates
+    .map((candidate) => {
+      const rect = candidate.getBoundingClientRect();
+      const clampedX = Math.min(Math.max(point.x, rect.left), rect.right);
+      const clampedY = Math.min(Math.max(point.y, rect.top), rect.bottom);
+      return {
+        candidate,
+        distance: Math.hypot(point.x - clampedX, point.y - clampedY),
+      };
+    })
+    .sort((left, right) => left.distance - right.distance)[0];
+
+  return nearest && nearest.distance <= 24 ? nearest.candidate : null;
+}
