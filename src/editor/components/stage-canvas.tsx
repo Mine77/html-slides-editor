@@ -1,10 +1,12 @@
 import type { CSSProperties, MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { EditableType, StageRect } from "../../core";
+import type { ImageCropOverlay as ImageCropOverlayModel } from "../hooks/use-image-crop";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
 import { cn } from "../lib/utils";
 import { BlockManipulationOverlay } from "./block-manipulation-overlay";
 import { SelectionContextMenuContent } from "./context-menu";
 import { FloatingToolbar, type SelectionCommandAvailability } from "./floating-toolbar";
+import { ImageCropOverlay } from "./image-crop-overlay";
 import { ContextMenu, ContextMenuTrigger } from "./ui/context-menu";
 
 type ResizeHandleCorner = "top-left" | "top-right" | "bottom-right" | "bottom-left";
@@ -21,6 +23,7 @@ interface StageCanvasProps {
   offsetY: number;
   scale: number;
   preselectionOverlay: StageRect | null;
+  marqueeOverlay: StageRect | null;
   selectionOverlay: StageRect | null;
   toolbarKey: string | null;
   inspectedStyles: CssPropertyRow[];
@@ -29,6 +32,8 @@ interface StageCanvasProps {
   isSelectedElementLocked: boolean;
   groupScopeOverlayPassive: boolean;
   isEditingText: boolean;
+  isCropMode: boolean;
+  cropOverlay: ImageCropOverlayModel | null;
   manipulationOverlay: {
     selectionBounds: StageRect;
     snapGuides: Array<{
@@ -65,12 +70,17 @@ interface StageCanvasProps {
     event: ReactMouseEvent<HTMLButtonElement>
   ) => void;
   onRotateHandleMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  onCropHandleMouseDown: (
+    corner: ResizeHandleCorner,
+    event: ReactMouseEvent<HTMLButtonElement>
+  ) => void;
   onSelectionOverlayDoubleClick: (event: ReactMouseEvent<HTMLDivElement>) => void;
   onBackgroundClick: () => void;
   onStyleChange: (propertyName: string, nextValue: string) => void;
   onStylePreview: (propertyName: string, nextValue: string | null) => void;
   onAttributeChange: (attributeName: string, nextValue: string) => void;
   onAlignToSlide: (action: string) => void;
+  onCropImage: () => void;
   onDistribute: (action: string) => void;
   onGroup: () => void;
   onLayerOrder: (action: string) => void;
@@ -86,6 +96,7 @@ function StageCanvas({
   offsetY,
   scale,
   preselectionOverlay,
+  marqueeOverlay,
   selectionOverlay,
   toolbarKey,
   inspectedStyles,
@@ -94,6 +105,8 @@ function StageCanvas({
   isSelectedElementLocked,
   groupScopeOverlayPassive,
   isEditingText,
+  isCropMode,
+  cropOverlay,
   manipulationOverlay,
   attributeValues,
   iframeRef,
@@ -109,12 +122,14 @@ function StageCanvas({
   onStageMouseLeave,
   onResizeHandleMouseDown,
   onRotateHandleMouseDown,
+  onCropHandleMouseDown,
   onSelectionOverlayDoubleClick,
   onBackgroundClick,
   onStyleChange,
   onStylePreview,
   onAttributeChange,
   onAlignToSlide,
+  onCropImage,
   onDistribute,
   onGroup,
   onLayerOrder,
@@ -149,7 +164,11 @@ function StageCanvas({
       }}
       onMouseLeave={onStageMouseLeave}
     >
-      {selectionOverlay && !isManipulating && !isToolbarSuppressed && !isEditingText ? (
+      {selectionOverlay &&
+      !isManipulating &&
+      !isToolbarSuppressed &&
+      !isEditingText &&
+      !isCropMode ? (
         <div
           className="pointer-events-none absolute z-40 w-max max-[1200px]:static max-[1200px]:mb-4 max-[1200px]:pointer-events-auto"
           style={toolbarStyle}
@@ -166,6 +185,7 @@ function StageCanvas({
             onStylePreview={onStylePreview}
             onAttributeChange={onAttributeChange}
             onAlignToSlide={onAlignToSlide}
+            onCropImage={onCropImage}
             onDistribute={onDistribute}
             onGroup={onGroup}
             onLayerOrder={onLayerOrder}
@@ -205,6 +225,18 @@ function StageCanvas({
           }}
         />
       ) : null}
+      {marqueeOverlay && !isEditingText ? (
+        <div
+          data-testid="marquee-selection-overlay"
+          className="pointer-events-none absolute z-[4] border border-yellow-400 bg-yellow-400/15"
+          style={{
+            left: `${marqueeOverlay.x}px`,
+            top: `${marqueeOverlay.y}px`,
+            width: `${marqueeOverlay.width}px`,
+            height: `${marqueeOverlay.height}px`,
+          }}
+        />
+      ) : null}
       {!isEditingText ? (
         <ContextMenu>
           <ContextMenuTrigger asChild>
@@ -233,7 +265,7 @@ function StageCanvas({
           data-testid="selection-overlay"
           className={cn(
             "absolute z-[3] border border-dashed",
-            groupScopeOverlayPassive ? "pointer-events-none" : "pointer-events-auto"
+            groupScopeOverlayPassive || isCropMode ? "pointer-events-none" : "pointer-events-auto"
           )}
           style={{
             ...SELECTION_CHROME_STYLE,
@@ -250,6 +282,9 @@ function StageCanvas({
             onSelectionOverlayDoubleClick(event);
           }}
         />
+      ) : null}
+      {cropOverlay ? (
+        <ImageCropOverlay overlay={cropOverlay} onCropHandleMouseDown={onCropHandleMouseDown} />
       ) : null}
       {manipulationOverlay ? (
         <BlockManipulationOverlay

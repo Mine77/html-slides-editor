@@ -1,19 +1,20 @@
 import {
   Accessibility,
   AlignCenter,
+  Baseline,
   Bold,
-  CaseSensitive,
+  Crop,
   Ellipsis,
   Group,
   Italic,
   Layers,
   Link2,
+  ListPlus,
   Lock,
   LockOpen,
-  Palette,
   Rows3,
-  Square,
   Strikethrough,
+  TextAlignJustify,
   Underline,
   Ungroup,
 } from "lucide-react";
@@ -31,21 +32,17 @@ import {
   DISTRIBUTE_OPTIONS,
   type ElementToolFeature,
   LAYER_ORDER_OPTIONS,
-  LINE_HEIGHT_OPTIONS,
   TEXT_ALIGN_OPTIONS,
 } from "../lib/element-tool-model";
 import { isFeatureActive } from "../lib/element-tool-values";
 import { cn } from "../lib/utils";
 import { ColorPicker } from "./color-picker";
-import {
-  FontFamilyCombobox,
-  FontSizeControl,
-  NumericCommitControl,
-} from "./floating-toolbar-fields";
+import { FontFamilyCombobox, FontSizeControl } from "./floating-toolbar-fields";
 import { Divider, IconButton } from "./floating-toolbar-parts";
 import {
   AttributeMenuButton,
   ColorPopover,
+  LineHeightPopover,
   OptionsPopover,
   type OptionsSectionProps,
   type PopoverSectionProps,
@@ -68,6 +65,7 @@ interface FloatingToolbarSectionsProps {
   activePopoverId: string | null;
   isSelectedElementLocked: boolean;
   selectionCommandAvailability: SelectionCommandAvailability;
+  selectedElementType: "text" | "image" | "block" | "group" | "multi";
   showGroupTool: boolean;
   showMultiTools: boolean;
   commitFeature: (feature: ElementToolFeature, nextValue: string) => void;
@@ -82,6 +80,7 @@ function FloatingToolbarSections({
   activePopoverId,
   isSelectedElementLocked,
   selectionCommandAvailability,
+  selectedElementType,
   showGroupTool,
   showMultiTools,
   commitFeature,
@@ -91,6 +90,8 @@ function FloatingToolbarSections({
   setActiveAttributeDialog,
   setActivePopoverId,
 }: FloatingToolbarSectionsProps) {
+  const isImageSelection = selectedElementType === "image";
+
   return (
     <>
       <LockSection
@@ -101,39 +102,59 @@ function FloatingToolbarSections({
       {isSelectedElementLocked ? null : (
         <>
           <Divider />
-          <FontSection
-            commitFeature={commitFeature}
-            getCurrentValue={getCurrentValue}
-            getFeature={getFeature}
-            onStylePreview={onStylePreview}
-            setActivePopoverId={setActivePopoverId}
-          />
-          <Divider />
-          <TextStyleSection
-            commitFeature={commitFeature}
-            getCurrentValue={getCurrentValue}
-            getFeature={getFeature}
-          />
-          <Divider />
-          <ColorSection
-            activePopoverId={activePopoverId}
-            commitFeature={commitFeature}
-            getCurrentValue={getCurrentValue}
-            getFeature={getFeature}
-            onStylePreview={onStylePreview}
-            selectionCommandAvailability={selectionCommandAvailability}
-            setActivePopoverId={setActivePopoverId}
-          />
-          <Divider />
-          <ParagraphSection
-            activePopoverId={activePopoverId}
-            commitFeature={commitFeature}
-            getCurrentValue={getCurrentValue}
-            getFeature={getFeature}
-            selectionCommandAvailability={selectionCommandAvailability}
-            onStylePreview={onStylePreview}
-            setActivePopoverId={setActivePopoverId}
-          />
+          {isImageSelection ? (
+            <ImageSection commitFeature={commitFeature} getFeature={getFeature} />
+          ) : (
+            <>
+              <FontSection
+                commitFeature={commitFeature}
+                getCurrentValue={getCurrentValue}
+                getFeature={getFeature}
+                onStylePreview={onStylePreview}
+                setActivePopoverId={setActivePopoverId}
+              />
+              <Divider />
+              <TextStyleSection
+                commitFeature={commitFeature}
+                getCurrentValue={getCurrentValue}
+                getFeature={getFeature}
+              />
+              <Divider />
+              <ColorSection
+                activePopoverId={activePopoverId}
+                commitFeature={commitFeature}
+                getCurrentValue={getCurrentValue}
+                getFeature={getFeature}
+                onStylePreview={onStylePreview}
+                selectionCommandAvailability={selectionCommandAvailability}
+                setActivePopoverId={setActivePopoverId}
+              />
+              <Divider />
+              <ParagraphSection
+                activePopoverId={activePopoverId}
+                commitFeature={commitFeature}
+                getCurrentValue={getCurrentValue}
+                getFeature={getFeature}
+                onStylePreview={onStylePreview}
+                selectionCommandAvailability={selectionCommandAvailability}
+                setActivePopoverId={setActivePopoverId}
+              />
+            </>
+          )}
+          {isImageSelection ? (
+            <>
+              <Divider />
+              <BorderSection
+                activePopoverId={activePopoverId}
+                commitFeature={commitFeature}
+                getCurrentValue={getCurrentValue}
+                getFeature={getFeature}
+                onStylePreview={onStylePreview}
+                selectionCommandAvailability={selectionCommandAvailability}
+                setActivePopoverId={setActivePopoverId}
+              />
+            </>
+          ) : null}
           {showMultiTools ? (
             <>
               <Divider />
@@ -142,8 +163,8 @@ function FloatingToolbarSections({
                 commitFeature={commitFeature}
                 getCurrentValue={getCurrentValue}
                 getFeature={getFeature}
-                selectionCommandAvailability={selectionCommandAvailability}
                 onStylePreview={onStylePreview}
+                selectionCommandAvailability={selectionCommandAvailability}
                 setActivePopoverId={setActivePopoverId}
               />
             </>
@@ -167,6 +188,22 @@ function FloatingToolbarSections({
         </>
       )}
     </>
+  );
+}
+
+function ImageSection({
+  commitFeature,
+  getFeature,
+}: Pick<FloatingToolbarSectionsProps, "commitFeature" | "getFeature">) {
+  return (
+    <ToolbarSection>
+      <IconButton
+        label="Crop image"
+        onClick={() => commitFeature(getFeature("image-crop"), "cover")}
+      >
+        <Crop className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
+      </IconButton>
+    </ToolbarSection>
   );
 }
 
@@ -204,6 +241,7 @@ function FontSection({
 >) {
   const fontFamilyFeature = getFeature("font-family");
   const fontSizeFeature = getFeature("font-size");
+
   return (
     <ToolbarSection>
       <FontFamilyCombobox
@@ -253,20 +291,30 @@ function TextStyleSection({
 function ColorSection(
   props: PopoverSectionProps & Pick<OptionsSectionProps, "selectionCommandAvailability">
 ) {
+  const textColorFeature = props.getFeature("text-color");
+  const backgroundColorFeature = props.getFeature("background-color");
+
   return (
     <ToolbarSection>
       <ColorPopover
         {...props}
-        feature={props.getFeature("text-color")}
-        icon={<Palette className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
-        includeGradients
+        feature={textColorFeature}
+        icon={
+          <TextColorIcon colorValue={props.getCurrentValue(textColorFeature)} label="Text color" />
+        }
+        includeGradients={false}
         label="Text color"
         popoverId="text-color"
       />
       <ColorPopover
         {...props}
-        feature={props.getFeature("background-color")}
-        icon={<Square className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
+        feature={backgroundColorFeature}
+        icon={
+          <BackgroundColorIcon
+            colorValue={props.getCurrentValue(backgroundColorFeature)}
+            label="Background color"
+          />
+        }
         includeGradients
         label="Background color"
         popoverId="background-color"
@@ -284,28 +332,53 @@ function ColorSection(
   );
 }
 
+function TextColorIcon({ colorValue, label }: { colorValue: string; label: string }) {
+  return (
+    <span
+      className="relative inline-grid size-4 place-items-center"
+      aria-hidden="true"
+      data-testid="floating-toolbar-text-color-icon"
+      title={label}
+    >
+      <Baseline className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
+      <span
+        className="absolute bottom-0 h-1.5 w-4 rounded-[3px] border border-white/80 shadow-[0_0_0_1px_rgba(15,23,42,0.14)]"
+        style={{ background: getColorIndicatorBackground(colorValue) }}
+      />
+    </span>
+  );
+}
+
+function BackgroundColorIcon({ colorValue, label }: { colorValue: string; label: string }) {
+  return (
+    <span
+      className="inline-block size-4 rounded-[4px] border border-white/85 shadow-[0_0_0_1px_rgba(15,23,42,0.16),inset_0_0_0_1px_rgba(255,255,255,0.45)]"
+      aria-hidden="true"
+      data-testid="floating-toolbar-background-color-icon"
+      title={label}
+      style={{ background: getColorIndicatorBackground(colorValue) }}
+    />
+  );
+}
+
+function getColorIndicatorBackground(value: string) {
+  return value.trim() || "transparent";
+}
+
 function ParagraphSection(props: OptionsSectionProps) {
   return (
     <ToolbarSection>
-      <OptionsPopover
+      <LineHeightPopover
         {...props}
-        custom={
-          <NumericCommitControl
-            feature={props.getFeature("line-height")}
-            label="Custom line height"
-            onCommitFeature={props.commitFeature}
-          />
-        }
         feature={props.getFeature("line-height")}
-        icon={<Rows3 className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
+        icon={<ListPlus className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
         label="Line height"
-        options={LINE_HEIGHT_OPTIONS}
         popoverId="line-height"
       />
       <OptionsPopover
         {...props}
         feature={props.getFeature("text-align")}
-        icon={<AlignCenter className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
+        icon={<TextAlignJustify className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
         label="Text align"
         options={TEXT_ALIGN_OPTIONS}
         popoverId="text-align"
@@ -388,6 +461,7 @@ function BorderAppearancePopover({
     if (!borderFeature.propertyName) {
       return;
     }
+
     onStylePreview(borderFeature.propertyName, nextStyle);
   }
 
@@ -395,10 +469,12 @@ function BorderAppearancePopover({
     if (!borderFeature.propertyName) {
       return;
     }
+
     onStylePreview(borderFeature.propertyName, null);
   }
 
   function commitBorderStyle(nextStyle: string) {
+    clearBorderStylePreview();
     commitFeature(borderFeature, nextStyle);
   }
 
@@ -421,7 +497,12 @@ function BorderAppearancePopover({
           />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[288px] !bg-white p-2.5 !backdrop-blur-none">
+      <PopoverContent
+        align="start"
+        className="w-[288px] !bg-white p-2.5 !backdrop-blur-none"
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <Tabs defaultValue="style" className="gap-2">
           <TabsList className="h-7 w-full" aria-label="Border settings tabs">
             <TabsTrigger value="style" className="text-[12px]">
@@ -439,25 +520,26 @@ function BorderAppearancePopover({
               <div className="grid gap-1" aria-label="Stroke Style">
                 {BORDER_STYLE_OPTIONS.map((option) => {
                   const selected = currentBorderStyle === option.value;
+
                   return (
                     <button
                       key={option.value}
                       type="button"
                       className={cn(
-                        "flex h-8 items-center justify-between gap-3 rounded-md px-2 text-[12px] font-medium text-foreground/65 transition-colors hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                        "flex h-8 items-center justify-between gap-2 rounded-md px-2 text-[12px] font-medium text-foreground/65 transition-colors hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                         selected &&
                           "bg-foreground/[0.07] text-foreground shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)]"
                       )}
-                      data-value={option.value}
                       aria-label={option.label}
                       aria-pressed={selected}
-                      onMouseEnter={() => previewBorderStyle(option.value)}
-                      onFocus={() => previewBorderStyle(option.value)}
-                      onMouseLeave={clearBorderStylePreview}
+                      data-value={option.value}
                       onBlur={clearBorderStylePreview}
                       onClick={() => commitBorderStyle(option.value)}
+                      onFocus={() => previewBorderStyle(option.value)}
+                      onMouseEnter={() => previewBorderStyle(option.value)}
+                      onMouseLeave={clearBorderStylePreview}
                     >
-                      <span>{option.label}</span>
+                      <span className="min-w-0 truncate">{option.label}</span>
                       {option.value === "none" ? (
                         <span aria-hidden="true" />
                       ) : (
@@ -474,13 +556,10 @@ function BorderAppearancePopover({
               max={24}
               min={0}
               value={strokeWeight}
-              onCommit={(nextValue) => {
-                commitFeature(borderWidthFeature, `${nextValue}px`);
-              }}
+              onCommit={(nextValue) => commitFeature(borderWidthFeature, `${nextValue}px`)}
               onPreview={(nextValue) => {
-                const nextCssValue = `${nextValue}px`;
                 if (borderWidthFeature.propertyName) {
-                  onStylePreview(borderWidthFeature.propertyName, nextCssValue);
+                  onStylePreview(borderWidthFeature.propertyName, `${nextValue}px`);
                 }
               }}
             />
@@ -489,13 +568,10 @@ function BorderAppearancePopover({
               max={64}
               min={0}
               value={radius}
-              onCommit={(nextValue) => {
-                commitFeature(borderRadiusFeature, `${nextValue}px`);
-              }}
+              onCommit={(nextValue) => commitFeature(borderRadiusFeature, `${nextValue}px`)}
               onPreview={(nextValue) => {
-                const nextCssValue = `${nextValue}px`;
                 if (borderRadiusFeature.propertyName) {
-                  onStylePreview(borderRadiusFeature.propertyName, nextCssValue);
+                  onStylePreview(borderRadiusFeature.propertyName, `${nextValue}px`);
                 }
               }}
             />
@@ -504,13 +580,12 @@ function BorderAppearancePopover({
               max={32}
               min={0}
               value={shadow}
-              onCommit={(nextValue) => {
-                commitFeature(boxShadowFeature, formatShadowValue(nextValue));
-              }}
+              onCommit={(nextValue) =>
+                commitFeature(boxShadowFeature, formatShadowValue(nextValue))
+              }
               onPreview={(nextValue) => {
-                const nextCssValue = formatShadowValue(nextValue);
                 if (boxShadowFeature.propertyName) {
-                  onStylePreview(boxShadowFeature.propertyName, nextCssValue);
+                  onStylePreview(boxShadowFeature.propertyName, formatShadowValue(nextValue));
                 }
               }}
             />
@@ -519,8 +594,10 @@ function BorderAppearancePopover({
             <ColorPicker
               ariaLabelPrefix="Border color"
               includeGradients={false}
+              includeOpacity={false}
               value={borderColor}
               onChange={(nextValue) => commitFeature(borderColorFeature, nextValue)}
+              onCommit={() => onOpenChange(false)}
             />
           </TabsContent>
         </Tabs>
@@ -568,13 +645,12 @@ function BorderRangeControl({
       commitTimerRef.current = null;
     }
 
-    const nextValue = draftValueRef.current;
     if (!pendingCommitRef.current) {
       return;
     }
 
     pendingCommitRef.current = false;
-    onCommit(nextValue);
+    onCommit(draftValueRef.current);
   }
 
   function scheduleDraftCommit() {
@@ -599,20 +675,20 @@ function BorderRangeControl({
         <span>{label}</span>
         <span>{draftValue}px</span>
       </div>
-      <div className="grid grid-cols-[1fr_48px] items-center gap-2.5">
+      <div className="grid grid-cols-[1fr_44px] items-center gap-2">
         <input
           type="range"
           min={min}
           max={max}
           value={draftValue}
           aria-label={label}
-          onChange={(event) => updateDraftValue(Number.parseInt(event.target.value, 10))}
+          className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-foreground/10 accent-foreground"
           onBlur={commitDraftValue}
+          onChange={(event) => updateDraftValue(Number.parseInt(event.target.value, 10))}
           onKeyUp={commitDraftValue}
           onPointerUp={commitDraftValue}
-          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-foreground/10 accent-foreground"
         />
-        <div className="grid h-7 place-items-center rounded-md border border-foreground/[0.1] bg-white text-[12px] font-medium tabular-nums text-foreground/70">
+        <div className="grid h-6 place-items-center rounded-md border border-foreground/[0.1] bg-white px-1 text-[11px] font-medium tabular-nums text-foreground/70">
           {draftValue}px
         </div>
       </div>
@@ -623,7 +699,7 @@ function BorderRangeControl({
 function BorderStyleSample({ optionValue }: { optionValue: string }) {
   return (
     <span
-      className="block w-9 shrink-0 border-t-[3px] border-foreground"
+      className="block w-8 shrink-0 border-t-[3px] border-foreground"
       data-testid="floating-toolbar-option-preview"
       style={{ borderTopStyle: optionValue as "solid" | "dashed" | "dotted" }}
       aria-hidden="true"
@@ -752,6 +828,7 @@ function GroupSection({
 >) {
   const canUngroup = selectionCommandAvailability.ungroup;
   const feature = getFeature(canUngroup ? "ungroup" : "group");
+
   return (
     <ToolbarSection>
       <IconButton

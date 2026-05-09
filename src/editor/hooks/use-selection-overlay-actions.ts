@@ -3,6 +3,7 @@ import { type EditableElement, SELECTOR_ATTR } from "../../core";
 import type { ResizeHandleCorner } from "../lib/block-snap-types";
 import { getScopedTextTargetAtPoint } from "../lib/editor-selection-structure";
 import type { PointerStartLike } from "./block-manipulation-types";
+import { getOutermostSelectedAncestorFromPoint } from "./iframe-text-editing-dom";
 
 interface OverlayPointerDown {
   clientX: number;
@@ -66,7 +67,15 @@ function useSelectionOverlayActions({
 
       onToolbarSuppressedChange(true);
       const additive = event.shiftKey || event.metaKey || event.ctrlKey;
-      const targetElementId = onPointerPreselectionUpdate(event.clientX, event.clientY);
+      const pointerTargetElementId = onPointerPreselectionUpdate(event.clientX, event.clientY);
+      const targetElementId =
+        getSelectedAncestorFromPointer({
+          activeGroupScopeId,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          iframe: iframeRef.current,
+          selectedElementIds,
+        }) ?? pointerTargetElementId;
       overlayPointerDownRef.current = {
         clientX: event.clientX,
         clientY: event.clientY,
@@ -74,21 +83,28 @@ function useSelectionOverlayActions({
         targetElementId,
       };
 
-      if (targetElementId && targetElementId !== selectedElementId) {
+      const isSelectedPointerTarget = Boolean(
+        targetElementId && selectedElementIds.includes(targetElementId)
+      );
+
+      if (targetElementId && targetElementId !== selectedElementId && !isSelectedPointerTarget) {
         event.stopPropagation();
         return;
       }
 
-      if (targetElementId && targetElementId === selectedElementId) {
+      if (targetElementId && (targetElementId === selectedElementId || isSelectedPointerTarget)) {
         event.stopPropagation();
       }
 
-      onBeginMove({
-        clientX: event.clientX,
-        clientY: event.clientY,
-        preventDefault: () => event.preventDefault(),
-        stopPropagation: () => event.stopPropagation(),
-      });
+      onBeginMove(
+        {
+          clientX: event.clientX,
+          clientY: event.clientY,
+          preventDefault: () => event.preventDefault(),
+          stopPropagation: () => event.stopPropagation(),
+        },
+        targetElementId && isSelectedPointerTarget ? targetElementId : undefined
+      );
     },
     onSelectionOverlayMouseMove: (event: ReactMouseEvent<HTMLDivElement>) => {
       if (isSelectedElementLocked) {
@@ -97,7 +113,11 @@ function useSelectionOverlayActions({
 
       const pointerDown = overlayPointerDownRef.current;
       onPointerPreselectionUpdate(event.clientX, event.clientY);
-      if (!pointerDown || pointerDown.targetElementId === selectedElementId) {
+      if (
+        !pointerDown ||
+        pointerDown.targetElementId === selectedElementId ||
+        (pointerDown.targetElementId && selectedElementIds.includes(pointerDown.targetElementId))
+      ) {
         return;
       }
 
@@ -214,6 +234,38 @@ function useSelectionOverlayActions({
       }
     },
   };
+}
+
+function getSelectedAncestorFromPointer({
+  activeGroupScopeId,
+  clientX,
+  clientY,
+  iframe,
+  selectedElementIds,
+}: {
+  activeGroupScopeId: string | null;
+  clientX: number;
+  clientY: number;
+  iframe: HTMLIFrameElement | null;
+  selectedElementIds: string[];
+}): string | null {
+  const doc = iframe?.contentDocument;
+  if (!iframe || !doc || !selectedElementIds.length) {
+    return null;
+  }
+
+  const iframeRect = iframe.getBoundingClientRect();
+  const iframeScaleX = iframeRect.width > 0 ? iframe.clientWidth / iframeRect.width : 1;
+  const iframeScaleY = iframeRect.height > 0 ? iframe.clientHeight / iframeRect.height : 1;
+  const selectedAncestor = getOutermostSelectedAncestorFromPoint(
+    doc,
+    (clientX - iframeRect.left) * iframeScaleX,
+    (clientY - iframeRect.top) * iframeScaleY,
+    activeGroupScopeId,
+    selectedElementIds
+  );
+
+  return selectedAncestor?.getAttribute(SELECTOR_ATTR) ?? null;
 }
 
 export { useSelectionOverlayActions };

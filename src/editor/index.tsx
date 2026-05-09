@@ -11,6 +11,8 @@ import { useEditorElementActions } from "./hooks/use-editor-element-actions";
 import { useEditorKeyboardShortcuts } from "./hooks/use-editor-keyboard-shortcuts";
 import { useEditorSlideActions } from "./hooks/use-editor-slide-actions";
 import { useIframeTextEditing } from "./hooks/use-iframe-text-editing";
+import { useImageCrop } from "./hooks/use-image-crop";
+import { useMarqueeSelection } from "./hooks/use-marquee-selection";
 import { useSelectionOverlayActions } from "./hooks/use-selection-overlay-actions";
 import { useSlideHistory } from "./hooks/use-slide-history";
 import { useSlideInspector } from "./hooks/use-slide-inspector";
@@ -218,6 +220,22 @@ function SlidesEditor({
     onCommitOperation: commitOperation,
     isElementLocked,
   });
+  const { marqueeOverlay, isMarqueeSelecting } = useMarqueeSelection({
+    activeGroupScopeId,
+    activeSlide,
+    iframeRef,
+    isEditingText,
+    onClearPreselection: clearPreselection,
+    onSelectElementIds: setSelectedElementIds,
+    selectedElementIds,
+    stageGeometry: {
+      scale,
+      offsetX,
+      offsetY,
+      slideWidth,
+      slideHeight,
+    },
+  });
   beginPointerMoveRef.current = (elementId, clientX, clientY, pointerOptions) => {
     beginMove(
       {
@@ -242,6 +260,17 @@ function SlidesEditor({
     onCommitOperation: commitOperation,
     onSelectElementIds: setSelectedElementIds,
     onLockedElementIdsBySlideIdChange: setLockedElementIdsBySlideId,
+  });
+  const imageCrop = useImageCrop({
+    activeSlide,
+    selectedElementId,
+    selectedElementType,
+    selectedStageRect,
+    stageGeometry: { offsetX, offsetY, scale, slideWidth, slideHeight },
+    iframeRef,
+    isEditingText,
+    isSelectedElementLocked,
+    onCommitOperation: commitOperation,
   });
 
   const slideActions = useEditorSlideActions({
@@ -275,6 +304,14 @@ function SlidesEditor({
     onBeginGroupEditingScope: beginGroupEditingScope,
     onClearSelection: clearSelection,
   });
+  const handleBackgroundClick = useCallback(() => {
+    if (imageCrop.isCropMode) {
+      imageCrop.exitCropMode();
+      return;
+    }
+
+    selectionOverlayActions.onBackgroundClick();
+  }, [imageCrop, selectionOverlayActions]);
 
   useEditorKeyboardShortcuts({
     activeSlide,
@@ -312,6 +349,7 @@ function SlidesEditor({
       offsetY={offsetY}
       scale={scale}
       preselectionOverlay={preselectionOverlay}
+      marqueeOverlay={marqueeOverlay}
       selectionOverlay={unifiedSelectionOverlay}
       toolbarKey={
         selectedElementIds.length ? `${activeSlide.id}:${selectedElementIds.join(",")}` : null
@@ -322,12 +360,14 @@ function SlidesEditor({
       isSelectedElementLocked={isSelectedElementLocked}
       groupScopeOverlayPassive={groupScopeOverlayPassive}
       isEditingText={isEditingText}
-      manipulationOverlay={manipulationOverlay}
+      isCropMode={imageCrop.isCropMode}
+      cropOverlay={imageCrop.cropOverlay}
+      manipulationOverlay={imageCrop.isCropMode ? null : manipulationOverlay}
       iframeRef={iframeRef}
       stageViewportRef={stageViewportRef}
       selectionOverlayRef={selectionOverlayRef}
       selectionContextMenuTriggerRef={selectionContextMenuTriggerRef}
-      isManipulating={isManipulating}
+      isManipulating={isManipulating || isMarqueeSelecting}
       isToolbarSuppressed={isToolbarSuppressed}
       onDeckTitleChange={onDeckTitleChange}
       onExportHtml={onExportHtml}
@@ -356,12 +396,14 @@ function SlidesEditor({
       onStageMouseLeave={clearPreselection}
       onResizeHandleMouseDown={selectionOverlayActions.onResizeHandleMouseDown}
       onRotateHandleMouseDown={selectionOverlayActions.onRotateHandleMouseDown}
+      onCropHandleMouseDown={imageCrop.beginCropResize}
       onSelectionOverlayDoubleClick={selectionOverlayActions.onSelectionOverlayDoubleClick}
-      onBackgroundClick={selectionOverlayActions.onBackgroundClick}
+      onBackgroundClick={handleBackgroundClick}
       onStyleChange={elementActions.commitStyleChange}
       onStylePreview={elementActions.previewStyleChange}
       onAttributeChange={elementActions.commitAttributeChange}
       onAlignToSlide={elementActions.commitArrangeAction}
+      onCropImage={imageCrop.beginCropMode}
       onDistribute={elementActions.distributeSelection}
       onGroup={elementActions.groupSelection}
       onLayerOrder={elementActions.commitLayerAction}

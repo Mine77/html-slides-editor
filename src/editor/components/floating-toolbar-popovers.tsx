@@ -4,7 +4,9 @@ import {
   type Dispatch,
   type ReactNode,
   type SetStateAction,
+  useEffect,
   useRef,
+  useState,
 } from "react";
 import type { ElementToolFeature, ElementToolOption } from "../lib/element-tool-model";
 import { cn } from "../lib/utils";
@@ -100,6 +102,7 @@ function OptionsPopover({
 }) {
   const currentValue = getCurrentValue(feature);
   const triggerIcon = feature.id === "text-align" ? getTextAlignIcon(currentValue) : icon;
+  const canPreview = feature.target === "style" && Boolean(feature.propertyName);
   const isStylePreviewMenu = shouldShowOptionPreviewAfterLabel(feature);
   const skipNextPreviewClearRef = useRef(false);
 
@@ -108,7 +111,7 @@ function OptionsPopover({
       return;
     }
 
-    if (isStylePreviewMenu && feature.propertyName) {
+    if (canPreview && feature.propertyName) {
       onStylePreview(feature.propertyName, null);
     }
   }
@@ -134,7 +137,11 @@ function OptionsPopover({
           label={label}
         />
       </PopoverTrigger>
-      <PopoverContent className={cn("p-1.5", isStylePreviewMenu ? "w-40" : "w-64")}>
+      <PopoverContent
+        className={cn("p-1.5", isStylePreviewMenu ? "w-40" : "w-64")}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <div className={cn("grid", isStylePreviewMenu ? "gap-0.5" : "gap-1")}>
           {options.map((option) => {
             const Icon = option.icon;
@@ -143,6 +150,7 @@ function OptionsPopover({
               feature.id === "distribute" &&
               !selectionCommandAvailability.group;
             const showOptionPreviewAfterLabel = shouldShowOptionPreviewAfterLabel(feature);
+
             return (
               <button
                 key={option.value}
@@ -151,24 +159,22 @@ function OptionsPopover({
                   menuItemClassName,
                   currentValue === option.value && "bg-foreground/[0.06]"
                 )}
-                disabled={disabled}
+                aria-pressed={currentValue === option.value}
                 data-value={option.value}
+                disabled={disabled}
                 onBlur={clearOptionPreview}
                 onClick={() => {
                   skipNextPreviewClearRef.current = true;
                   commitFeature(feature, option.value);
                   setActivePopoverId(null);
                 }}
-                onMouseDown={() => {
-                  skipNextPreviewClearRef.current = true;
-                }}
-                onPointerDown={() => {
-                  skipNextPreviewClearRef.current = true;
-                }}
                 onFocus={() => {
                   if (feature.propertyName) {
                     onStylePreview(feature.propertyName, option.value);
                   }
+                }}
+                onMouseDown={() => {
+                  skipNextPreviewClearRef.current = true;
                 }}
                 onMouseEnter={() => {
                   if (feature.propertyName) {
@@ -176,6 +182,9 @@ function OptionsPopover({
                   }
                 }}
                 onMouseLeave={clearOptionPreview}
+                onPointerDown={() => {
+                  skipNextPreviewClearRef.current = true;
+                }}
               >
                 {showOptionPreviewAfterLabel ? (
                   <>
@@ -199,6 +208,88 @@ function OptionsPopover({
         {custom ? (
           <div className="mt-2 border-t border-foreground/[0.08] pt-2">{custom}</div>
         ) : null}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function LineHeightPopover({
+  activePopoverId,
+  commitFeature,
+  feature,
+  getCurrentValue,
+  icon,
+  label,
+  popoverId,
+  setActivePopoverId,
+  onStylePreview,
+}: PopoverSectionProps & {
+  feature: ElementToolFeature;
+  icon: ReactNode;
+  label: string;
+  popoverId: string;
+}) {
+  const currentValue = getCurrentValue(feature);
+  const [draft, setDraft] = useState(() => getLineHeightSliderValue(currentValue));
+  const displayValue = formatLineHeightValue(draft);
+
+  useEffect(() => {
+    if (activePopoverId === popoverId) {
+      setDraft(getLineHeightSliderValue(currentValue));
+    }
+  }, [activePopoverId, currentValue, popoverId]);
+
+  function previewDraft(nextValue: string) {
+    setDraft(nextValue);
+    onStylePreview("line-height", nextValue);
+  }
+
+  function commitDraft(nextValue = draft) {
+    onStylePreview("line-height", null);
+    commitFeature(feature, nextValue);
+  }
+
+  return (
+    <Popover
+      open={activePopoverId === popoverId}
+      onOpenChange={(open) => {
+        if (!open) {
+          onStylePreview("line-height", null);
+        }
+        setActivePopoverId(open ? popoverId : null);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <ToolbarPopoverButton active={activePopoverId === popoverId} icon={icon} label={label} />
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-64 p-3"
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <section className="grid gap-2" aria-label="Line height">
+          <div className="flex items-center justify-between text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
+            <span>Line height</span>
+            <span className="tabular-nums">{displayValue}x</span>
+          </div>
+          <input
+            aria-label="Line height"
+            className="h-2 w-full cursor-pointer appearance-none rounded-full bg-foreground/10 accent-foreground"
+            max={LINE_HEIGHT_SLIDER_MAX}
+            min={LINE_HEIGHT_SLIDER_MIN}
+            onBlur={() => commitDraft()}
+            onChange={(event) => previewDraft(event.target.value)}
+            onKeyUp={() => commitDraft()}
+            onPointerUp={() => commitDraft()}
+            step={LINE_HEIGHT_SLIDER_STEP}
+            type="range"
+            value={draft}
+          />
+          <div className="flex justify-between text-[10px] font-medium text-foreground/35">
+            <span>{LINE_HEIGHT_SLIDER_MIN}x</span>
+            <span>{LINE_HEIGHT_SLIDER_MAX}x</span>
+          </div>
+        </section>
       </PopoverContent>
     </Popover>
   );
@@ -238,6 +329,7 @@ function ToolbarPopoverButton({
 } & Omit<ComponentProps<typeof Button>, "children" | "size" | "type" | "variant">) {
   return (
     <Button
+      {...props}
       type="button"
       variant="ghost"
       size="icon-sm"
@@ -248,7 +340,6 @@ function ToolbarPopoverButton({
         active && toolbarIconButtonActiveClassName,
         className
       )}
-      {...props}
     >
       {icon}
     </Button>
@@ -335,4 +426,25 @@ function getTextAlignIcon(currentValue: string) {
   return <AlignCenter className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />;
 }
 
-export { AttributeMenuButton, ColorPopover, OptionsPopover, ToolbarSection };
+function getLineHeightSliderValue(currentValue: string) {
+  const numericValue = Number.parseFloat(currentValue);
+  const value = Number.isFinite(numericValue) ? numericValue : LINE_HEIGHT_SLIDER_DEFAULT;
+  return formatLineHeightValue(clamp(value, LINE_HEIGHT_SLIDER_MIN, LINE_HEIGHT_SLIDER_MAX));
+}
+
+function formatLineHeightValue(value: string | number) {
+  const numericValue = typeof value === "number" ? value : Number.parseFloat(value);
+  const safeValue = Number.isFinite(numericValue) ? numericValue : LINE_HEIGHT_SLIDER_DEFAULT;
+  return String(Math.round(safeValue * 100) / 100);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+const LINE_HEIGHT_SLIDER_MIN = 0.8;
+const LINE_HEIGHT_SLIDER_MAX = 2.4;
+const LINE_HEIGHT_SLIDER_STEP = 0.01;
+const LINE_HEIGHT_SLIDER_DEFAULT = 1.2;
+
+export { AttributeMenuButton, ColorPopover, LineHeightPopover, OptionsPopover, ToolbarSection };

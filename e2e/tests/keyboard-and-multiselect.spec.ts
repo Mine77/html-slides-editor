@@ -293,6 +293,70 @@ test("shift click multi-select moves and deletes elements as one history entry",
   await expect(secondText).toBeVisible();
 });
 
+test("keyboard select all selects every top-level editable element on the active slide", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const firstText = frame.locator('[data-editor-id="text-1"]');
+  const secondText = frame.locator('[data-editor-id="text-2"]');
+  const nestedBlock = frame.locator('[data-editor-id="block-4"]');
+  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const { selectionOverlay } = getHistoryControls(page);
+
+  const [firstBefore, secondBefore, blockBefore, nestedBefore] = await Promise.all([
+    getRequiredBoundingBox(firstText, "first top-level text before select all"),
+    getRequiredBoundingBox(secondText, "second top-level text before select all"),
+    getRequiredBoundingBox(nestedBlock, "nested block before select all"),
+    getRequiredBoundingBox(nestedText, "nested text before select all"),
+  ]);
+
+  await page.keyboard.press(`${MODIFIER}+A`);
+  await expect(selectionOverlay).toBeVisible();
+
+  const overlayBox = await getRequiredBoundingBox(selectionOverlay, "select-all overlay");
+  expect(overlayBox.x).toBeLessThanOrEqual(firstBefore.x + 3);
+  expect(overlayBox.y).toBeLessThanOrEqual(firstBefore.y + 3);
+  expect(overlayBox.x + overlayBox.width).toBeGreaterThanOrEqual(
+    blockBefore.x + blockBefore.width - 3
+  );
+  expect(overlayBox.y + overlayBox.height).toBeGreaterThanOrEqual(
+    blockBefore.y + blockBefore.height - 3
+  );
+
+  await page.keyboard.press("ArrowRight");
+
+  const [firstAfter, secondAfter, blockAfter, nestedAfter] = await Promise.all([
+    getRequiredBoundingBox(firstText, "first top-level text after select-all move"),
+    getRequiredBoundingBox(secondText, "second top-level text after select-all move"),
+    getRequiredBoundingBox(nestedBlock, "nested block after select-all move"),
+    getRequiredBoundingBox(nestedText, "nested text after select-all move"),
+  ]);
+  expect(firstAfter.x).toBeGreaterThan(firstBefore.x);
+  expect(secondAfter.x).toBeGreaterThan(secondBefore.x);
+  expect(blockAfter.x).toBeGreaterThan(blockBefore.x);
+  expect(nestedAfter.x - blockAfter.x).toBeCloseTo(nestedBefore.x - blockBefore.x, 0);
+});
+
+test("keyboard select all keeps native text selection while text editing", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const { selectionOverlay } = getHistoryControls(page);
+
+  await editableHeading.dblclick();
+  await expect(selectionOverlay).toBeHidden();
+  await page.keyboard.press(`${MODIFIER}+A`);
+
+  const selectedText = await page
+    .locator('[data-testid="slide-iframe"]')
+    .evaluate((iframe) => (iframe as HTMLIFrameElement).contentWindow?.getSelection()?.toString());
+  expect(selectedText).toBe(HERO_KICKER.toUpperCase());
+  await expect(selectionOverlay).toBeHidden();
+});
+
 test("multi-select copy paste duplicates the selected set", async ({ page }) => {
   await gotoEditor(page);
 

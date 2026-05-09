@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { type Locator, expect, test } from "@playwright/test";
 import {
   MODIFIER,
   clickFloatingToolbarButton,
@@ -8,6 +8,7 @@ import {
   getComputedStyleValue,
   getHeaderControls,
   getHistoryControls,
+  getInlineStyle,
   getSlideElementRect,
   gotoEditor,
   selectFontFamilyOption,
@@ -42,20 +43,31 @@ test("full floating editor applies typography and paragraph controls", async ({ 
   await expectInlineStyle(editableHeading, "text-decoration-line", "underline line-through");
 
   await toolbar.getByRole("button", { name: "Line height", exact: true }).click();
-  const relaxedLineHeight = page.getByRole("button", { name: "Relaxed", exact: true });
-  await expect(relaxedLineHeight).toBeVisible();
-  await relaxedLineHeight.click();
-  await expectInlineStyle(editableHeading, "line-height", "1.45");
+  const lineHeightSlider = page.getByRole("slider", { name: "Line height", exact: true });
+  await expect(lineHeightSlider).toBeVisible();
+  await expect(page.getByRole("button", { name: "Relaxed", exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Custom line height", { exact: true })).toHaveCount(0);
+  await expect(lineHeightSlider).toHaveAttribute("min", "0.8");
+  await expect(lineHeightSlider).toHaveAttribute("max", "2.4");
+  await expect(lineHeightSlider).toHaveAttribute("step", "0.01");
+  await expect(lineHeightSlider).not.toHaveValue("2.4");
+  await lineHeightSlider.fill("1.35");
+  await expectInlineStyle(editableHeading, "line-height", "1.35");
+  await lineHeightSlider.press("ArrowRight");
+  await expectInlineStyle(editableHeading, "line-height", "1.36");
+  await page.keyboard.press("Escape");
+  await expect(lineHeightSlider).toBeHidden();
   await toolbar.getByRole("button", { name: "Line height", exact: true }).click();
-  const customLineHeight = page.getByLabel("Custom line height", { exact: true });
-  await expect(customLineHeight).toBeVisible();
-  await customLineHeight.fill("1.33");
-  await page.getByRole("button", { name: "Apply", exact: true }).click();
-  await expectInlineStyle(editableHeading, "line-height", "1.33");
+  await expect(lineHeightSlider).toHaveValue("1.36");
 
   await toolbar.getByRole("button", { name: "Text align", exact: true }).click();
   const centerAlign = page.getByRole("button", { name: "Center", exact: true });
   await expect(centerAlign).toBeVisible();
+  await centerAlign.hover();
+  await expectInlineStyle(editableHeading, "text-align", "center");
+  await page.mouse.move(0, 0);
+  await expectInlineStyle(editableHeading, "text-align", "");
+  await centerAlign.hover();
   await centerAlign.click();
   await expectInlineStyle(editableHeading, "text-align", "center");
 
@@ -65,6 +77,27 @@ test("full floating editor applies typography and paragraph controls", async ({ 
   await expectInlineStyle(editableHeading, "text-align", "center");
 });
 
+test("line height slider reflects computed and committed line-height state", async ({ page }) => {
+  await gotoEditor(page);
+
+  const frame = coverFrame(page);
+  const title = frame.locator('[data-editor-id="text-2"]');
+  const toolbar = page.getByTestId("floating-toolbar-anchor");
+
+  await title.click();
+  await toolbar.getByRole("button", { name: "Line height", exact: true }).click();
+  const lineHeightSlider = page.getByRole("slider", { name: "Line height", exact: true });
+  await expect(lineHeightSlider).toBeVisible();
+  await expect(lineHeightSlider).toHaveValue("0.92");
+
+  await lineHeightSlider.fill("1.3");
+  await expectInlineStyle(title, "line-height", "1.3");
+  await page.keyboard.press("Escape");
+  await expect(lineHeightSlider).toBeHidden();
+  await toolbar.getByRole("button", { name: "Line height", exact: true }).click();
+  await expect(lineHeightSlider).toHaveValue("1.3");
+});
+
 test("full floating editor applies color and border controls", async ({ page }) => {
   await gotoEditor(page);
 
@@ -72,27 +105,98 @@ test("full floating editor applies color and border controls", async ({ page }) 
   const editableHeading = frame.locator('[data-editor-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
+  await editableHeading.evaluate((node) => {
+    (node as HTMLElement).style.color = "rgba(59, 130, 246, 0.5)";
+  });
   await editableHeading.click();
   await toolbar.getByRole("button", { name: "Text color", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Gradient", exact: true })).toHaveCount(0);
+  const textColorPanel = page.locator('[data-slot="popover-content"]');
+  await expect(textColorPanel.getByRole("textbox")).toHaveValue("3B82F6");
+  await expect(textColorPanel.getByRole("slider", { name: "Opacity", exact: true })).toHaveValue(
+    "50"
+  );
+
+  const opacitySlider = textColorPanel.getByRole("slider", { name: "Opacity", exact: true });
+  const opacityBox = await opacitySlider.boundingBox();
+  expect(opacityBox).not.toBeNull();
+  if (!opacityBox) {
+    throw new Error("Expected opacity slider to have bounds.");
+  }
+  await page.mouse.move(
+    opacityBox.x + opacityBox.width * 0.5,
+    opacityBox.y + opacityBox.height / 2
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    opacityBox.x + opacityBox.width * 0.25,
+    opacityBox.y + opacityBox.height / 2
+  );
+  await page.mouse.up();
+  await expect.poll(async () => getColorAlpha(editableHeading)).toBeLessThan(0.3);
+  await expect.poll(async () => getColorAlpha(editableHeading)).toBeGreaterThan(0.2);
+
   const blueTextColor = page.getByRole("button", {
     name: "Use Text color #3B82F6",
     exact: true,
   });
   await expect(blueTextColor).toBeVisible();
   await blueTextColor.click();
-  await expectInlineStyle(editableHeading, "color", "rgb(59, 130, 246)");
+  await expect(page.locator('[data-slot="popover-content"]')).toBeVisible();
+  await expect.poll(async () => getColorAlpha(editableHeading)).toBeLessThan(0.3);
+  await expect.poll(async () => getColorAlpha(editableHeading)).toBeGreaterThan(0.2);
 
   await toolbar.getByRole("button", { name: "Background color", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Color", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Gradient", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Gradient", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Color", exact: true }).click();
+  const colorPanel = page.getByRole("tabpanel", { name: "Color", exact: true });
+  await expect(colorPanel.getByRole("slider", { name: "Hue", exact: true })).toBeVisible();
+  const hueSlider = colorPanel.getByRole("slider", { name: "Hue", exact: true });
+  const hueBox = await hueSlider.boundingBox();
+  expect(hueBox).not.toBeNull();
+  if (!hueBox) {
+    throw new Error("Expected hue slider to have bounds.");
+  }
+  await page.mouse.click(hueBox.x + hueBox.width * 0.3, hueBox.y + hueBox.height / 2);
+  await expect(colorPanel.getByRole("slider", { name: "Hue", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Gradient", exact: true }).click();
   const backgroundGradient = page.getByRole("button", {
     name: "Use Background color gradient 1",
     exact: true,
   });
   await expect(backgroundGradient).toBeVisible();
   await backgroundGradient.click();
+  await expect(page.getByRole("tab", { name: "Gradient", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Apply gradient", exact: true })).toHaveCount(0);
   await expectInlineStyle(
     editableHeading,
     "background-image",
     "linear-gradient(135deg, rgb(168, 85, 247), rgb(236, 72, 153))"
+  );
+  await expect
+    .poll(async () => getBackgroundIconStyle(toolbar))
+    .toContain("linear-gradient(135deg, rgb(168, 85, 247), rgb(236, 72, 153))");
+
+  const gradientAngle = page.getByRole("slider", { name: "Gradient angle", exact: true });
+  await expect(gradientAngle).toHaveValue("135");
+  await gradientAngle.fill("220");
+  await expectInlineStyle(
+    editableHeading,
+    "background-image",
+    "linear-gradient(220deg, rgb(168, 85, 247), rgb(236, 72, 153))"
+  );
+  await expect
+    .poll(async () => getBackgroundIconStyle(toolbar))
+    .toContain("linear-gradient(220deg, rgb(168, 85, 247), rgb(236, 72, 153))");
+
+  const gradientStart = page.getByLabel("Gradient start", { exact: true });
+  await gradientStart.fill("10B981");
+  await expectInlineStyle(
+    editableHeading,
+    "background-image",
+    "linear-gradient(220deg, rgb(16, 185, 129), rgb(236, 72, 153))"
   );
 
   await toolbar.getByTestId("floating-border-trigger").click();
@@ -169,6 +273,151 @@ test("floating border menu reflects selected element styles on first open", asyn
   await expect(borderTriggerLine).toHaveCSS("border-top-width", "5px");
   await expect(borderTriggerLine).toHaveCSS("border-top-color", "rgb(197, 157, 157)");
 });
+
+async function getColorAlpha(locator: Locator) {
+  const color = await locator.evaluate((node) => (node as HTMLElement).style.color);
+  const match = /rgba?\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/i.exec(color);
+  return match ? Number.parseFloat(match[1] ?? "1") : 1;
+}
+
+async function getBackgroundIconStyle(toolbar: Locator) {
+  return toolbar.getByTestId("floating-toolbar-background-color-icon").evaluate((node) => {
+    return (node as HTMLElement).style.background;
+  });
+}
+
+test("image floating toolbar hides text and color tools and supports crop handles", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await page.getByLabel("Slide 16").click();
+
+  const frame = coverFrame(page);
+  const editableImage = frame.locator('[data-editor-id="crop-image"]');
+  const toolbar = page.getByTestId("floating-toolbar-anchor");
+
+  await editableImage.click();
+  await expect(toolbar).toBeVisible();
+  await expect(toolbar.getByLabel("Font", { exact: true })).toBeHidden();
+  await expect(
+    toolbar.getByRole("button", { name: "Increase font size", exact: true })
+  ).toBeHidden();
+  await expect(toolbar.getByRole("button", { name: "Bold", exact: true })).toBeHidden();
+  await expect(toolbar.getByRole("button", { name: "Italic", exact: true })).toBeHidden();
+  await expect(toolbar.getByRole("button", { name: "Line height", exact: true })).toBeHidden();
+  await expect(toolbar.getByRole("button", { name: "Text align", exact: true })).toBeHidden();
+
+  await expect(toolbar.getByRole("button", { name: "Crop image", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Background color", exact: true })).toBeHidden();
+  await expect(toolbar.getByRole("button", { name: "Text color", exact: true })).toBeHidden();
+  await expect(toolbar.getByRole("button", { name: "Border", exact: true })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Other", exact: true })).toBeVisible();
+
+  await toolbar.getByRole("button", { name: "Crop image", exact: true }).click();
+  await expectInlineStyle(editableImage, "object-fit", "cover");
+  await expect(page.getByTestId("image-crop-overlay")).toBeVisible();
+  await expect(page.getByTestId("image-crop-overlay")).toHaveCSS("border-radius", "48px");
+  await expect(page.getByTestId("block-rotate-handle")).toBeHidden();
+  await expect(page.getByTestId("block-resize-handle-top-left")).toBeHidden();
+
+  const cropHandle = page.getByTestId("image-crop-handle-top-left");
+  const handleBox = await cropHandle.boundingBox();
+  if (!handleBox) {
+    throw new Error("Expected crop handle to have bounds.");
+  }
+  await expect(cropHandle).toHaveCSS("cursor", /data:image\/svg\+xml.*nwse-resize/);
+  const initialCropOverlay = await page.getByTestId("image-crop-overlay").boundingBox();
+  if (!initialCropOverlay) {
+    throw new Error("Expected crop overlay to have initial bounds.");
+  }
+
+  const handleCenter = {
+    x: handleBox.x + handleBox.width / 2,
+    y: handleBox.y + handleBox.height / 2,
+  };
+
+  await page.mouse.move(handleCenter.x, handleCenter.y);
+  await page.mouse.down();
+  await page.mouse.move(handleCenter.x + 72, handleCenter.y + 48, { steps: 6 });
+  await expect
+    .poll(
+      async () => {
+        const previewBox = await page.getByTestId("image-crop-overlay").boundingBox();
+        return Boolean(
+          previewBox &&
+            previewBox.x > initialCropOverlay.x &&
+            previewBox.y > initialCropOverlay.y &&
+            previewBox.width < initialCropOverlay.width &&
+            previewBox.height < initialCropOverlay.height
+        );
+      },
+      { timeout: 1000 }
+    )
+    .toBe(true);
+  const previewCropOverlay = await page.getByTestId("image-crop-overlay").boundingBox();
+  if (!previewCropOverlay) {
+    throw new Error("Expected crop overlay to update while dragging.");
+  }
+  expect(previewCropOverlay.x).toBeGreaterThan(initialCropOverlay.x);
+  expect(previewCropOverlay.y).toBeGreaterThan(initialCropOverlay.y);
+  expect(previewCropOverlay.width).toBeLessThan(initialCropOverlay.width);
+  expect(previewCropOverlay.height).toBeLessThan(initialCropOverlay.height);
+  await expect(page.getByText("saving...")).toBeHidden();
+  await page.mouse.up();
+  await expect(page.getByText("saving...")).toBeVisible();
+  await expectInlineStyle(editableImage, "clip-path", "");
+  await expect(page.getByTestId("image-crop-mask")).toBeVisible();
+  await expect
+    .poll(async () => parseInsetPercentages(await getInlineStyle(editableImage, "clip-path")), {
+      timeout: 500,
+    })
+    .toBeNull();
+  await frame.locator("[data-slide-root]").click({ position: { x: 24, y: 24 } });
+  await expect(page.getByTestId("image-crop-overlay")).toBeHidden();
+  await expect
+    .poll(async () => parseInsetPercentages(await getInlineStyle(editableImage, "clip-path")), {
+      timeout: 2500,
+    })
+    .toEqual({
+      top: expect.any(Number),
+      right: 0,
+      bottom: 0,
+      left: expect.any(Number),
+    });
+  const topLeftCrop = parseInsetPercentages(await getInlineStyle(editableImage, "clip-path"));
+  const croppedClipPath = await getInlineStyle(editableImage, "clip-path");
+  expect(croppedClipPath).toContain("round 48px");
+  expect(topLeftCrop.top).toBeGreaterThan(4);
+  expect(topLeftCrop.left).toBeGreaterThan(4);
+  await editableImage.click();
+  await expect(toolbar).toBeVisible();
+  await toolbar.getByRole("button", { name: "Crop image", exact: true }).click();
+  await expect(page.getByTestId("image-crop-overlay")).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("image-crop-overlay")).toBeHidden();
+  await expect(page.getByTestId("selection-overlay")).toBeVisible();
+
+  await page.keyboard.press(`${MODIFIER}+Z`);
+  await expectInlineStyle(editableImage, "clip-path", "");
+  await page.keyboard.press(`${MODIFIER}+Shift+Z`);
+  await expectInlineStyle(editableImage, "clip-path", croppedClipPath);
+});
+
+function parseInsetPercentages(value: string) {
+  const match = value.match(
+    /^inset\((-?\d+(?:\.\d+)?)% (-?\d+(?:\.\d+)?)% (-?\d+(?:\.\d+)?)% (-?\d+(?:\.\d+)?)%(?: round .+)?\)$/
+  );
+  if (!match) {
+    return null;
+  }
+
+  return {
+    top: Number.parseFloat(match[1] ?? "0"),
+    right: Number.parseFloat(match[2] ?? "0"),
+    bottom: Number.parseFloat(match[3] ?? "0"),
+    left: Number.parseFloat(match[4] ?? "0"),
+  };
+}
 
 test("floating toolbar font family select changes the selected text font", async ({ page }) => {
   await gotoEditor(page);

@@ -11,6 +11,7 @@ import { useIframeTextDocumentEvents } from "./iframe-text-document-events";
 import {
   applyGroupScopeFocus,
   getDeepestEditableElementFromPoint,
+  setNativeTextSelectionEnabled,
 } from "./iframe-text-editing-dom";
 import type {
   TextEditingState,
@@ -225,6 +226,16 @@ function useIframeTextEditing({
       setTextEditing(null);
     }
   }, [activeSlide, textEditing]);
+
+  useEffect(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (doc) {
+      setNativeTextSelectionEnabled(
+        doc,
+        Boolean(activeSlide && textEditing?.slideId === activeSlide.id)
+      );
+    }
+  }, [activeSlide, iframeRef, textEditing]);
 
   commitTextEditRef.current = commitTextEdit;
   cancelTextEditRef.current = cancelTextEdit;

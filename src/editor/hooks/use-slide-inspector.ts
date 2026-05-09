@@ -8,6 +8,7 @@ import {
   querySlideElement,
 } from "../../core";
 import { type CssPropertyRow, collectCssProperties } from "../lib/collect-css-properties";
+import { getVisibleImageRect } from "../lib/image-crop";
 
 interface UseSlideInspectorOptions {
   iframeRef: RefObject<HTMLIFrameElement | null>;
@@ -122,7 +123,7 @@ function useSlideInspector({
         .map((elementId) => querySlideElement<HTMLElement>(doc, elementId))
         .filter((node): node is HTMLElement => Boolean(node))
         .map((node) =>
-          elementRectToStageRect(node.getBoundingClientRect(), rootRect, {
+          elementRectToStageRect(getVisibleImageRect(node), rootRect, {
             scale,
             offsetX,
             offsetY,
@@ -163,7 +164,7 @@ function useSlideInspector({
       : null;
     const preselectionRect =
       preselectionNode && rootRect
-        ? elementRectToStageRect(preselectionNode.getBoundingClientRect(), rootRect, {
+        ? elementRectToStageRect(getVisibleImageRect(preselectionNode), rootRect, {
             scale,
             offsetX,
             offsetY,

@@ -33,6 +33,7 @@ function FloatingToolbar({
   onStylePreview,
   onAttributeChange,
   onAlignToSlide,
+  onCropImage,
   onDistribute,
   onGroup,
   onLayerOrder,
@@ -136,7 +137,10 @@ function FloatingToolbar({
         return;
       }
 
-      if (target instanceof Element && target.closest('[data-slot="select-content"]')) {
+      if (
+        target instanceof Element &&
+        target.closest('[data-slot="select-content"], [data-slot="popover-content"]')
+      ) {
         return;
       }
 
@@ -177,6 +181,10 @@ function FloatingToolbar({
       onUngroup();
       return;
     }
+    if (feature.id === "image-crop") {
+      onCropImage();
+      return;
+    }
     if (feature.id === "other-link") {
       onAttributeChange("data-link-url", nextValue.trim());
       return;
@@ -185,12 +193,22 @@ function FloatingToolbar({
       onAttributeChange("aria-label", nextValue.trim());
       return;
     }
-    if (feature.id === "background-color" && nextValue.startsWith("linear-gradient")) {
-      setOptimisticStyles((currentStyles) => ({
-        ...currentStyles,
-        "background-image": nextValue,
-      }));
-      onStyleChange("background-image", nextValue);
+    if (feature.id === "background-color") {
+      if (nextValue.startsWith("linear-gradient")) {
+        setOptimisticStyles((currentStyles) => ({
+          ...currentStyles,
+          "background-image": nextValue,
+        }));
+        onStyleChange("background-image", nextValue);
+      } else {
+        setOptimisticStyles((currentStyles) => ({
+          ...currentStyles,
+          "background-color": nextValue,
+          "background-image": "",
+        }));
+        onStyleChange("background-color", nextValue);
+        onStyleChange("background-image", "");
+      }
       return;
     }
 
@@ -237,6 +255,7 @@ function FloatingToolbar({
           activePopoverId={activePopoverId}
           isSelectedElementLocked={isSelectedElementLocked}
           selectionCommandAvailability={selectionCommandAvailability}
+          selectedElementType={selectedElementType}
           showGroupTool={showGroupTool}
           showMultiTools={showMultiTools}
           commitFeature={commitFeature}
@@ -262,6 +281,24 @@ function FloatingToolbar({
   );
 
   function getCurrentValue(feature: ElementToolFeature) {
+    if (feature.id === "background-color") {
+      const optimisticBackgroundImage = optimisticStyles["background-image"];
+      if (optimisticBackgroundImage?.trim().startsWith("linear-gradient")) {
+        return optimisticBackgroundImage;
+      }
+
+      if ("background-color" in optimisticStyles) {
+        return (
+          optimisticStyles["background-color"] ??
+          getElementToolValue({
+            attributeValues,
+            feature,
+            inspectedStyles,
+          })
+        );
+      }
+    }
+
     if (feature.propertyName && feature.propertyName in optimisticStyles) {
       return (
         optimisticStyles[feature.propertyName] ??
@@ -279,6 +316,8 @@ function FloatingToolbar({
 
 function shouldOptimisticallyTrackStyle(propertyName: string) {
   return (
+    propertyName === "background-color" ||
+    propertyName === "background-image" ||
     propertyName === "border" ||
     propertyName === "border-style" ||
     propertyName === "border-color" ||

@@ -21,6 +21,7 @@ export type ElementToolFeatureId =
   | "height"
   | "opacity"
   | "rotation"
+  | "image-crop"
   | "align-to-slide"
   | "distribute"
   | "layer-order"
