@@ -86,12 +86,26 @@ test("full floating editor applies color and border controls", async ({ page }) 
   await toolbar.getByRole("button", { name: "Background color", exact: true }).click();
   await expect(page.getByRole("tab", { name: "Color", exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "Gradient", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "Gradient", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Color", exact: true }).click();
+  const colorPanel = page.getByRole("tabpanel", { name: "Color", exact: true });
+  await expect(colorPanel.getByRole("slider", { name: "Hue", exact: true })).toBeVisible();
+  const hueSlider = colorPanel.getByRole("slider", { name: "Hue", exact: true });
+  const hueBox = await hueSlider.boundingBox();
+  expect(hueBox).not.toBeNull();
+  if (!hueBox) {
+    throw new Error("Expected hue slider to have bounds.");
+  }
+  await page.mouse.click(hueBox.x + hueBox.width * 0.3, hueBox.y + hueBox.height / 2);
+  await expect(colorPanel.getByRole("slider", { name: "Hue", exact: true })).toBeVisible();
+  await page.getByRole("tab", { name: "Gradient", exact: true }).click();
   const backgroundGradient = page.getByRole("button", {
     name: "Use Background color gradient 1",
     exact: true,
   });
   await expect(backgroundGradient).toBeVisible();
   await backgroundGradient.click();
+  await expect(page.getByRole("tab", { name: "Gradient", exact: true })).toBeHidden();
   await expectInlineStyle(
     editableHeading,
     "background-image",

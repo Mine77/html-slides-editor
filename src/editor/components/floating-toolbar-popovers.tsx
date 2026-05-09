@@ -52,7 +52,11 @@ function ColorPopover({
       <PopoverTrigger asChild>
         <ToolbarPopoverButton active={activePopoverId === popoverId} icon={icon} label={label} />
       </PopoverTrigger>
-      <PopoverContent className="w-80 max-h-[calc(100vh-40px)] overflow-y-auto p-2">
+      <PopoverContent
+        className="w-80 max-h-[calc(100vh-40px)] overflow-y-auto p-2"
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <ColorPicker
           value={getCurrentValue(feature)}
           ariaLabelPrefix={label}
@@ -99,7 +103,11 @@ function OptionsPopover({
           label={label}
         />
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-1.5">
+      <PopoverContent
+        className="w-64 p-1.5"
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <div className="grid gap-1">
           {options.map((option) => {
             const Icon = option.icon;
