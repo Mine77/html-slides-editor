@@ -27,12 +27,10 @@ export type ElementToolFeatureId =
   | "ungroup"
   | "locked"
   | "link-url"
-  | "alt-text"
   | "aria-label"
   | "custom-css"
   | "other-tools"
   | "other-link"
-  | "other-alt-text"
   | "other-aria-label";
 
 export type ElementToolControlType =

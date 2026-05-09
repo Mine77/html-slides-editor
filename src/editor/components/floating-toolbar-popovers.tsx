@@ -166,11 +166,11 @@ function ToolbarPopoverButton({
   icon,
   label,
   ...props
-}: ComponentProps<typeof Button> & {
+}: {
   active: boolean;
   icon: ReactNode;
   label: string;
-}) {
+} & Omit<ComponentProps<typeof Button>, "children" | "size" | "type" | "variant">) {
   return (
     <Button
       {...props}
