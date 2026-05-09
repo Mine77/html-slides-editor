@@ -21,6 +21,7 @@ interface StageCanvasProps {
   offsetY: number;
   scale: number;
   preselectionOverlay: StageRect | null;
+  marqueeOverlay: StageRect | null;
   selectionOverlay: StageRect | null;
   toolbarKey: string | null;
   inspectedStyles: CssPropertyRow[];
@@ -86,6 +87,7 @@ function StageCanvas({
   offsetY,
   scale,
   preselectionOverlay,
+  marqueeOverlay,
   selectionOverlay,
   toolbarKey,
   inspectedStyles,
@@ -202,6 +204,18 @@ function StageCanvas({
             top: `${preselectionOverlay.y}px`,
             width: `${preselectionOverlay.width}px`,
             height: `${preselectionOverlay.height}px`,
+          }}
+        />
+      ) : null}
+      {marqueeOverlay && !isEditingText ? (
+        <div
+          data-testid="marquee-selection-overlay"
+          className="pointer-events-none absolute z-[4] border border-yellow-400 bg-yellow-400/15"
+          style={{
+            left: `${marqueeOverlay.x}px`,
+            top: `${marqueeOverlay.y}px`,
+            width: `${marqueeOverlay.width}px`,
+            height: `${marqueeOverlay.height}px`,
           }}
         />
       ) : null}

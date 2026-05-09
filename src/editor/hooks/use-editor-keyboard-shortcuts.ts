@@ -10,6 +10,7 @@ import {
 import {
   ARROW_DELTAS,
   commitOperations,
+  getAllSelectableElementIds,
   getShortcutStep,
   isEditableElementTarget,
   isLayoutEditable,
@@ -114,6 +115,16 @@ function useEditorKeyboardShortcuts({
       };
       onSelectElementIds(paste.selectedElementIds);
       clipboardRef.current = paste.nextClipboard;
+      return true;
+    };
+
+    const selectAllObjects = () => {
+      const selectableElementIds = getAllSelectableElementIds(iframeRef.current?.contentDocument);
+      if (!selectableElementIds.length) {
+        return false;
+      }
+
+      onSelectElementIds(selectableElementIds);
       return true;
     };
 
@@ -244,6 +255,8 @@ function useEditorKeyboardShortcuts({
         handled = true;
       } else if (isEditableTarget) {
         return;
+      } else if (commandKey && !event.shiftKey && key === "a") {
+        handled = selectAllObjects();
       } else if (commandKey && !event.shiftKey && key === "c") {
         handled = copySelection();
       } else if (commandKey && !event.shiftKey && key === "x") {

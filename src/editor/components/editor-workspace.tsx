@@ -24,6 +24,7 @@ interface EditorWorkspaceProps {
   offsetY: number;
   scale: number;
   preselectionOverlay: StageRect | null;
+  marqueeOverlay: StageRect | null;
   selectionOverlay: StageRect | null;
   toolbarKey: string | null;
   inspectedStyles: CssPropertyRow[];
@@ -95,6 +96,7 @@ function EditorWorkspace({
   offsetY,
   scale,
   preselectionOverlay,
+  marqueeOverlay,
   selectionOverlay,
   toolbarKey,
   inspectedStyles,
@@ -193,6 +195,7 @@ function EditorWorkspace({
                 offsetY={offsetY}
                 scale={scale}
                 preselectionOverlay={preselectionOverlay}
+                marqueeOverlay={marqueeOverlay}
                 selectionOverlay={selectionOverlay}
                 toolbarKey={toolbarKey}
                 inspectedStyles={inspectedStyles}
