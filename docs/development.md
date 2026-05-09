@@ -27,7 +27,7 @@ Deck-specific commands:
 pnpm editor:e2e:generate-deck
 pnpm --silent starry-slides verify sample-slides
 pnpm --silent starry-slides verify sample-slides --static
-pnpm --silent starry-slides view sample-slides --slide 01-hero.html
+pnpm --silent starry-slides view sample-slides --slide slides/01-hero.html
 pnpm starry-slides open sample-slides
 ```
 
@@ -51,9 +51,6 @@ src/
 
 e2e/                           Playwright tests, fixtures, and deck generator
 sample-slides/                 ignored local sample deck for dev and CLI default
-
-skills/
-  starry-slides/         agent-facing deck workflow and protocol tools
 ```
 
 ## Implementation Boundaries
@@ -74,8 +71,8 @@ Rules that matter in this repo:
 - Do not invent alternate built-in deck locations.
 - Do not add extra persistent deck copies beyond `sample-slides/` and the
   ignored e2e working deck.
-- Keep generated slides Contract-compatible and validate them with
-  `starry-slides`.
+- Keep generated slides contract-compatible and validate them with
+  `starry-slides` against [docs/slide-contract.md](/Users/haichao/.codex/worktrees/d0b5/starry-slides/docs/slide-contract.md).
 
 ## Local Sample Deck
 

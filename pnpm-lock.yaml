@@ -17,6 +17,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      commander:
+        specifier: ^14.0.3
+        version: 14.0.3
       html-to-image:
         specifier: ^1.11.11
         version: 1.11.13
@@ -35,9 +38,6 @@ importers:
       react-dom:
         specifier: ^19.1.0
         version: 19.2.5(react@19.2.5)
-      skills:
-        specifier: ^1.5.6
-        version: 1.5.6
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -1849,6 +1849,10 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
+  commander@14.0.3:
+    resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
+    engines: {node: '>=20'}
+
   commander@4.1.1:
     resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
     engines: {node: '>= 6'}
@@ -2315,11 +2319,6 @@ packages:
 
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
-
-  skills@1.5.6:
-    resolution: {integrity: sha512-CFXuNtPkVQl+Nub72C5apjQwpL195CcVre3H6jSzPLKKR+xsNMdEFmaHcc28M79cZdVmQll1xq5Rxb5PA/tBCQ==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   sonner@2.0.7:
     resolution: {integrity: sha512-W6ZN4p58k8aDKA4XPcx2hpIQXBRAgyiWVkYhT7CvK6D3iAu7xjvVyhQHg2/iaKJZ1XVJ4r7XuwGL+WGEK37i9w==}
@@ -4118,6 +4117,8 @@ snapshots:
 
   clsx@2.1.1: {}
 
+  commander@14.0.3: {}
+
   commander@4.1.1: {}
 
   confbox@0.1.8: {}
@@ -4624,10 +4625,6 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  skills@1.5.6:
-    dependencies:
-      yaml: 2.8.4
-
   sonner@2.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
       react: 19.2.5
@@ -4924,4 +4921,5 @@ snapshots:
 
   yallist@3.1.1: {}
 
-  yaml@2.8.4: {}
+  yaml@2.8.4:
+    optional: true
