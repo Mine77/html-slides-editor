@@ -97,6 +97,8 @@ function FloatingToolbarSections({
         commitFeature={commitFeature}
         getFeature={getFeature}
         isSelectedElementLocked={isSelectedElementLocked}
+        selectionCommandAvailability={selectionCommandAvailability}
+        showGroupTool={showGroupTool}
       />
       {isSelectedElementLocked ? null : (
         <>
@@ -169,16 +171,6 @@ function FloatingToolbarSections({
               />
             </>
           ) : null}
-          {showGroupTool ? (
-            <>
-              <Divider />
-              <GroupSection
-                commitFeature={commitFeature}
-                getFeature={getFeature}
-                selectionCommandAvailability={selectionCommandAvailability}
-              />
-            </>
-          ) : null}
           <Divider />
           <OtherSection
             activePopoverId={activePopoverId}
@@ -211,7 +203,16 @@ function LockSection({
   commitFeature,
   getFeature,
   isSelectedElementLocked,
-}: Pick<FloatingToolbarSectionsProps, "commitFeature" | "getFeature" | "isSelectedElementLocked">) {
+  selectionCommandAvailability,
+  showGroupTool,
+}: Pick<
+  FloatingToolbarSectionsProps,
+  | "commitFeature"
+  | "getFeature"
+  | "isSelectedElementLocked"
+  | "selectionCommandAvailability"
+  | "showGroupTool"
+>) {
   return (
     <ToolbarSection>
       <IconButton
@@ -225,6 +226,13 @@ function LockSection({
           <Lock className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
         )}
       </IconButton>
+      {isSelectedElementLocked || !showGroupTool ? null : (
+        <GroupButton
+          commitFeature={commitFeature}
+          getFeature={getFeature}
+          selectionCommandAvailability={selectionCommandAvailability}
+        />
+      )}
     </ToolbarSection>
   );
 }
@@ -452,7 +460,7 @@ function MultiArrangeSection(props: OptionsSectionProps) {
   );
 }
 
-function GroupSection({
+function GroupButton({
   commitFeature,
   getFeature,
   selectionCommandAvailability,
