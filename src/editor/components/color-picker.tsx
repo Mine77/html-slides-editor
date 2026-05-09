@@ -9,6 +9,7 @@ import {
 import { cn } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 const SWATCHES = [
   "#0F172A",
@@ -61,48 +62,7 @@ function ColorPicker({
   const [gradientEnd, setGradientEnd] = useState("#8B5CF6");
   const [gradientAngle, setGradientAngle] = useState(135);
   const hueColor = `hsl(${hsv.h}, 100%, 50%)`;
-
-  useEffect(() => {
-    setHexInput(normalizedHex.replace("#", ""));
-  }, [normalizedHex]);
-
-  function commitColor(nextHex: string, nextAlpha = parsedColor.alpha) {
-    onChange(formatColorValue(nextHex, nextAlpha));
-  }
-
-  function updateOpacity(event: ChangeEvent<HTMLInputElement>) {
-    const alpha = Number.parseInt(event.target.value, 10) / 100;
-    commitColor(normalizedHex, alpha);
-  }
-
-  function updateFromSpectrum(event: ReactPointerEvent<HTMLDivElement>) {
-    const rect = spectrumRef.current?.getBoundingClientRect();
-
-    if (!rect) {
-      return;
-    }
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-
-    const saturation = clamp((event.clientX - rect.left) / rect.width, 0, 1);
-    const brightness = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
-    commitColor(hsvToHex({ ...hsv, s: saturation, v: brightness }));
-  }
-
-  function updateFromHue(event: ReactPointerEvent<HTMLDivElement>) {
-    const rect = hueRef.current?.getBoundingClientRect();
-
-    if (!rect) {
-      return;
-    }
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-
-    const hue = Math.round(clamp((event.clientX - rect.left) / rect.width, 0, 1) * 360);
-    commitColor(hsvToHex({ ...hsv, h: hue === 360 ? 0 : hue }));
-  }
-
-  return (
+  const colorPanel = (
     <div className="grid gap-3">
       <div
         className="relative h-36 w-full touch-none select-none overflow-hidden rounded-xl border-0 before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(to_top,#000,transparent),linear-gradient(to_right,#fff,transparent)] before:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -224,90 +184,146 @@ function ColorPicker({
           ))}
         </div>
       </section>
-
-      {includeGradients ? (
-        <section className="grid gap-2" aria-label="Preset gradients">
-          <div className="text-[10px] font-medium uppercase leading-tight tracking-wider text-foreground/40">
-            Gradients
-          </div>
-          <div className="grid grid-cols-6 gap-1.5">
-            {GRADIENTS.map((gradient, index) => (
-              <button
-                key={gradient}
-                className={cn(
-                  "h-8 cursor-pointer rounded-md border border-foreground/10 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-[box-shadow,outline-color,border-color] duration-150 hover:border-foreground/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  gradient === value && "shadow-[0_0_0_2px_white,0_0_0_4px_rgba(0,0,0,0.18)]"
-                )}
-                type="button"
-                style={{ background: gradient }}
-                aria-label={
-                  ariaLabelPrefix
-                    ? `Use ${ariaLabelPrefix} gradient ${index + 1}`
-                    : `Use gradient ${index + 1}`
-                }
-                onClick={() => {
-                  onChange(gradient);
-                  onCommit?.();
-                }}
-              />
-            ))}
-          </div>
-          <div className="grid gap-2 rounded-md bg-foreground/[0.03] p-2">
-            <div
-              className="h-8 rounded-md border border-foreground/10"
-              style={{ background: createGradientValue(gradientAngle, gradientStart, gradientEnd) }}
-              aria-hidden="true"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                className="h-8 rounded-md bg-white px-2 font-mono text-xs uppercase"
-                aria-label="Gradient start"
-                value={gradientStart.replace("#", "")}
-                onChange={(event) =>
-                  setGradientStart(`#${event.target.value.replace(/[^0-9a-f]/gi, "").slice(0, 6)}`)
-                }
-                onBlur={() => setGradientStart(expandHex(gradientStart))}
-              />
-              <Input
-                className="h-8 rounded-md bg-white px-2 font-mono text-xs uppercase"
-                aria-label="Gradient end"
-                value={gradientEnd.replace("#", "")}
-                onChange={(event) =>
-                  setGradientEnd(`#${event.target.value.replace(/[^0-9a-f]/gi, "").slice(0, 6)}`)
-                }
-                onBlur={() => setGradientEnd(expandHex(gradientEnd))}
-              />
-            </div>
-            <div className="grid gap-1">
-              <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-foreground/40">
-                <span>Angle</span>
-                <span>{gradientAngle}deg</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={360}
-                value={gradientAngle}
-                aria-label="Gradient angle"
-                onChange={(event) => setGradientAngle(Number.parseInt(event.target.value, 10))}
-                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-foreground/10 accent-foreground"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                onChange(createGradientValue(gradientAngle, gradientStart, gradientEnd));
-                onCommit?.();
-              }}
-            >
-              Apply gradient
-            </Button>
-          </div>
-        </section>
-      ) : null}
     </div>
+  );
+
+  const gradientPanel = includeGradients ? (
+    <section className="grid gap-2" aria-label="Preset gradients">
+      <div className="grid grid-cols-6 gap-1.5">
+        {GRADIENTS.map((gradient, index) => (
+          <button
+            key={gradient}
+            className={cn(
+              "h-8 cursor-pointer rounded-md border border-foreground/10 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-[box-shadow,outline-color,border-color] duration-150 hover:border-foreground/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              gradient === value && "shadow-[0_0_0_2px_white,0_0_0_4px_rgba(0,0,0,0.18)]"
+            )}
+            type="button"
+            style={{ background: gradient }}
+            aria-label={
+              ariaLabelPrefix
+                ? `Use ${ariaLabelPrefix} gradient ${index + 1}`
+                : `Use gradient ${index + 1}`
+            }
+            onClick={() => {
+              onChange(gradient);
+              onCommit?.();
+            }}
+          />
+        ))}
+      </div>
+      <div className="grid gap-2 rounded-md bg-foreground/[0.03] p-2">
+        <div
+          className="h-8 rounded-md border border-foreground/10"
+          style={{ background: createGradientValue(gradientAngle, gradientStart, gradientEnd) }}
+          aria-hidden="true"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <Input
+            className="h-8 rounded-md bg-white px-2 font-mono text-xs uppercase"
+            aria-label="Gradient start"
+            value={gradientStart.replace("#", "")}
+            onChange={(event) =>
+              setGradientStart(`#${event.target.value.replace(/[^0-9a-f]/gi, "").slice(0, 6)}`)
+            }
+            onBlur={() => setGradientStart(expandHex(gradientStart))}
+          />
+          <Input
+            className="h-8 rounded-md bg-white px-2 font-mono text-xs uppercase"
+            aria-label="Gradient end"
+            value={gradientEnd.replace("#", "")}
+            onChange={(event) =>
+              setGradientEnd(`#${event.target.value.replace(/[^0-9a-f]/gi, "").slice(0, 6)}`)
+            }
+            onBlur={() => setGradientEnd(expandHex(gradientEnd))}
+          />
+        </div>
+        <div className="grid gap-1">
+          <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-foreground/40">
+            <span>Angle</span>
+            <span>{gradientAngle}deg</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={360}
+            value={gradientAngle}
+            aria-label="Gradient angle"
+            onChange={(event) => setGradientAngle(Number.parseInt(event.target.value, 10))}
+            className="h-2 w-full cursor-pointer appearance-none rounded-full bg-foreground/10 accent-foreground"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            onChange(createGradientValue(gradientAngle, gradientStart, gradientEnd));
+            onCommit?.();
+          }}
+        >
+          Apply gradient
+        </Button>
+      </div>
+    </section>
+  ) : null;
+
+  useEffect(() => {
+    setHexInput(normalizedHex.replace("#", ""));
+  }, [normalizedHex]);
+
+  function commitColor(nextHex: string, nextAlpha = parsedColor.alpha) {
+    onChange(formatColorValue(nextHex, nextAlpha));
+  }
+
+  function updateOpacity(event: ChangeEvent<HTMLInputElement>) {
+    const alpha = Number.parseInt(event.target.value, 10) / 100;
+    commitColor(normalizedHex, alpha);
+  }
+
+  function updateFromSpectrum(event: ReactPointerEvent<HTMLDivElement>) {
+    const rect = spectrumRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const saturation = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    const brightness = clamp(1 - (event.clientY - rect.top) / rect.height, 0, 1);
+    commitColor(hsvToHex({ ...hsv, s: saturation, v: brightness }));
+  }
+
+  function updateFromHue(event: ReactPointerEvent<HTMLDivElement>) {
+    const rect = hueRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const hue = Math.round(clamp((event.clientX - rect.left) / rect.width, 0, 1) * 360);
+    commitColor(hsvToHex({ ...hsv, h: hue === 360 ? 0 : hue }));
+  }
+
+  if (!includeGradients) {
+    return colorPanel;
+  }
+
+  return (
+    <Tabs defaultValue="color" className="gap-3">
+      <TabsList className="grid w-full grid-cols-2" aria-label="Color picker mode">
+        <TabsTrigger value="color">Color</TabsTrigger>
+        <TabsTrigger value="gradient">Gradient</TabsTrigger>
+      </TabsList>
+      <TabsContent value="color" className="mt-0">
+        {colorPanel}
+      </TabsContent>
+      <TabsContent value="gradient" className="mt-0">
+        {gradientPanel}
+      </TabsContent>
+    </Tabs>
   );
 }
 
