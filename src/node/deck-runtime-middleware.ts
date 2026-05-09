@@ -46,6 +46,11 @@ interface DeckRuntimeMiddlewareOptions {
   saveTargetDirs: string[];
 }
 
+export interface DeckRuntimeMiddleware {
+  handleDevRequest(request: IncomingMessage, response: ServerResponse, next: () => void): void;
+  handlePreviewRequest(request: IncomingMessage, response: ServerResponse, next: () => void): void;
+}
+
 export function createDeckRuntimeMiddlewarePlugin({
   runtimeDeckDir,
   previewDeckDir,
@@ -68,11 +73,11 @@ export function createDeckRuntimeMiddlewarePlugin({
   };
 }
 
-function createDeckRuntimeMiddleware({
+export function createDeckRuntimeMiddleware({
   runtimeDeckDir,
   previewDeckDir,
   saveTargetDirs,
-}: DeckRuntimeMiddlewareOptions) {
+}: DeckRuntimeMiddlewareOptions): DeckRuntimeMiddleware {
   let lastResetCompletedAt = 0;
   let deckOperationQueue: Promise<void> = Promise.resolve();
   let resetSnapshot: DeckFileSnapshot[] = [];

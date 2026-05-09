@@ -9,6 +9,30 @@ The project rule is simple: HTML stays the source of truth.
 
 ## Usage
 
+Run the published CLI with npm:
+
+```bash
+npx starry-slides path/to/deck
+npx starry-slides verify path/to/deck
+npx starry-slides view path/to/deck --all
+```
+
+Install the CLI globally:
+
+```bash
+npm install -g starry-slides
+starry-slides open path/to/deck
+```
+
+Rendered verification, preview, and PDF export use Playwright Chromium. On a
+fresh machine, install the browser runtime once:
+
+```bash
+npx playwright install chromium
+```
+
+## Development
+
 Install dependencies:
 
 ```bash
@@ -53,6 +77,21 @@ starry-slides add-skill
 ```
 
 `starry-slides [deck]` defaults to `starry-slides open [deck]`.
+
+## Publishing
+
+Before publishing:
+
+```bash
+npm view starry-slides name version --json
+pnpm lint
+pnpm build
+pnpm test:packaged-cli
+npm pack --dry-run --json
+```
+
+The package is published as `starry-slides` and exposes the `starry-slides`
+binary.
 
 ## Roadmap
 

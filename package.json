@@ -1,9 +1,23 @@
 {
-  "name": "@starrykit/slides",
-  "private": true,
+  "name": "starry-slides",
   "version": "0.1.0",
+  "description": "Local-first CLI and browser editor for HTML slide decks.",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "packageManager": "pnpm@10.33.2",
+  "homepage": "https://github.com/StarryKit/starry-slides#readme",
+  "bugs": {
+    "url": "https://github.com/StarryKit/starry-slides/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StarryKit/starry-slides.git"
+  },
+  "keywords": ["slides", "presentation", "html", "cli", "editor"],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
   "bin": {
     "starry-slides": "./dist/cli/index.js"
   },
@@ -38,6 +52,7 @@
     "verify": "pnpm lint && pnpm test && pnpm build && pnpm test:packaged-cli && pnpm test:e2e"
   },
   "dependencies": {
+    "@playwright/test": "^1.54.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.11",
@@ -52,7 +67,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@playwright/test": "^1.54.2",
     "@tailwindcss/cli": "^4.2.4",
     "@tailwindcss/vite": "^4.2.4",
     "@types/jsdom": "^21.1.7",

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { spawn } from "node:child_process";
 import { type VerifyResult, createVerifyResult, verifyDeck } from "../core/verify-deck";
 import { resolveDeckPath } from "../node/deck-source";
+import { startEditorServer } from "../node/editor-server";
 import { exportHtml } from "../node/html-export";
 import { openBrowser } from "../node/open-browser";
 import { exportPdf } from "../node/pdf-export";
@@ -295,32 +295,16 @@ async function runOpen(deckPath: string) {
     return;
   }
 
-  const child = spawn("vite", ["--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
-    env: {
-      ...process.env,
-      STARRY_SLIDES_DECK_DIR: deckPath,
-    },
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
-
-  child.on("exit", (code, signal) => {
-    if (signal) {
-      process.kill(process.pid, signal);
-      return;
-    }
-
-    process.exit(code ?? 0);
-  });
-
-  for (const signal of ["SIGINT", "SIGTERM"] as const) {
-    process.on(signal, () => {
-      child.kill(signal);
-    });
-  }
+  const server = await startEditorServer({ deckPath, port });
+  const closeServer = () => {
+    void server.close().finally(() => process.exit(0));
+  };
 
   console.error(`Opening Starry Slides at ${url}`);
+  console.error("Press Ctrl+C to stop the editor server.");
   setTimeout(() => openBrowser(url), 750);
+  process.on("SIGINT", closeServer);
+  process.on("SIGTERM", closeServer);
 }
 
 async function main() {
