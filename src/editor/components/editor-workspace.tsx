@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { EditableType, PdfExportSelection, SlideModel, StageRect } from "../../core";
 import type { BlockManipulationOverlay as BlockManipulationOverlayModel } from "../hooks/block-manipulation-types";
+import type { ImageCropOverlay as ImageCropOverlayModel } from "../hooks/use-image-crop";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
 import { EditorHeader } from "./editor-header";
 import type { SelectionCommandAvailability } from "./floating-toolbar";
@@ -32,6 +33,8 @@ interface EditorWorkspaceProps {
   isSelectedElementLocked: boolean;
   groupScopeOverlayPassive: boolean;
   isEditingText: boolean;
+  isCropMode: boolean;
+  cropOverlay: ImageCropOverlayModel | null;
   manipulationOverlay: BlockManipulationOverlayModel | null;
   attributeValues: {
     locked: string;
@@ -68,12 +71,17 @@ interface EditorWorkspaceProps {
     event: ReactMouseEvent<HTMLButtonElement>
   ) => void;
   onRotateHandleMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  onCropHandleMouseDown: (
+    corner: ResizeHandleCorner,
+    event: ReactMouseEvent<HTMLButtonElement>
+  ) => void;
   onSelectionOverlayDoubleClick: (event: ReactMouseEvent<HTMLDivElement>) => void;
   onBackgroundClick: () => void;
   onStyleChange: (propertyName: string, nextValue: string) => void;
   onStylePreview: (propertyName: string, nextValue: string | null) => void;
   onAttributeChange: (attributeName: string, nextValue: string) => void;
   onAlignToSlide: (action: string) => void;
+  onCropImage: () => void;
   onDistribute: (action: string) => void;
   onGroup: () => void;
   onLayerOrder: (action: string) => void;
@@ -103,6 +111,8 @@ function EditorWorkspace({
   isSelectedElementLocked,
   groupScopeOverlayPassive,
   isEditingText,
+  isCropMode,
+  cropOverlay,
   manipulationOverlay,
   attributeValues,
   iframeRef,
@@ -132,12 +142,14 @@ function EditorWorkspace({
   onStageMouseLeave,
   onResizeHandleMouseDown,
   onRotateHandleMouseDown,
+  onCropHandleMouseDown,
   onSelectionOverlayDoubleClick,
   onBackgroundClick,
   onStyleChange,
   onStylePreview,
   onAttributeChange,
   onAlignToSlide,
+  onCropImage,
   onDistribute,
   onGroup,
   onLayerOrder,
@@ -201,6 +213,8 @@ function EditorWorkspace({
                 isSelectedElementLocked={isSelectedElementLocked}
                 groupScopeOverlayPassive={groupScopeOverlayPassive}
                 isEditingText={isEditingText}
+                isCropMode={isCropMode}
+                cropOverlay={cropOverlay}
                 manipulationOverlay={manipulationOverlay}
                 iframeRef={iframeRef}
                 stageViewportRef={stageViewportRef}
@@ -215,12 +229,14 @@ function EditorWorkspace({
                 onStageMouseLeave={onStageMouseLeave}
                 onResizeHandleMouseDown={onResizeHandleMouseDown}
                 onRotateHandleMouseDown={onRotateHandleMouseDown}
+                onCropHandleMouseDown={onCropHandleMouseDown}
                 onSelectionOverlayDoubleClick={onSelectionOverlayDoubleClick}
                 onBackgroundClick={onBackgroundClick}
                 onStyleChange={onStyleChange}
                 onStylePreview={onStylePreview}
                 onAttributeChange={onAttributeChange}
                 onAlignToSlide={onAlignToSlide}
+                onCropImage={onCropImage}
                 onDistribute={onDistribute}
                 onGroup={onGroup}
                 onLayerOrder={onLayerOrder}
