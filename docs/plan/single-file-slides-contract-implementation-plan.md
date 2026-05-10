@@ -4,7 +4,7 @@ Historical note: this document is an implementation record for the migration
 away from the older manifest-plus-multi-file deck model. References below to
 `manifest.json`, slide files, or `sourceFile` describe the migration source
 state, not the current product contract. The current source of truth is the
-single-file `deck.html` contract in `docs/slides-contract.md`.
+single-file `deck.html` contract in `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md`.
 
 Status:
 
@@ -18,7 +18,7 @@ Goal:
 
 - Migrate Starry Slides from the current manifest-plus-multi-file deck format to
   the single-file `<slides>` / `<slide>` contract defined in
-  [slides-contract.md](../slides-contract.md).
+  [STARRY-SLIDES-CONTRACT.md](../../skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md).
 
 Planning principles:
 
@@ -35,7 +35,7 @@ Planning principles:
 
 Outcome:
 
-- `docs/slides-contract.md` is stable enough to guide implementation.
+- `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md` is stable enough to guide implementation.
 
 Tasks:
 
@@ -48,7 +48,7 @@ Tasks:
 
 Primary files:
 
-- `docs/slides-contract.md`
+- `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md`
 - `docs/development.md`
 - `docs/contributing.md`
 - `README.md`
@@ -240,7 +240,7 @@ These are the recommended implementation slices to track as separate issues or
 work items.
 
 1. Contract and docs cleanup
-   - Finish `docs/slides-contract.md`
+   - Finish `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md`
    - Remove old manifest-first documentation references
 
 2. Core deck-document types and serializer

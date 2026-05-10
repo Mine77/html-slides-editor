@@ -22,8 +22,8 @@ single-file.html
 ├── <slides>
 │   ├── <slide> ... </slide>
 │   └── <slide> ... </slide>
-├── <style>   runtime CSS, inline or load from a remote URL
-├── <script>   runtime JS, inline or load from a remote URL
+├── <runtime-style>   runtime CSS, inline or load from a remote URL
+├── <runtime-script>   runtime JS, inline or load from a remote URL
 └── assets     assets, inline BASE64 or load from a remote URL
 ```
 

@@ -43,7 +43,7 @@ The existing codebase already constrains how this work must land:
 This refactor has the following goals:
 
 1. replace the manifest-plus-multi-file deck contract with one HTML deck file
-2. make [slides-contract.md](../slides-contract.md)
+2. make [STARRY-SLIDES-CONTRACT.md](../../skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md)
    the only normative source for the new `<slides>` and `<slide>` contract
 3. remove the contract requirement for `manifest.json`,
    `data-slide-root="true"`, and per-element `data-editable` markers
@@ -60,7 +60,7 @@ This refactor has the following goals:
 Adopt a single-file HTML deck contract built around custom tags.
 
 The contract definition itself must live in
-[slides-contract.md](../slides-contract.md).
+[STARRY-SLIDES-CONTRACT.md](../../skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md).
 This ADR does not duplicate the full tag schema. Instead, implementation must
 rewrite that contract document so it becomes the source of truth for:
 
@@ -92,14 +92,14 @@ After implementation:
 5. the loaded runtime is responsible for deciding how Presenter mode and Editor
    mode are bootstrapped for a given product context
 6. runtime loading and asset handling are represented by the contract
-   defined in `docs/slides-contract.md`
+   defined in `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md`
 
 Implementation planning for this decision lives in
 [single-file-slides-contract-implementation-plan.md](../plan/single-file-slides-contract-implementation-plan.md).
 
 ## Verification
 
-- [x] `docs/slides-contract.md` defines the new single-file contract through
+- [x] `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md` defines the new single-file contract through
       `<slides>` and `<slide>` and no longer describes `manifest.json` as part
       of the primary deck format
 - [x] a valid deck can be loaded from one HTML file containing `<slides>` and
@@ -117,7 +117,7 @@ Implementation planning for this decision lives in
 - [x] asset sources continue to work through ordinary HTML element attributes
       such as `src`
 - [x] runtime loading and asset handling respect the modes documented in
-      `docs/slides-contract.md`
+      `skills/starry-slides/reference/STARRY-SLIDES-CONTRACT.md`
 
 ## Consequences
 
