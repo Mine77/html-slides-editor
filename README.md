@@ -89,7 +89,7 @@ Detailed planning lives in [docs/roadmap/README.md](./docs/roadmap/README.md).
   and implementation boundaries.
 - [Contributing guide](./docs/contributing.md): expectations for changes,
   verification, and review.
-- [Slide Contract guide](./docs/slide-contract.md): deck package shape and
+- [Slide Contract guide](./docs/slides-contract.md): deck package shape and
   required HTML attributes.
 - [Repository context](./CONTEXT.md): repo rules, boundaries, testing
   expectations, and shared terminology.

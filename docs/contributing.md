@@ -35,6 +35,6 @@ changes, include rendered browser validation when practical.
 ## Agent-Facing Work
 
 Contract expectations live in
-[docs/slide-contract.md](/Users/haichao/.codex/worktrees/d0b5/starry-slides/docs/slide-contract.md).
+[docs/slides-contract.md](/Users/haichao/.codex/worktrees/4582/starry-slides/docs/slides-contract.md).
 Agents should use the local `starry-slides` CLI for validation, previewing,
 and opening decks instead of owning a separate editor runtime.
