@@ -1,8 +1,6 @@
 ![](assets/readme-banner.png)
 # Starry Slides
 
-## Overview
-
 Starry Slides is an agentic editor for slides and presentations using HTML as the source file.
 
 The project mainly contains 3 parts:

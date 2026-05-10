@@ -52,9 +52,12 @@ and default sizing for child slides.
 `<slide>` represents one slide page. It carries slide-level metadata, layout
 configuration, and the authored slide content itself.
 
-All descendants inside `<slide>` are editable by default. Editing behavior is
-determined by the editor runtime based on element type and context, not by
-contract-level `data-editable` markers.
+Editing support is determined by a contract-level tag whitelist. Elements in the
+supported tag list are currently editable. Elements outside the list are
+currently treated as non-editable authored content.
+
+`data-editable` is not part of this contract and must not appear in authored
+deck HTML.
 
 | Property       | Required | Type              | Default | Description                                                           |
 | -------------- | -------- | ----------------- | ------- | --------------------------------------------------------------------- |
@@ -63,6 +66,41 @@ contract-level `data-editable` markers.
 | `slide-hidden` | no       | `true` or `false` | `false` | Visibility flag for runtimes that support hidden slides.              |
 | `archetype`    | no       | string            | empty   | Optional archetype hint such as `title`, `comparison`, or `timeline`. |
 | `notes`        | no       | string            | empty   | Optional presenter or authoring notes.                                |
+
+## Editable Tags
+
+These tags are currently supported as editable elements inside `<slide>`.
+
+### Text Editables
+
+`a`, `b`, `blockquote`, `caption`, `cite`, `code`, `dd`, `dt`, `em`,
+`figcaption`, `h1`, `h2`, `h3`, `h4`, `h5`, `h6`, `i`, `label`, `li`, `mark`,
+`p`, `pre`, `small`, `span`, `strong`, `td`, `th`, `time`
+
+### Block Editables
+
+`article`, `aside`, `button`, `details`, `dialog`, `div`, `dl`, `figure`,
+`footer`, `form`, `header`, `main`, `nav`, `ol`, `section`, `summary`, `table`,
+`tbody`, `tfoot`, `thead`, `tr`, `ul`
+
+### Image Editables
+
+`canvas`, `img`, `svg`, `video`
+
+## Non-Editable Tags
+
+Any tag not listed in the editable tag whitelist is currently non-editable.
+
+This includes:
+
+- custom elements not explicitly added to the whitelist
+- structural wrapper elements outside the whitelist
+- metadata/runtime tags such as `<script>`, `<style>`, `<link>`, and `<meta>`
+
+## Group Semantics
+
+`data-group="true"` is runtime metadata for block grouping and is only valid on
+supported block-editable tags.
 
 ## Runtime
 
