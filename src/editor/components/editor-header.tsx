@@ -19,7 +19,6 @@ import { cn } from "../lib/utils";
 export interface PdfExportSlideOption {
   id: string;
   title: string;
-  file?: string;
 }
 
 interface EditorHeaderProps {
@@ -244,11 +243,11 @@ function PdfExportDialog({
   onClose: () => void;
   onExport: (selection: PdfExportSelection) => void;
 }) {
-  const exportableSlides = slides.filter((slide) => slide.file);
+  const exportableSlides = slides;
   const [scope, setScope] = useState<PdfScope>("all");
-  const [selectedSlideFiles, setSelectedSlideFiles] = useState<string[]>([]);
-  const selectedSet = new Set(selectedSlideFiles);
-  const selectedCount = selectedSlideFiles.length;
+  const [selectedSlideIds, setSelectedSlideIds] = useState<string[]>([]);
+  const selectedSet = new Set(selectedSlideIds);
+  const selectedCount = selectedSlideIds.length;
   const canExport = scope === "all" || (scope === "selected" && selectedCount > 0);
 
   useEffect(() => {
@@ -262,20 +261,20 @@ function PdfExportDialog({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const toggleSelectedSlide = (file: string, checked: boolean) => {
-    setSelectedSlideFiles((current) => {
+  const toggleSelectedSlide = (slideId: string, checked: boolean) => {
+    setSelectedSlideIds((current) => {
       if (checked) {
-        return current.includes(file) ? current : [...current, file];
+        return current.includes(slideId) ? current : [...current, slideId];
       }
 
-      return current.filter((item) => item !== file);
+      return current.filter((item) => item !== slideId);
     });
   };
 
   const submitExport = () => {
     if (scope === "selected") {
-      if (selectedSlideFiles.length > 0) {
-        onExport({ mode: "slides", slideFiles: selectedSlideFiles });
+      if (selectedSlideIds.length > 0) {
+        onExport({ mode: "slides", slideIds: selectedSlideIds });
       }
       return;
     }
@@ -353,18 +352,13 @@ function PdfExportDialog({
                 data-testid="pdf-slide-picker"
               >
                 {exportableSlides.map((slide, index) => {
-                  const file = slide.file;
-                  if (!file) {
-                    return null;
-                  }
-
                   return (
                     <label
                       key={slide.id}
                       data-testid="pdf-slide-option"
                       className={cn(
                         "grid cursor-pointer grid-cols-[104px_1fr] gap-2 rounded-md border border-foreground/[0.08] bg-white p-2 text-[12px] transition-colors hover:border-foreground/20 hover:bg-foreground/[0.025]",
-                        selectedSet.has(file) && "border-foreground/35 bg-foreground/[0.035]"
+                        selectedSet.has(slide.id) && "border-foreground/35 bg-foreground/[0.035]"
                       )}
                     >
                       <div className="relative aspect-[16/9] overflow-hidden rounded border border-foreground/[0.08] bg-white">
@@ -385,8 +379,10 @@ function PdfExportDialog({
                           <input
                             type="checkbox"
                             aria-label={`Select slide ${index + 1}`}
-                            checked={selectedSet.has(file)}
-                            onChange={(event) => toggleSelectedSlide(file, event.target.checked)}
+                            checked={selectedSet.has(slide.id)}
+                            onChange={(event) =>
+                              toggleSelectedSlide(slide.id, event.target.checked)
+                            }
                             className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-foreground"
                           />
                           <div className="min-w-0">

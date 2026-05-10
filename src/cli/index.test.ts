@@ -20,7 +20,7 @@ function createDeck() {
 }
 
 function writeValidDeck(deck = createDeck()) {
-  writeDeck(deck, [{ file: "slides/01.html", title: "One" }]);
+  writeDeck(deck, [{ id: "slides-01-html", title: "One" }]);
   return deck;
 }
 
@@ -88,7 +88,7 @@ describe("source starry-slides cli", () => {
 
   test("failed verify exits one and writes parseable JSON to stdout", () => {
     const deck = createDeck();
-    fs.writeFileSync(path.join(deck, "manifest.json"), JSON.stringify({ slides: [] }));
+    fs.writeFileSync(path.join(deck, "deck.html"), "<!DOCTYPE html><html><body></body></html>");
 
     const result = runCli(["verify", deck]);
 
@@ -97,7 +97,7 @@ describe("source starry-slides cli", () => {
     const parsed = parseJson(result.stdout);
     expect(parsed.ok).toBe(false);
     expect((parsed.issues as Array<{ code: string }>).map((issue) => issue.code)).toContain(
-      "structure.empty-manifest"
+      "structure.invalid-deck"
     );
   });
 
@@ -114,24 +114,24 @@ describe("source starry-slides cli", () => {
   test("view slide renders exactly one slide and writes diagnostics only to stderr", () => {
     const deck = writeValidDeck();
 
-    const result = runCli(["view", deck, "--slide", "slides/01.html"]);
+    const result = runCli(["view", deck, "--slide", "slides-01-html"]);
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
     const parsed = parseJson(result.stdout);
     expect(parsed.mode).toBe("single");
     expect(parsed.slides).toHaveLength(1);
-    expect((parsed.slides as Array<{ slideFile: string; path: string }>)[0].slideFile).toBe(
-      "slides/01.html"
+    expect((parsed.slides as Array<{ slideId: string; path: string }>)[0].slideId).toBe(
+      "slides-01-html"
     );
     expect(fs.existsSync((parsed.slides as Array<{ path: string }>)[0].path)).toBe(true);
   });
 
-  test("view all renders every manifest slide", () => {
+  test("view all renders every slide", () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/01.html", title: "One" },
-      { file: "slides/02.html", title: "Two" },
+      { id: "slides-01-html", title: "One" },
+      { id: "slides-02-html", title: "Two" },
     ]);
 
     const result = runCli(["view", deck, "--all"]);
@@ -140,9 +140,10 @@ describe("source starry-slides cli", () => {
     expect(result.stderr).toBe("");
     const parsed = parseJson(result.stdout);
     expect(parsed.mode).toBe("all");
-    expect((parsed.slides as Array<{ slideFile: string }>).map((slide) => slide.slideFile)).toEqual(
-      ["slides/01.html", "slides/02.html"]
-    );
+    expect((parsed.slides as Array<{ slideId: string }>).map((slide) => slide.slideId)).toEqual([
+      "slides-01-html",
+      "slides-02-html",
+    ]);
   });
 
   test("view out-dir writes only to the explicit output directory and clears stale files", () => {
@@ -164,19 +165,19 @@ describe("source starry-slides cli", () => {
   test("view slide combines exact selection with explicit out-dir", () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/01.html", title: "One" },
-      { file: "slides/02.html", title: "Two" },
+      { id: "slides-01-html", title: "One" },
+      { id: "slides-02-html", title: "Two" },
     ]);
     const outDir = path.join(deck, "single-preview");
 
-    const result = runCli(["view", deck, "--slide", "slides/02.html", "--out-dir", outDir]);
+    const result = runCli(["view", deck, "--slide", "slides-02-html", "--out-dir", outDir]);
 
     expect(result.status).toBe(0);
     const parsed = parseJson(result.stdout);
     expect(parsed.outputDir).toBe(outDir);
-    expect(parsed.slides as Array<{ slideFile: string; path: string }>).toHaveLength(1);
-    expect((parsed.slides as Array<{ slideFile: string; path: string }>)[0].slideFile).toBe(
-      "slides/02.html"
+    expect(parsed.slides as Array<{ slideId: string; path: string }>).toHaveLength(1);
+    expect((parsed.slides as Array<{ slideId: string; path: string }>)[0].slideId).toBe(
+      "slides-02-html"
     );
   });
 
@@ -187,7 +188,7 @@ describe("source starry-slides cli", () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toBe("");
-    expect(result.stderr).toContain("--slide must match a manifest slide file exactly: 1");
+    expect(result.stderr).toContain("--slide must match a slide id exactly: 1");
     expect(fs.existsSync(path.join(deck, ".starry-slides", "view"))).toBe(false);
   });
 
@@ -195,7 +196,7 @@ describe("source starry-slides cli", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
-        file: "slides/01.html",
+        id: "slide-1",
         html: slideHtml(textElement("text-1", "Hello"), "overflow: scroll"),
       },
     ]);
@@ -216,13 +217,13 @@ describe("source starry-slides cli", () => {
     const deck = writeValidDeck();
 
     expect(runCli(["view", deck]).stderr).toContain(
-      "view requires either --slide <manifest-file> or --all"
+      "view requires either --slide <slide-id> or --all"
     );
     expect(runCli(["view", deck, "--static", "--all"]).stderr).toContain(
       "view always runs Static Verify; do not pass --static"
     );
     expect(runCli(["view", deck, "--slide"]).stderr).toContain(
-      "option '--slide <manifest-file>' argument missing"
+      "option '--slide <slide-id>' argument missing"
     );
     expect(runCli(["view", deck, "--all", "--out-dir"]).stderr).toContain(
       "option '--out-dir <directory>' argument missing"
@@ -232,12 +233,12 @@ describe("source starry-slides cli", () => {
   test("view slide plus all follows last parser option wins semantics", () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/01.html", title: "One" },
-      { file: "slides/02.html", title: "Two" },
+      { id: "slides-01-html", title: "One" },
+      { id: "slides-02-html", title: "Two" },
     ]);
 
-    const allResult = runCli(["view", deck, "--slide", "slides/01.html", "--all"]);
-    const slideResult = runCli(["view", deck, "--all", "--slide", "slides/01.html"]);
+    const allResult = runCli(["view", deck, "--slide", "slides-01-html", "--all"]);
+    const slideResult = runCli(["view", deck, "--all", "--slide", "slides-01-html"]);
 
     expect(parseJson(allResult.stdout).mode).toBe("all");
     expect(parseJson(slideResult.stdout).mode).toBe("single");
@@ -247,7 +248,7 @@ describe("source starry-slides cli", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
-        file: "slides/01.html",
+        id: "slide-1",
         html: `<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root">${blockElement(
           "block-1",
           "Outside",
@@ -272,7 +273,7 @@ describe("source starry-slides cli", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
-        file: "slides/01.html",
+        id: "slide-1",
         html: `<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root">${blockElement(
           "block-1",
           "Outside",

@@ -11,14 +11,14 @@ const decks: Array<{ cleanup: () => void }> = [];
 function createDeck() {
   const deck = createTempDeck("starry-slides-packaged-");
   decks.push(deck);
-  writeDeck(deck.root, [{ file: "slides/01.html", title: "One" }]);
+  writeDeck(deck.root, [{ id: "slides-01-html", title: "One" }]);
   return deck.root;
 }
 
 function createBrokenDeck() {
   const deck = createTempDeck("starry-slides-packaged-broken-");
   decks.push(deck);
-  fs.writeFileSync(path.join(deck.root, "manifest.json"), JSON.stringify({ slides: [] }));
+  fs.mkdirSync(deck.root, { recursive: true });
   return deck.root;
 }
 
@@ -62,7 +62,7 @@ describe("packaged starry-slides CLI", () => {
     const deck = createDeck();
     const outDir = path.join(deck, "out");
 
-    const result = runBuiltCli(["view", deck, "--slide", "slides/01.html", "--out-dir", outDir]);
+    const result = runBuiltCli(["view", deck, "--slide", "slides-01-html", "--out-dir", outDir]);
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");

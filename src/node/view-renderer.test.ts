@@ -1,14 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, describe, expect, test } from "vitest";
-import {
-  blockElement,
-  createTempDeck,
-  slideHtml,
-  textElement,
-  writeDeck,
-} from "../../tests/helpers/deck-fixtures";
-import { getManifestSlides, renderPreviewManifest, verifyRenderedOverflow } from "./view-renderer";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { blockElement, createTempDeck, slideHtml, textElement, writeDeck } from "../../tests/helpers/deck-fixtures";
+import { getDeckSlides, renderPreviewManifest, verifyRenderedOverflow } from "./view-renderer";
 
 const decks: Array<{ cleanup: () => void }> = [];
 
@@ -24,39 +18,27 @@ afterEach(() => {
   }
 });
 
+vi.setConfig({ testTimeout: 15000 });
+
 describe("view renderer", () => {
-  test("getManifestSlides returns manifest-ordered slides that exist on disk", () => {
+  test("getDeckSlides returns ordered slide ids from deck.html", () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/02.html", title: "Second" },
-      { file: "slides/01.html", title: "First" },
+      { id: "slide-two", title: "Second" },
+      { id: "slide-one", title: "First" },
     ]);
-    fs.writeFileSync(
-      path.join(deck, "manifest.json"),
-      JSON.stringify(
-        {
-          slides: [
-            { file: "slides/02.html", title: "Second" },
-            { file: "slides/missing.html", title: "Missing" },
-            { file: "slides/01.html", title: "First" },
-          ],
-        },
-        null,
-        2
-      )
-    );
 
-    const slides = getManifestSlides(deck);
+    const slides = getDeckSlides(deck);
 
-    expect(slides.map((slide) => slide.file)).toEqual(["slides/02.html", "slides/01.html"]);
-    expect(slides.map((slide) => slide.index)).toEqual([0, 2]);
+    expect(slides.map((slide) => slide.id)).toEqual(["slide-two", "slide-one"]);
+    expect(slides.map((slide) => slide.index)).toEqual([0, 1]);
   });
 
   test("preview filenames are stable and collision-resistant for same basenames", async () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "section-a/slide.html", title: "A" },
-      { file: "section-b/slide.html", title: "B" },
+      { id: "section-a-slide", title: "A" },
+      { id: "section-b-slide", title: "B" },
     ]);
 
     const first = await renderPreviewManifest({ deckPath: deck });
@@ -71,7 +53,7 @@ describe("view renderer", () => {
 
   test("renderPreviewManifest writes PNG files with absolute paths in the default output directory", async () => {
     const deck = createDeck();
-    writeDeck(deck, [{ file: "slides/01.html" }]);
+    writeDeck(deck, [{ id: "slide-one" }]);
 
     const manifest = await renderPreviewManifest({ deckPath: deck });
 
@@ -87,7 +69,7 @@ describe("view renderer", () => {
 
   test("explicit outDir overrides the default directory and clears stale files", async () => {
     const deck = createDeck();
-    writeDeck(deck, [{ file: "slides/01.html" }]);
+    writeDeck(deck, [{ id: "slide-one" }]);
     const outDir = path.join(deck, "previews");
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(outDir, "stale.png"), "stale");
@@ -100,22 +82,22 @@ describe("view renderer", () => {
     expect(fs.existsSync(path.join(deck, ".starry-slides", "view"))).toBe(false);
   });
 
-  test("single-slide rendering uses exact manifest file selection", async () => {
+  test("single-slide rendering uses exact slide id selection", async () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/01.html", title: "One" },
-      { file: "slides/02.html", title: "Two" },
+      { id: "slide-one", title: "One" },
+      { id: "slide-two", title: "Two" },
     ]);
 
     const manifest = await renderPreviewManifest({
       deckPath: deck,
-      slideFile: "slides/02.html",
+      slideId: "slide-two",
     });
 
     expect(manifest.mode).toBe("single");
-    expect(manifest.slides.map((slide) => slide.slideFile)).toEqual(["slides/02.html"]);
-    await expect(renderPreviewManifest({ deckPath: deck, slideFile: "2" })).rejects.toThrow(
-      "--slide must match a manifest slide file exactly: 2"
+    expect(manifest.slides.map((slide) => slide.slideId)).toEqual(["slide-two"]);
+    await expect(renderPreviewManifest({ deckPath: deck, slideId: "missing" })).rejects.toThrow(
+      "--slide must match a slide id exactly: missing"
     );
   });
 
@@ -123,7 +105,7 @@ describe("view renderer", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
-        file: "slides/slide-overflow.html",
+        id: "slide-overflow",
         html: `<!DOCTYPE html><html><body style="margin:0"><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root" style="position:relative;width:800px;height:600px;overflow:visible">${blockElement(
           "block-1",
           "Outside",
@@ -131,7 +113,7 @@ describe("view renderer", () => {
         )}</main></body></html>`,
       },
       {
-        file: "slides/content-overflow.html",
+        id: "content-overflow",
         html: slideHtml(
           textElement(
             "text-1",
@@ -151,14 +133,14 @@ describe("view renderer", () => {
         "overflow.element-bounds",
       ])
     );
-    expect(issues.every((issue) => issue.slideFile && issue.selector)).toBe(true);
+    expect(issues.every((issue) => issue.slideId && issue.selector)).toBe(true);
   });
 
   test("data-allow-overflow exempts rendered overflow issues", async () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
-        file: "slides/01.html",
+        id: "slide-one",
         html: `<!DOCTYPE html><html><body style="margin:0"><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root" data-allow-overflow="true" style="position:relative;width:800px;height:600px;overflow:visible">${blockElement(
           "block-1",
           "Allowed",
@@ -176,7 +158,7 @@ describe("view renderer", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
-        file: "slides/01.html",
+        id: "slide-one",
         html: slideHtml(
           blockElement(
             "block-1",

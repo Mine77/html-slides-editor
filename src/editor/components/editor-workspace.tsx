@@ -176,7 +176,6 @@ function EditorWorkspace({
             pdfSlides={slides.map((slide) => ({
               id: slide.id,
               title: slide.title,
-              file: slide.sourceFile,
             }))}
             pdfThumbnails={thumbnails}
             onExportPdf={onExportPdf}

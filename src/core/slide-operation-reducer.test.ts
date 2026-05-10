@@ -50,7 +50,7 @@ describe("slide operations", () => {
     );
   });
 
-  test("applySlideOperation preserves generated-deck source identity", () => {
+  test("applySlideOperation preserves hidden state while reparsing slide content", () => {
     const originalSlide = {
       ...parseSlide(
         `<!DOCTYPE html>
@@ -58,12 +58,12 @@ describe("slide operations", () => {
   <body>
     <div class="slide-container" data-slide-root="true">
       <h1 data-editable="text">Before</h1>
-    </div>
+        </div>
   </body>
 </html>`,
         "slide-a"
       ),
-      sourceFile: "slide-a.html",
+      hidden: true,
     };
 
     const updatedSlide = applySlideOperation(originalSlide, {
@@ -75,7 +75,7 @@ describe("slide operations", () => {
       timestamp: 1,
     });
 
-    expect(updatedSlide.sourceFile).toBe("slide-a.html");
+    expect(updatedSlide.hidden).toBe(true);
   });
 
   test("invertSlideOperation reverses text, style, and layout operations", () => {

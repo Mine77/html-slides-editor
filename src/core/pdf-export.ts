@@ -1,22 +1,26 @@
-import type { SlideDeckManifestEntry } from "./slide-contract";
-
 export type PdfExportSelection =
   | { mode?: "all" }
-  | { mode: "slide"; slideFile?: string }
-  | { mode: "slides"; slideFiles?: string[] };
+  | { mode: "slide"; slideId?: string }
+  | { mode: "slides"; slideIds?: string[] };
+
+export interface PdfExportSlideEntry {
+  id: string;
+  title?: string;
+  hidden?: boolean;
+}
 
 export type ResolvedPdfExportMode = "all" | "single" | "slides";
 
 export interface ResolvedPdfExportSelection {
   mode: ResolvedPdfExportMode;
-  slides: SlideDeckManifestEntry[];
+  slides: PdfExportSlideEntry[];
 }
 
 export function planPdfExport({
   slides,
   selection,
 }: {
-  slides: SlideDeckManifestEntry[];
+  slides: PdfExportSlideEntry[];
   selection?: PdfExportSelection;
 }): ResolvedPdfExportSelection {
   const resolvedSelection = selection ?? { mode: "all" };
@@ -27,50 +31,50 @@ export function planPdfExport({
   }
 
   if (mode === "slide") {
-    const slideFile = "slideFile" in resolvedSelection ? resolvedSelection.slideFile?.trim() : "";
-    if (!slideFile) {
-      throw new Error("--slide requires a manifest slide file value");
+    const slideId = "slideId" in resolvedSelection ? resolvedSelection.slideId?.trim() : "";
+    if (!slideId) {
+      throw new Error("--slide requires a slide id value");
     }
 
-    const slide = findSlide(slides, slideFile);
+    const slide = findSlide(slides, slideId);
     if (!slide) {
-      throw new Error(`--slide must match a manifest slide file exactly: ${slideFile}`);
+      throw new Error(`--slide must match a slide id exactly: ${slideId}`);
     }
 
     return { mode: "single", slides: [slide] };
   }
 
-  const slideFiles = "slideFiles" in resolvedSelection ? (resolvedSelection.slideFiles ?? []) : [];
-  const requestedFiles = slideFiles.map((file) => file.trim()).filter(Boolean);
-  if (requestedFiles.length === 0) {
-    throw new Error("--slides requires at least one manifest slide file value");
+  const slideIds = "slideIds" in resolvedSelection ? (resolvedSelection.slideIds ?? []) : [];
+  const requestedIds = slideIds.map((id) => id.trim()).filter(Boolean);
+  if (requestedIds.length === 0) {
+    throw new Error("--slides requires at least one slide id value");
   }
 
-  const selectedSlides: SlideDeckManifestEntry[] = [];
-  const missingFiles: string[] = [];
-  for (const slideFile of requestedFiles) {
-    const slide = findSlide(slides, slideFile);
+  const selectedSlides: PdfExportSlideEntry[] = [];
+  const missingIds: string[] = [];
+  for (const slideId of requestedIds) {
+    const slide = findSlide(slides, slideId);
     if (!slide) {
-      missingFiles.push(slideFile);
+      missingIds.push(slideId);
       continue;
     }
     selectedSlides.push(slide);
   }
 
-  if (missingFiles.length > 0) {
-    throw new Error(`--slides must match manifest slide files exactly: ${missingFiles.join(", ")}`);
+  if (missingIds.length > 0) {
+    throw new Error(`--slides must match slide ids exactly: ${missingIds.join(", ")}`);
   }
 
   return { mode: "slides", slides: selectedSlides };
 }
 
 export function planPdfExportSlides(
-  slides: SlideDeckManifestEntry[],
+  slides: PdfExportSlideEntry[],
   selection?: PdfExportSelection
-): SlideDeckManifestEntry[] {
+): PdfExportSlideEntry[] {
   return planPdfExport({ slides, selection }).slides;
 }
 
-function findSlide(slides: SlideDeckManifestEntry[], slideFile: string) {
-  return slides.find((slide) => slide.file === slideFile);
+function findSlide(slides: PdfExportSlideEntry[], slideId: string) {
+  return slides.find((slide) => slide.id === slideId);
 }

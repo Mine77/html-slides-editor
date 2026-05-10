@@ -1,7 +1,12 @@
 # ADR-0014: Adopt CLI and core verification test contract
 
-- Status: proposed
+- Status: implemented-reference
 - Date: 2026-05-06
+
+Historical note: this ADR predates the single-file `deck.html` contract adopted
+in ADR-0026. References to manifests or slide files below are retained only as
+implementation-history context; the current product contract uses `deck.html`
+and exact slide ids.
 
 ## Context
 
@@ -54,10 +59,10 @@ failure path, stdout/stderr behavior, and filesystem or process side effects.
 | `starry-slides open [deck]` | Runs Complete Verify before starting Vite. On verify failure, writes a Verify Result JSON to stdout, exits non-zero, and does not spawn Vite. On verify success, starts the editor server with `STARRY_SLIDES_DECK_DIR` set to the resolved deck path, writes human-readable startup information to stderr, and does not write agent JSON to stdout. |
 | `starry-slides verify [deck]` | Runs Complete Verify, writes a Verify Result JSON to stdout, exits `0` when `ok: true`, exits `1` when `ok: false`, includes rendered overflow checks, and reports structural/static/rendered issues in one `issues` array. |
 | `starry-slides verify [deck] --static` | Runs Static Verify only, writes a Verify Result JSON to stdout, exits according to `ok`, and excludes rendered overflow checks. Option order before or after `[deck]` should be covered if the parser supports it. |
-| `starry-slides view [deck] --slide <manifest-file>` | Runs Static Verify first, requires an exact manifest `file` value, renders exactly one PNG, writes a Preview Manifest JSON to stdout, and writes diagnostics only to stderr. |
-| `starry-slides view [deck] --all` | Runs Static Verify first, renders every manifest slide, writes one Preview Manifest JSON to stdout, and produces one PNG per manifest slide. |
+| `starry-slides view [deck] --slide <slide-id>` | Runs Static Verify first, requires an exact slide `id` value, renders exactly one PNG, writes a Preview Manifest JSON to stdout, and writes diagnostics only to stderr. |
+| `starry-slides view [deck] --all` | Runs Static Verify first, renders every slide, writes one Preview Manifest JSON to stdout, and produces one PNG per slide. |
 | `starry-slides view [deck] --all --out-dir <directory>` | Overrides the default output directory, clears stale files in that directory, writes all previews there, and does not write to `<deck>/.starry-slides/view/`. |
-| `starry-slides view [deck] --slide <manifest-file> --out-dir <directory>` | Combines exact single-slide selection with explicit output directory behavior. |
+| `starry-slides view [deck] --slide <slide-id> --out-dir <directory>` | Combines exact single-slide selection with explicit output directory behavior. |
 | `starry-slides add-skill` | Preserves the current reserved/stub behavior until a later ADR defines installation semantics. The current expected exit code and stderr text must be asserted so accidental behavior changes are visible. |
 | `starry-slides help`, `starry-slides --help`, `starry-slides -h` | Print usage text to stdout and exit `0`; usage must list every supported command shape and option. |
 
@@ -70,7 +75,7 @@ Invalid command and option behavior must also be covered:
   internally
 - conflicting `view --slide ... --all` behavior is explicitly tested and
   documented according to the parser's chosen semantics
-- missing deck, invalid manifest, missing slide, and rendered overflow failures
+- missing deck, invalid `deck.html`, empty deck, and rendered overflow failures
   are represented as structured JSON when the command's contract is JSON stdout
 
 ### Test layers
@@ -83,11 +88,9 @@ Core tests belong near `src/core/verify-deck.test.ts` or equivalent files under
 They must cover:
 
 - missing deck path returns `structure.missing-deck`
-- missing `manifest.json` returns `structure.missing-manifest`
-- invalid JSON manifest returns `structure.invalid-manifest`
-- empty manifest returns `structure.empty-manifest`
-- missing slide file returns `structure.missing-slide`
-- manifest slide path escaping the deck returns `structure.slide-escape`
+- missing `deck.html` returns `structure.missing-deck`
+- invalid deck HTML returns `structure.invalid-deck`
+- empty deck returns `structure.empty-deck`
 - missing slide root returns `structure.missing-root`
 - multiple slide roots returns `structure.multiple-roots`
 - invalid `data-editable` values return `structure.invalid-editable`
@@ -115,7 +118,7 @@ need to exercise preview rendering or rendered overflow behavior directly.
 
 They must cover:
 
-- `getManifestSlides` returns manifest-ordered slides that exist on disk
+- `getDeckSlides` returns deck-ordered slides from `deck.html`
 - preview filenames are stable and collision-resistant for same basenames in
   different directories
 - `renderPreviewManifest` writes PNG files and returns absolute `path` values
@@ -123,7 +126,7 @@ They must cover:
 - explicit `outDir` overrides the default output directory
 - each view run clears stale files in the chosen output directory
 - rendered overflow emits `overflow.slide`, `overflow.element-content`, and
-  `overflow.element-bounds` with slide file and selector details
+  `overflow.element-bounds` with slide id and selector details
 - `data-allow-overflow="true"` exempts rendered overflow issues
 - decorative effects such as shadows or blur are not treated as overflow
 
@@ -144,8 +147,8 @@ They must cover:
 - successful verify exits `0` and writes parseable JSON to stdout
 - failed verify exits `1` and writes parseable JSON to stdout
 - human-readable diagnostics and errors go to stderr
-- `view [deck] --slide <manifest-file>` renders exactly one slide
-- `view [deck] --all` renders every manifest slide
+- `view [deck] --slide <slide-id>` renders exactly one slide
+- `view [deck] --all` renders every slide
 - `view --out-dir <directory>` writes only to the explicit output directory
 - `view` clears stale preview files before writing new previews
 - `view` refuses non-exact `--slide` values such as indexes, titles, or slugs
@@ -187,7 +190,7 @@ They must cover:
 
 - the built CLI starts without TypeScript runtime support
 - `node dist/cli/index.js verify <fixture>` writes parseable JSON stdout
-- `node dist/cli/index.js view <fixture> --slide <file> --out-dir <dir>` writes
+- `node dist/cli/index.js view <fixture> --slide <slide-id> --out-dir <dir>` writes
   preview PNG files and a parseable Preview Manifest
 - `node dist/cli/index.js verify <broken-fixture>` exits `1`
 - `node dist/cli/index.js help` prints usage text
@@ -214,8 +217,8 @@ Use shared fixture helpers for:
 
 - a minimal valid deck
 - a multi-slide valid deck
-- a deck with missing manifest
-- a deck with invalid manifest JSON
+- a deck with missing `deck.html`
+- a deck with invalid deck HTML
 - a deck with missing slide root
 - a deck with static overflow
 - a deck with rendered bounds overflow

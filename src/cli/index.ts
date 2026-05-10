@@ -10,7 +10,9 @@ function createProgram() {
 
   program
     .name("starry-slides")
-    .description("Local-first CLI for verifying, previewing, and opening HTML slide decks.")
+    .description(
+      "CLI for Starry Slides, an agentic editor for HTML-first slides and presentations. Use this CLI to open, view, and verify your slides directly from the command line."
+    )
     .helpCommand("help [command]")
     .showHelpAfterError()
     .allowExcessArguments(false)

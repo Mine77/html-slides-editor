@@ -2,22 +2,27 @@ import { describe, expect, test } from "vitest";
 import {
   createGroupCreateOperation,
   createGroupUngroupOperation,
-  ensureEditableSelectors,
 } from "./index";
+
+function createSlideHtml(content: string) {
+  return `<!DOCTYPE html>
+<html lang="en">
+  <body>
+    <main data-slide-root="true" data-slide-width="1920" data-slide-height="1080" data-editor-id="slide-root">
+      ${content}
+    </main>
+  </body>
+</html>`;
+}
 
 describe("group slide operations", () => {
   test("group create flattens selected groups and generates a new group container", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 10px; top: 20px; width: 300px; height: 200px;">
         <p data-editable="text" data-editor-id="text-1" style="left: 15px; top: 10px; width: 120px; height: 40px;">Alpha</p>
       </div>
       <div data-editable="block" data-editor-id="block-2" style="left: 400px; top: 60px; width: 160px; height: 120px;">Beta</div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupCreateOperation({
       html,
@@ -35,15 +40,10 @@ describe("group slide operations", () => {
   });
 
   test("group create converts children to group-relative coordinates", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <p data-editable="text" data-editor-id="text-1" style="left: 100px; top: 80px; width: 120px; height: 40px;">Alpha</p>
       <div data-editable="block" data-editor-id="block-2" style="left: 260px; top: 140px; width: 160px; height: 90px;">Beta</div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupCreateOperation({
       html,
@@ -71,17 +71,12 @@ describe("group slide operations", () => {
   });
 
   test("group create rejects cross-parent selections", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-editor-id="block-1" style="left: 40px; top: 40px; width: 300px; height: 200px;">
         <p data-editable="text" data-editor-id="text-2" style="left: 10px; top: 10px; width: 100px; height: 40px;">Nested</p>
       </div>
       <p data-editable="text" data-editor-id="text-3" style="left: 420px; top: 80px; width: 100px; height: 40px;">Peer</p>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupCreateOperation({
       html,
@@ -95,14 +90,9 @@ describe("group slide operations", () => {
   });
 
   test("group ungroup ignores ordinary blocks without direct nested editables", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">Alpha</div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupUngroupOperation({
       html,
@@ -115,18 +105,13 @@ describe("group slide operations", () => {
   });
 
   test("group ungroup flattens ordinary blocks with direct editable children", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
         <p data-editable="text" data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
         <p data-editable="text" data-editor-id="text-3" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
       </div>
       <div data-editable="block" data-editor-id="block-4" style="left: 520px; top: 80px; width: 160px; height: 120px;">Gamma</div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupUngroupOperation({
       html,
@@ -153,10 +138,7 @@ describe("group slide operations", () => {
   });
 
   test("group ungroup promotes direct list wrappers as block children without flattening li items", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <article data-editable="block" data-editor-id="card-1" style="left: 100px; top: 80px; width: 300px; height: 240px;">
         <strong data-editable="text" data-editor-id="text-2" style="left: 20px; top: 18px; width: 160px; height: 32px;">Alpha</strong>
         <ul style="left: 24px; top: 110px; width: 220px; height: 96px;">
@@ -164,9 +146,7 @@ describe("group slide operations", () => {
           <li data-editable="text" data-editor-id="text-4">Two</li>
         </ul>
       </article>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupUngroupOperation({
       html,
@@ -196,16 +176,11 @@ describe("group slide operations", () => {
   });
 
   test("group ungroup preserves captured presentation styles for flattened block children", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
         <strong data-editable="text" data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</strong>
       </div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupUngroupOperation({
       html,
@@ -231,17 +206,12 @@ describe("group slide operations", () => {
   });
 
   test("group ungroup restores children to parent order and coordinate space", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
         <p data-editable="text" data-editor-id="text-1" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
         <p data-editable="text" data-editor-id="text-2" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
       </div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupUngroupOperation({
       html,
@@ -258,17 +228,12 @@ describe("group slide operations", () => {
   });
 
   test("group ungroup preserves child dimensions when a rendered rect map is supplied", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 240px; top: 470px; width: 600px; height: 180px;">
         <article data-editable="block" data-editor-id="card-a" style="left: 0px; top: 0px; width: 260px; height: 180px;">A</article>
         <article data-editable="block" data-editor-id="card-b" style="left: 340px; top: 0px; width: 260px; height: 180px;">B</article>
       </div>
-    </div>
-  </body>
-</html>`);
+    `);
 
     const operation = createGroupUngroupOperation({
       html,

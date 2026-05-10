@@ -1,8 +1,14 @@
 # Single-File Slides Contract Implementation Plan
 
+Historical note: this document is an implementation record for the migration
+away from the older manifest-plus-multi-file deck model. References below to
+`manifest.json`, slide files, or `sourceFile` describe the migration source
+state, not the current product contract. The current source of truth is the
+single-file `deck.html` contract in `docs/slides-contract.md`.
+
 Status:
 
-- Proposed
+- Completed
 
 Related decision:
 
@@ -266,9 +272,9 @@ work items.
 
 ## Validation checklist
 
-- [ ] One HTML deck file can be parsed into ordered slides plus deck metadata
-- [ ] One edited slide can be written back into the parent deck document
-- [ ] Editor save writes a single deck HTML artifact
-- [ ] Verify/view/export flows no longer depend on `manifest.json`
-- [ ] Runtime bootstrap does not depend on custom-tag source properties
-- [ ] Existing coverage has been migrated to the single-file contract
+- [x] One HTML deck file can be parsed into ordered slides plus deck metadata
+- [x] One edited slide can be written back into the parent deck document
+- [x] Editor save writes a single deck HTML artifact
+- [x] Verify/view/export flows no longer depend on `manifest.json`
+- [x] Runtime bootstrap does not depend on custom-tag source properties
+- [x] Existing coverage has been migrated to the single-file contract

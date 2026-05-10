@@ -1,45 +1,45 @@
 import { describe, expect, test } from "vitest";
 import { planPdfExportSlides } from "./index";
 
-const manifestSlides = [
-  { file: "slides/01.html", title: "One" },
-  { file: "slides/02.html", title: "Two" },
-  { file: "slides/03.html", title: "Three" },
+const slides = [
+  { id: "slide-one", title: "One" },
+  { id: "slide-two", title: "Two" },
+  { id: "slide-three", title: "Three" },
 ];
 
 describe("PDF export planning", () => {
-  test("defaults to every manifest slide in order", () => {
-    expect(planPdfExportSlides(manifestSlides)).toEqual(manifestSlides);
-    expect(planPdfExportSlides(manifestSlides, { mode: "all" })).toEqual(manifestSlides);
+  test("defaults to every slide in order", () => {
+    expect(planPdfExportSlides(slides)).toEqual(slides);
+    expect(planPdfExportSlides(slides, { mode: "all" })).toEqual(slides);
   });
 
-  test("resolves a single manifest slide file exactly", () => {
-    expect(
-      planPdfExportSlides(manifestSlides, { mode: "slide", slideFile: "slides/02.html" })
-    ).toEqual([manifestSlides[1]]);
+  test("resolves a single slide id exactly", () => {
+    expect(planPdfExportSlides(slides, { mode: "slide", slideId: "slide-two" })).toEqual([
+      slides[1],
+    ]);
   });
 
-  test("resolves selected manifest slide files in requested order", () => {
+  test("resolves selected slide ids in requested order", () => {
     expect(
-      planPdfExportSlides(manifestSlides, {
+      planPdfExportSlides(slides, {
         mode: "slides",
-        slideFiles: ["slides/03.html", "slides/01.html"],
+        slideIds: ["slide-three", "slide-one"],
       })
-    ).toEqual([manifestSlides[2], manifestSlides[0]]);
+    ).toEqual([slides[2], slides[0]]);
   });
 
   test("rejects missing or non-exact slide selections", () => {
-    expect(() => planPdfExportSlides(manifestSlides, { mode: "slide" })).toThrow(
-      "--slide requires a manifest slide file value"
+    expect(() => planPdfExportSlides(slides, { mode: "slide" })).toThrow(
+      "--slide requires a slide id value"
     );
-    expect(() => planPdfExportSlides(manifestSlides, { mode: "slide", slideFile: "2" })).toThrow(
-      "--slide must match a manifest slide file exactly: 2"
+    expect(() => planPdfExportSlides(slides, { mode: "slide", slideId: "missing" })).toThrow(
+      "--slide must match a slide id exactly: missing"
     );
     expect(() =>
-      planPdfExportSlides(manifestSlides, {
+      planPdfExportSlides(slides, {
         mode: "slides",
-        slideFiles: ["slides/01.html", "missing.html"],
+        slideIds: ["slide-one", "missing"],
       })
-    ).toThrow("--slides must match manifest slide files exactly: missing.html");
+    ).toThrow("--slides must match slide ids exactly: missing");
   });
 });

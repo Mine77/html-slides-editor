@@ -6,6 +6,7 @@ import {
   getHeaderControls,
   getHistoryControls,
   gotoEditor,
+  readPersistedDeckHtml,
 } from "./helpers";
 
 test("selecting another element after clearing selection keeps the app mounted", async ({
@@ -49,9 +50,11 @@ test("header title input renames the deck topic and persists after refresh", asy
 
   await expect
     .poll(async () => {
-      const manifestResponse = await page.request.get(`/deck/manifest.json?v=${Date.now()}`);
-      expect(manifestResponse.ok()).toBeTruthy();
-      return (await manifestResponse.json()).topic;
+      const html = await readPersistedDeckHtml(page);
+      return page.evaluate((source) => {
+        const doc = new DOMParser().parseFromString(source, "text/html");
+        return doc.querySelector("slides")?.getAttribute("title") ?? null;
+      }, html);
     })
     .toBe(nextTitle);
 
@@ -216,12 +219,11 @@ test("sidebar context menu renames a slide and persists after refresh", async ({
 
   await expect
     .poll(async () => {
-      const manifestResponse = await page.request.get(`/deck/manifest.json?v=${Date.now()}`);
-      expect(manifestResponse.ok()).toBeTruthy();
-      const manifest = (await manifestResponse.json()) as {
-        slides?: Array<{ title?: string }>;
-      };
-      return manifest.slides?.[1]?.title;
+      const html = await readPersistedDeckHtml(page);
+      return page.evaluate((source) => {
+        const doc = new DOMParser().parseFromString(source, "text/html");
+        return doc.querySelectorAll("slide")[1]?.getAttribute("title") ?? null;
+      }, html);
     })
     .toBe(nextTitle);
 
@@ -378,7 +380,7 @@ test("export PDF opens a scope dialog and exports selected or all slides", async
   expect(exportRequests.at(-1)).toEqual({
     selection: {
       mode: "slides",
-      slideFiles: ["01-hero.html", "03-problem.html"],
+      slideIds: ["01-hero", "03-why-html-native-slide-editing-matters"],
     },
   });
 

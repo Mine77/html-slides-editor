@@ -27,7 +27,7 @@ Deck-specific commands:
 pnpm editor:e2e:generate-deck
 pnpm --silent starry-slides verify sample-slides
 pnpm --silent starry-slides verify sample-slides --static
-pnpm --silent starry-slides view sample-slides --slide slides/01-hero.html
+pnpm --silent starry-slides view sample-slides --slide 01-hero
 pnpm starry-slides open sample-slides
 ```
 

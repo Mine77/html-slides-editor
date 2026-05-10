@@ -31,6 +31,12 @@ export async function gotoEditor(page: Page) {
   await expect(coverFrame(page).locator('[data-editor-id="text-1"]')).toHaveText(HERO_KICKER);
 }
 
+export async function readPersistedDeckHtml(page: Page) {
+  const response = await page.request.get(`/deck/deck.html?v=${Date.now()}`);
+  expect(response.ok()).toBeTruthy();
+  return response.text();
+}
+
 export function getHistoryControls(page: Page) {
   return {
     preselectionOverlay: page.getByTestId("preselection-overlay"),

@@ -18,6 +18,10 @@ two-subject architecture:
 Historical details below remain useful context, but future implementation
 should follow ADR-0005 where package boundaries conflict.
 
+This ADR also predates the single-file `deck.html` contract adopted in
+ADR-0026. References below to manifest-driven import describe the earlier deck
+model, not the current persisted format.
+
 ## Context
 
 The initial workspace split introduced three packages:

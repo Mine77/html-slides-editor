@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  type DeckMetadata,
   type PdfExportSelection,
-  type SlideDeckManifest,
   type SlideModel,
-  loadSlidesFromManifest,
+  loadDeckDocument,
+  serializeDeckDocument,
 } from "../../core";
 
 interface SlidesDataResult {
@@ -18,14 +19,13 @@ interface SlidesDataResult {
   exportHtml: () => Promise<void>;
 }
 
-const GENERATED_MANIFEST_URL = "/deck/manifest.json";
+const GENERATED_DECK_URL = "/deck/deck.html";
 const GENERATED_SAVE_URL = "/__editor/save-generated-deck";
 const GENERATED_EXPORT_PDF_URL = "/__editor/export-pdf";
 const GENERATED_EXPORT_HTML_URL = "/__editor/export-html";
 const SAVE_DEBOUNCE_MS = 800;
 
 interface SavePayloadSlide {
-  file?: string;
   htmlSource?: string;
   title?: string;
   hidden?: boolean;
@@ -37,7 +37,8 @@ export function useSlidesData(): SlidesDataResult {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const manifestRef = useRef<SlideDeckManifest | null>(null);
+  const deckMetadataRef = useRef<DeckMetadata | null>(null);
+  const deckHtmlRef = useRef<string>("");
   const loadedSlidesRef = useRef<SlideModel[]>([]);
   const latestSlidesRef = useRef<SlideModel[] | null>(null);
   const latestDeckTitleRef = useRef<string | null>(null);
@@ -49,8 +50,8 @@ export function useSlidesData(): SlidesDataResult {
 
   useEffect(() => {
     let cancelled = false;
-    loadSlidesFromManifest({
-      manifestUrl: `${GENERATED_MANIFEST_URL}?v=${Date.now()}`,
+    loadDeckDocument({
+      deckUrl: `${GENERATED_DECK_URL}?v=${Date.now()}`,
     })
       .then((importedDeck) => {
         if (cancelled) {
@@ -60,13 +61,15 @@ export function useSlidesData(): SlidesDataResult {
         if (!importedDeck) {
           setDeckTitle("Generated deck");
           setSlides([]);
-          setErrorMessage("No slides were found at /deck/manifest.json.");
+          setErrorMessage("No deck payload was found at /deck/deck.html.");
           setIsLoading(false);
           return;
         }
 
-        manifestRef.current = importedDeck.manifest;
-        const importedTitle = importedDeck.manifest.topic || "Generated deck";
+        const metadata = importedDeck.metadata;
+        deckMetadataRef.current = metadata;
+        deckHtmlRef.current = importedDeck.htmlSource;
+        const importedTitle = metadata.title || "Generated deck";
         latestDeckTitleRef.current = importedTitle;
         setDeckTitle(importedTitle);
         setSlides(importedDeck.slides);
@@ -94,12 +97,12 @@ export function useSlidesData(): SlidesDataResult {
   }, []);
 
   const flushSave = async (): Promise<void> => {
-    const manifest = manifestRef.current;
+    const metadata = deckMetadataRef.current;
     const nextSlides = latestSlidesRef.current ?? loadedSlidesRef.current;
     const nextDeckTitle = latestDeckTitleRef.current ?? deckTitle;
     const saveRequestId = saveRequestIdRef.current;
 
-    if (!manifest?.slides?.length || !nextSlides?.length) {
+    if (!metadata || !nextSlides?.length) {
       return;
     }
 
@@ -113,23 +116,13 @@ export function useSlidesData(): SlidesDataResult {
 
     isSaveInFlightRef.current = true;
 
-    const sourceFileBySlideId = new Map(
-      loadedSlidesRef.current.map((slide, index) => [
-        slide.id,
-        slide.sourceFile ?? manifest.slides?.[index]?.file,
-      ])
-    );
-    const manifestSlides = nextSlides.flatMap((slide) => {
-      const file = slide.sourceFile ?? sourceFileBySlideId.get(slide.id);
-      return file
-        ? [
-            {
-              file,
-              title: slide.title,
-              hidden: slide.hidden === true ? true : undefined,
-            },
-          ]
-        : [];
+    const serializedDeck = serializeDeckDocument({
+      metadata: {
+        ...metadata,
+        title: nextDeckTitle,
+      },
+      slides: nextSlides,
+      originalHtmlSource: deckHtmlRef.current,
     });
 
     const savePromise = fetch(GENERATED_SAVE_URL, {
@@ -139,14 +132,9 @@ export function useSlidesData(): SlidesDataResult {
       },
       body: JSON.stringify({
         clientLoadedAt: clientLoadedAtRef.current,
-        manifest: {
-          ...manifest,
-          topic: nextDeckTitle,
-          slides: manifestSlides,
-        },
+        deckHtml: serializedDeck,
         slides: nextSlides.map(
           (slide): SavePayloadSlide => ({
-            file: slide.sourceFile ?? sourceFileBySlideId.get(slide.id),
             htmlSource: slide.htmlSource,
             title: slide.title,
             hidden: slide.hidden === true,
@@ -188,8 +176,8 @@ export function useSlidesData(): SlidesDataResult {
       return;
     }
 
-    const manifest = manifestRef.current;
-    if (!manifest?.slides?.length) {
+    const metadata = deckMetadataRef.current;
+    if (!metadata) {
       return;
     }
 

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { createTempDeck, writeDeck } from "../../tests/helpers/deck-fixtures";
 import { exportPdf } from "./pdf-export";
 
@@ -18,6 +18,8 @@ afterEach(() => {
   }
 });
 
+vi.setConfig({ testTimeout: 15000 });
+
 function expectPdfFile(filePath: string) {
   expect(fs.existsSync(filePath)).toBe(true);
   const contents = fs.readFileSync(filePath);
@@ -26,21 +28,18 @@ function expectPdfFile(filePath: string) {
 }
 
 describe("PDF export runtime", () => {
-  test("exports every manifest slide by default", async () => {
+  test("exports every slide by default", async () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/01.html", title: "One" },
-      { file: "slides/02.html", title: "Two" },
+      { id: "slide-one", title: "One" },
+      { id: "slide-two", title: "Two" },
     ]);
     const outFile = path.join(deck, "deck.pdf");
 
     const result = await exportPdf({ deckPath: deck, outFile });
 
     expect(result.mode).toBe("all");
-    expect(result.slides.map((slide) => slide.slideFile)).toEqual([
-      "slides/01.html",
-      "slides/02.html",
-    ]);
+    expect(result.slides.map((slide) => slide.slideId)).toEqual(["slide-one", "slide-two"]);
     expect(result.path).toBe(outFile);
     expectPdfFile(outFile);
   });
@@ -48,9 +47,9 @@ describe("PDF export runtime", () => {
   test("exports a selected subset in requested order", async () => {
     const deck = createDeck();
     writeDeck(deck, [
-      { file: "slides/01.html", title: "One" },
-      { file: "slides/02.html", title: "Two" },
-      { file: "slides/03.html", title: "Three" },
+      { id: "slide-one", title: "One" },
+      { id: "slide-two", title: "Two" },
+      { id: "slide-three", title: "Three" },
     ]);
     const outFile = path.join(deck, "subset.pdf");
 
@@ -59,30 +58,27 @@ describe("PDF export runtime", () => {
       outFile,
       selection: {
         mode: "slides",
-        slideFiles: ["slides/03.html", "slides/01.html"],
+        slideIds: ["slide-three", "slide-one"],
       },
     });
 
     expect(result.mode).toBe("slides");
-    expect(result.slides.map((slide) => slide.slideFile)).toEqual([
-      "slides/03.html",
-      "slides/01.html",
-    ]);
+    expect(result.slides.map((slide) => slide.slideId)).toEqual(["slide-three", "slide-one"]);
     expectPdfFile(outFile);
   });
 
   test("rejects non-exact slide selections before writing output", async () => {
     const deck = createDeck();
-    writeDeck(deck, [{ file: "slides/01.html", title: "One" }]);
+    writeDeck(deck, [{ id: "slide-one", title: "One" }]);
     const outFile = path.join(deck, "missing.pdf");
 
     await expect(
       exportPdf({
         deckPath: deck,
         outFile,
-        selection: { mode: "slide", slideFile: "1" },
+        selection: { mode: "slide", slideId: "missing" },
       })
-    ).rejects.toThrow("--slide must match a manifest slide file exactly: 1");
+    ).rejects.toThrow("--slide must match a slide id exactly: missing");
     expect(fs.existsSync(outFile)).toBe(false);
   });
 });

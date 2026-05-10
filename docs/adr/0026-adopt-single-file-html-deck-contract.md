@@ -1,6 +1,6 @@
 # ADR-0026: Replace manifest decks with a single-file custom-tag slide contract
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-05-10
 
 ## Context
@@ -43,7 +43,7 @@ The existing codebase already constrains how this work must land:
 This refactor has the following goals:
 
 1. replace the manifest-plus-multi-file deck contract with one HTML deck file
-2. make [slides-contract.md](/Users/haichao/.codex/worktrees/4582/starry-slides/docs/slides-contract.md)
+2. make [slides-contract.md](../slides-contract.md)
    the only normative source for the new `<slides>` and `<slide>` contract
 3. remove the contract requirement for `manifest.json`,
    `data-slide-root="true"`, and per-element `data-editable` markers
@@ -60,7 +60,7 @@ This refactor has the following goals:
 Adopt a single-file HTML deck contract built around custom tags.
 
 The contract definition itself must live in
-[slides-contract.md](/Users/haichao/.codex/worktrees/4582/starry-slides/docs/slides-contract.md).
+[slides-contract.md](../slides-contract.md).
 This ADR does not duplicate the full tag schema. Instead, implementation must
 rewrite that contract document so it becomes the source of truth for:
 
@@ -95,28 +95,28 @@ After implementation:
    defined in `docs/slides-contract.md`
 
 Implementation planning for this decision lives in
-[single-file-slides-contract-implementation-plan.md](/Users/haichao/.codex/worktrees/4582/starry-slides/docs/roadmap/single-file-slides-contract-implementation-plan.md).
+[single-file-slides-contract-implementation-plan.md](../plan/single-file-slides-contract-implementation-plan.md).
 
 ## Verification
 
-- [ ] `docs/slides-contract.md` defines the new single-file contract through
+- [x] `docs/slides-contract.md` defines the new single-file contract through
       `<slides>` and `<slide>` and no longer describes `manifest.json` as part
       of the primary deck format
-- [ ] a valid deck can be loaded from one HTML file containing `<slides>` and
+- [x] a valid deck can be loaded from one HTML file containing `<slides>` and
       `<slide>`
-- [ ] editor save writes one deck HTML file instead of coordinating manifest and
+- [x] editor save writes one deck HTML file instead of coordinating manifest and
       per-slide file writes
-- [ ] deck metadata previously stored in `manifest.json` is represented through
+- [x] deck metadata previously stored in `manifest.json` is represented through
       `<slides>` and `<slide>` properties
-- [ ] slide descendants are editable without contract-level `data-editable`
+- [x] slide descendants are editable without contract-level `data-editable`
       markers
-- [ ] verify, view, preview, PDF export, and HTML export all read the new deck
+- [x] verify, view, preview, PDF export, and HTML export all read the new deck
       structure successfully
-- [ ] runtime loading happens through ordinary HTML CSS and JS integration
+- [x] runtime loading happens through ordinary HTML CSS and JS integration
       rather than through `<slides>` or `<slide>` source properties
-- [ ] asset sources continue to work through ordinary HTML element attributes
+- [x] asset sources continue to work through ordinary HTML element attributes
       such as `src`
-- [ ] runtime loading and asset handling respect the modes documented in
+- [x] runtime loading and asset handling respect the modes documented in
       `docs/slides-contract.md`
 
 ## Consequences

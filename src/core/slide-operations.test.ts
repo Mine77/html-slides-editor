@@ -4,7 +4,6 @@ import {
   createElementPlacement,
   createUniqueElementId,
   duplicateSlideElement,
-  ensureEditableSelectors,
   getSlideElementHtml,
   insertSlideElement,
   invertSlideOperation,
@@ -18,17 +17,22 @@ import {
   updateSlideText,
 } from "./index";
 
-describe("HTML write-back", () => {
-  test("writes updated text back into htmlSource using data-editor-id targeting", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
+function createSlideHtml(content: string) {
+  return `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Original heading</h1>
-      <p data-editable="text">Original body</p>
-    </div>
+    <main data-slide-root="true" data-slide-width="1920" data-slide-height="1080" data-editor-id="slide-root">
+      ${content}
+    </main>
   </body>
-</html>`);
+</html>`;
+}
+
+describe("HTML write-back", () => {
+  test("writes updated text back into htmlSource using data-editor-id targeting", () => {
+    const html = createSlideHtml(`
+      <h1 data-editable="text" data-editor-id="text-1">Original heading</h1>
+      <p data-editable="text" data-editor-id="text-2">Original body</p>`);
 
     const updatedHtml = updateSlideText(html, "text-2", "  Updated body  ");
     const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
@@ -38,14 +42,8 @@ describe("HTML write-back", () => {
   });
 
   test("writes, removes, and cleans up inline styles", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text" style="font-size: 64px; color: red;">Original heading</h1>
-    </div>
-  </body>
-</html>`);
+    const html = createSlideHtml(`
+      <h1 data-editable="text" data-editor-id="text-1" style="font-size: 64px; color: red;">Original heading</h1>`);
 
     const colorOnlyHtml = updateSlideStyle(html, "text-1", "font-size", "");
     const colorDoc = new DOMParser().parseFromString(colorOnlyHtml, "text/html");
@@ -61,14 +59,8 @@ describe("HTML write-back", () => {
   });
 
   test("writes and removes element attributes", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <button data-editable="block">Action</button>
-    </div>
-  </body>
-</html>`);
+    const html = createSlideHtml(`
+      <button data-editable="block" data-editor-id="block-1">Action</button>`);
 
     const updatedHtml = updateSlideAttribute(html, "block-1", "aria-label", "Action button");
     const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
@@ -85,14 +77,8 @@ describe("HTML write-back", () => {
   });
 
   test("duplicates and removes editable elements by editor id", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <p data-editable="text">Copy me</p>
-    </div>
-  </body>
-</html>`);
+    const html = createSlideHtml(`
+      <p data-editable="text" data-editor-id="text-1">Copy me</p>`);
 
     const duplicatedHtml = duplicateSlideElement(html, "text-1", "text-1-copy");
     const duplicatedDoc = new DOMParser().parseFromString(duplicatedHtml, "text/html");
@@ -108,14 +94,8 @@ describe("HTML write-back", () => {
   });
 
   test("layout updates write block position, size, and rotation back into htmlSource", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block">Card</div>
-    </div>
-  </body>
-</html>`);
+    const html = createSlideHtml(`
+      <div data-editable="block" data-editor-id="block-1">Card</div>`);
 
     const updatedHtml = updateSlideElementLayout(html, "block-1", {
       position: "absolute",
@@ -143,14 +123,8 @@ describe("HTML write-back", () => {
   });
 
   test("element transform updates preserve rotation while changing translation", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" style="transform: translate(10px, 20px) rotate(15deg);">Card</div>
-    </div>
-  </body>
-</html>`);
+    const html = createSlideHtml(`
+      <div data-editable="block" data-editor-id="block-1" style="transform: translate(10px, 20px) rotate(15deg);">Card</div>`);
 
     const updatedHtml = updateSlideElementTransform(html, "block-1", 5, -10);
     const doc = new DOMParser().parseFromString(updatedHtml, "text/html");
@@ -161,15 +135,9 @@ describe("HTML write-back", () => {
   });
 
   test("element insert and remove helpers preserve document placement", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Before</h1>
-      <p data-editable="text">After</p>
-    </div>
-  </body>
-</html>`);
+    const html = createSlideHtml(`
+      <h1 data-editable="text" data-editor-id="text-1">Before</h1>
+      <p data-editable="text" data-editor-id="text-2">After</p>`);
     const sourceHtml = getSlideElementHtml(html, "text-1");
     const placement = createElementPlacement(html, "text-1");
 
@@ -194,17 +162,11 @@ describe("HTML write-back", () => {
   });
 
   test("element id helpers create unique copied element ids", () => {
-    const html = ensureEditableSelectors(`<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
+    const html = createSlideHtml(`
       <div data-editable="block" data-editor-id="block-1">
         <span data-editable="text" data-editor-id="text-2">Nested</span>
       </div>
-      <div data-editable="block" data-editor-id="block-1-copy">Existing</div>
-    </div>
-  </body>
-</html>`);
+      <div data-editable="block" data-editor-id="block-1-copy">Existing</div>`);
     const copiedHtml = updateSlideElementHtmlIds(
       '<div data-editable="block" data-editor-id="block-1"><span data-editable="text" data-editor-id="text-2">Nested</span></div>',
       {

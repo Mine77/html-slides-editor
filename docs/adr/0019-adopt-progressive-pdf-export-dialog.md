@@ -9,7 +9,7 @@ ADR-0016 established the shared PDF export pipeline and the editor header entry
 point. The first editor interaction exposed PDF scopes directly in the Export
 dropdown, including separate items for current-slide PDF and selected-slides
 PDF. That made the dropdown responsible for too many export decisions and left
-the selected-slides path dependent on a browser prompt for manifest file names.
+the selected-slides path dependent on a browser prompt for slide ids.
 
 The editor now needs a progressive interaction:
 
@@ -33,17 +33,17 @@ When PDF is chosen, open a modal dialog that owns PDF-specific scope selection.
 The dialog must offer:
 
 - all slides
-- selected slides chosen from the deck's manifest-backed slide list
+- selected slides chosen from the deck's slide list
 
 The modal must be visually centered in the viewport. When selected-slides mode
 is active, the slide picker must render each exportable slide with its
 thumbnail, slide number, and title so users can choose by visual content instead
-of manifest filenames.
+of raw slide ids.
 
 The dialog submits a `PdfExportSelection`:
 
 - all slides -> `{ mode: "all" }`
-- selected slides -> `{ mode: "slides", slideFiles }`
+- selected slides -> `{ mode: "slides", slideIds }`
 
 The editor still sends the selection through the existing `onExportPdf` callback
 and local runtime endpoint from ADR-0016. The dialog must not generate PDFs or
@@ -67,7 +67,7 @@ duplicate runtime selection validation.
 
 - Keep direct PDF scope items in the dropdown. Rejected because the dropdown
   mixes format selection with format-specific configuration and does not scale.
-- Keep the selected-slides prompt. Rejected because manifest-file text input is
+- Keep the selected-slides prompt. Rejected because slide-id text input is
   not a user-facing selection experience and is brittle in automated tests.
 - Put the PDF scope dialog outside the header. Rejected for now because the
   header already owns export command UI; the dialog remains a trigger surface and
@@ -88,7 +88,7 @@ duplicate runtime selection validation.
   - add a PDF export dialog rendered from the editor header
   - center the PDF dialog with explicit layout classes rather than relying on
     browser `<dialog>` default positioning
-  - pass manifest-backed slide metadata and sidebar thumbnail data from
+  - pass deck slide metadata and sidebar thumbnail data from
     `SlidesEditor` into the header
   - render selected-slide choices as compact thumbnail cards with a checkbox,
     slide number, and title
@@ -100,10 +100,10 @@ duplicate runtime selection validation.
 - E2E opens the Export dropdown, chooses PDF, and verifies a dialog appears
 - E2E verifies the dropdown no longer contains direct PDF scope actions
 - E2E verifies the PDF dialog is centered in the viewport
-- E2E verifies selected-slides mode shows slide thumbnails with numbers and
+  - E2E verifies selected-slides mode shows slide thumbnails with numbers and
     titles
   - E2E chooses selected slides in the dialog and asserts the runtime endpoint
-    receives `mode: "slides"` with the selected manifest files
+    receives `mode: "slides"` with the selected slide ids
   - E2E chooses all slides in the dialog and asserts the runtime endpoint
     receives `mode: "all"`
 

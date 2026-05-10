@@ -91,5 +91,3 @@ Asset elements such as `<img>` or `<video>` may point to:
 - inline data URLs such as base64-encoded media
 
 The runtime should use whatever src the authored document provides.
-
-

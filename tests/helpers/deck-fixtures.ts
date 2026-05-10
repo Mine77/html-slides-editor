@@ -17,28 +17,10 @@ export function createTempDeck(prefix = "starry-slides-test-"): TestDeck {
 
 export function writeDeck(
   deck: string,
-  slides: Array<{ file: string; title?: string; html?: string }>
+  slides: Array<{ id?: string; title?: string; html?: string }>
 ) {
   fs.mkdirSync(deck, { recursive: true });
-  fs.writeFileSync(
-    path.join(deck, "manifest.json"),
-    JSON.stringify(
-      {
-        slides: slides.map((slide) => ({
-          file: slide.file,
-          ...(slide.title ? { title: slide.title } : {}),
-        })),
-      },
-      null,
-      2
-    )
-  );
-
-  for (const slide of slides) {
-    const slidePath = path.join(deck, slide.file);
-    fs.mkdirSync(path.dirname(slidePath), { recursive: true });
-    fs.writeFileSync(slidePath, slide.html ?? slideHtml());
-  }
+  fs.writeFileSync(path.join(deck, "deck.html"), createDeckHtml(slides), "utf8");
 }
 
 export function slideHtml(content = textElement("text-1", "Hello"), rootStyle = "") {
@@ -59,4 +41,37 @@ export function textElement(id: string, text: string, style = "") {
 
 export function blockElement(id: string, text: string, style = "") {
   return `<div data-editable="block" data-editor-id="${id}" style="${style}">${text}</div>`;
+}
+
+function createDeckHtml(slides: Array<{ id?: string; title?: string; html?: string }>) {
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <slides title="Generated deck" width="800" height="600">
+${slides
+  .map((slide, index) => {
+    const html = slide.html ?? slideHtml();
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+    const title = escapeAttribute(slide.title ?? `Slide ${index + 1}`);
+    const id = slide.id?.trim() || `slide-${index + 1}`;
+    const headNodes = (headMatch?.[1] ?? "")
+      .trim()
+      .split(/(?=<(?:style|link|script|meta|title)\b)/i)
+      .filter(Boolean);
+    return `      <slide id="${id}" title="${title}">
+${headNodes.map((node) => `        ${node.trim()}`).join("\n")}${headNodes.length > 0 ? "\n" : ""}        ${(bodyMatch?.[1] ?? "").trim()}
+      </slide>`;
+  })
+  .join("\n")}
+    </slides>
+  </body>
+</html>`;
+}
+
+function escapeAttribute(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }

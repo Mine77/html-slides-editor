@@ -15,16 +15,8 @@ const NOT_FOUND_ERROR_CODE = "ENOENT";
 
 interface SaveGeneratedDeckPayload {
   clientLoadedAt?: number;
-  manifest?: {
-    topic?: string;
-    slides?: Array<{
-      file?: string;
-      title?: string;
-      hidden?: boolean;
-    }>;
-  };
+  deckHtml?: string;
   slides?: Array<{
-    file?: string;
     htmlSource?: string;
     title?: string;
     hidden?: boolean;
@@ -148,53 +140,23 @@ export function createDeckRuntimeMiddleware({
       return;
     }
 
-    const slides = payload.slides?.filter(
-      (
-        slide
-      ): slide is {
-        file: string;
-        htmlSource: string;
-        title?: string;
-        hidden?: boolean;
-      } => typeof slide.file === "string" && typeof slide.htmlSource === "string"
-    );
+    const normalizedDeckHtml =
+      typeof payload.deckHtml === "string" && payload.deckHtml.trim().length > 0
+        ? payload.deckHtml
+        : null;
 
-    if (!slides?.length) {
-      writeJsonResponse(response, 400, { error: "Slides payload is required." });
+    if (!normalizedDeckHtml) {
+      writeJsonResponse(response, 400, { error: "Deck payload is required." });
       return;
     }
 
     await Promise.all(
-      slides.map(async (slide) => {
-        await Promise.all(
-          saveTargetDirs.map(async (targetRoot) => {
-            const targetPath = path.join(targetRoot, slide.file);
-            await fs.mkdir(path.dirname(targetPath), { recursive: true });
-            await fs.writeFile(targetPath, slide.htmlSource, "utf8");
-          })
-        );
+      saveTargetDirs.map(async (targetRoot) => {
+        const targetPath = path.join(targetRoot, "deck.html");
+        await fs.mkdir(path.dirname(targetPath), { recursive: true });
+        await fs.writeFile(targetPath, normalizedDeckHtml, "utf8");
       })
     );
-
-    if (payload.manifest?.slides?.length) {
-      const manifestPath = path.join(saveTargetDirs[0] ?? runtimeDeckDir, "manifest.json");
-      const nextManifest = {
-        ...payload.manifest,
-        slides: payload.manifest.slides.filter(
-          (slide): slide is { file: string; title?: string; hidden?: boolean } =>
-            typeof slide.file === "string"
-        ),
-      };
-      const contents = JSON.stringify(nextManifest, null, 2);
-      await fs.writeFile(manifestPath, contents, "utf8");
-      await Promise.all(
-        saveTargetDirs
-          .slice(1)
-          .map((targetRoot) =>
-            fs.writeFile(path.join(targetRoot, "manifest.json"), contents, "utf8")
-          )
-      );
-    }
 
     writeJsonResponse(response, 200, { ok: true });
   }

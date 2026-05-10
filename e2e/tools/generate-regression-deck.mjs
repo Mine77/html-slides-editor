@@ -44,114 +44,124 @@ const appOutputRoot = path.resolve(process.cwd(), getArg("--app-out-dir", "sampl
 
 const slides = [
   {
-    file: "01-hero.html",
+    id: "01-hero",
     title: topic,
     html: buildHeroSlide(topic, summary),
   },
   {
-    file: "02-agenda.html",
+    id: "02-agenda",
     title: `${topic} Agenda`,
     html: buildAgendaSlide(topic, points),
   },
   {
-    file: "03-problem.html",
+    id: "03-why-html-native-slide-editing-matters",
     title: "Why HTML-native slide editing matters",
     html: buildProblemSlide(),
   },
   {
-    file: "04-architecture.html",
+    id: "04-generation-to-editor-pipeline",
     title: "Generation to editor pipeline",
     html: buildArchitectureSlide(),
   },
   {
-    file: "05-table.html",
+    id: "05-feature-matrix-table",
     title: "Feature matrix table",
     html: buildTableSlide(),
   },
   {
-    file: "06-chart.html",
+    id: "06-coverage-growth-chart",
     title: "Coverage growth chart",
     html: buildChartSlide(),
   },
   {
-    file: "07-images.html",
+    id: "07-image-rich-slide",
     title: "Image-rich slide",
     html: buildImageSlide(),
   },
   {
-    file: "08-timeline.html",
+    id: "08-project-roadmap-timeline",
     title: "Project roadmap timeline",
     html: buildTimelineSlide(),
   },
   {
-    file: "09-comparison.html",
+    id: "09-html-native-versus-schema-first",
     title: "HTML-native versus schema-first",
     html: buildComparisonSlide(),
   },
   {
-    file: "10-coverage.html",
+    id: "10-fixture-coverage-summary",
     title: "Fixture coverage summary",
     html: buildCoverageSlide(),
   },
   {
-    file: "11-snap-center.html",
+    id: "11-snap-center-fixture",
     title: "Snap center fixture",
     html: buildSnapCenterSlide(),
   },
   {
-    file: "12-snap-siblings.html",
+    id: "12-snap-sibling-fixture",
     title: "Snap sibling fixture",
     html: buildSnapSiblingSlide(),
   },
   {
-    file: "13-group-geometry.html",
+    id: "13-group-geometry-fixture",
     title: "Group geometry fixture",
     html: buildGroupGeometrySlide(),
   },
   {
-    file: "14-closing.html",
+    id: "14-closing-and-next-steps",
     title: "Closing and next steps",
     html: buildClosingSlide(),
   },
   {
-    file: "15-block-flatten.html",
+    id: "15-block-flatten-fixture",
     title: "Block flatten fixture",
     html: buildBlockFlattenSlide(),
   },
   {
-    file: "16-crop-image.html",
+    id: "16-single-image-crop-fixture",
     title: "Single image crop fixture",
     html: buildCropImageSlide(),
   },
 ];
 
-resetDirectory(outputRoot);
-
-for (const slide of slides) {
-  fs.writeFileSync(path.join(outputRoot, slide.file), slide.html, "utf8");
+function extractHeadAndBody(html) {
+  const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  return {
+    head: headMatch?.[1]?.trim() ?? "",
+    body: bodyMatch?.[1]?.trim() ?? "",
+  };
 }
 
-fs.writeFileSync(
-  path.join(outputRoot, "manifest.json"),
-  `${JSON.stringify(
-    {
-      topic,
-      generatedAt: new Date().toISOString(),
-      slides: slides.map((slide) => ({
-        file: slide.file,
-        title: slide.title,
-      })),
-    },
-    null,
-    2
-  )}\n`,
-  "utf8"
-);
+function createDeckHtml({ topic, slides }) {
+  const defaultHead = extractHeadAndBody(slides[0]?.html ?? "");
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    ${defaultHead.head}
+  </head>
+  <body>
+    <slides title="${topic.replace(/"/g, "&quot;")}" generated-at="${new Date().toISOString()}" width="1920" height="1080">
+${slides
+  .map((slide) => {
+    const parts = extractHeadAndBody(slide.html);
+    return `      <slide id="${slide.id}" title="${slide.title.replace(/"/g, "&quot;")}">
+${parts.head ? `        ${parts.head}\n` : ""}        ${parts.body}
+      </slide>`;
+  })
+  .join("\n")}
+    </slides>
+  </body>
+</html>`;
+}
+
+resetDirectory(outputRoot);
+fs.writeFileSync(path.join(outputRoot, "deck.html"), createDeckHtml({ topic, slides }), "utf8");
 
 console.log(`Generated ${slides.length} slides in ${outputRoot}`);
-for (const slide of slides) {
-  console.log(`- ${slide.file}`);
-}
+console.log(`- deck.html`);
 
 if (appOutputRoot !== outputRoot) {
   resetDirectory(appOutputRoot);

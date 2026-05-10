@@ -36,60 +36,23 @@ export function createUniqueSlideId(slides: SlideModel[], preferredId: string): 
   return `${preferredId}-${index}`;
 }
 
-export function createUniqueSlideSourceFile(slides: SlideModel[], preferredFile: string): string {
-  const existingFiles = new Set(slides.map((slide) => slide.sourceFile).filter(Boolean));
-  if (!existingFiles.has(preferredFile)) {
-    return preferredFile;
-  }
-
-  const extensionIndex = preferredFile.lastIndexOf(".");
-  const base = extensionIndex >= 0 ? preferredFile.slice(0, extensionIndex) : preferredFile;
-  const extension = extensionIndex >= 0 ? preferredFile.slice(extensionIndex) : "";
-  let index = 2;
-
-  while (existingFiles.has(`${base}-${index}${extension}`)) {
-    index += 1;
-  }
-
-  return `${base}-${index}${extension}`;
-}
-
 export function createBlankSlide(slides: SlideModel[], insertIndex: number): SlideModel {
   const position = Math.max(insertIndex + 1, 1);
   const slideId = createUniqueSlideId(slides, `generated-slide-${position}`);
-  const sourceFile = createUniqueSlideSourceFile(
-    slides,
-    `${String(position).padStart(2, "0")}-untitled.html`
-  );
 
   return {
     ...parseSlide(DEFAULT_NEW_SLIDE_HTML, slideId),
     hidden: false,
-    sourceFile,
     title: "Untitled Slide",
   };
 }
 
 export function createDuplicatedSlide(slides: SlideModel[], sourceSlide: SlideModel): SlideModel {
   const slideId = createUniqueSlideId(slides, `${sourceSlide.id}-copy`);
-  const sourceFile = createUniqueSlideSourceFile(
-    slides,
-    sourceSlide.sourceFile ? appendFileSuffix(sourceSlide.sourceFile, "copy") : `${slideId}.html`
-  );
 
   return {
     ...parseSlide(sourceSlide.htmlSource, slideId),
     hidden: sourceSlide.hidden === true,
-    sourceFile,
     title: sourceSlide.title,
   };
-}
-
-function appendFileSuffix(file: string, suffix: string): string {
-  const extensionIndex = file.lastIndexOf(".");
-  if (extensionIndex < 0) {
-    return `${file}-${suffix}`;
-  }
-
-  return `${file.slice(0, extensionIndex)}-${suffix}${file.slice(extensionIndex)}`;
 }

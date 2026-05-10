@@ -1,15 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
+import { loadVerifyDeckSource } from "../core/verify-deck";
 import {
   type HtmlExportSlide,
   createSingleHtmlExportDocument,
   planHtmlExportSlides,
 } from "../core";
-import { getManifestSlides } from "./view-renderer";
+import { materializeRenderableSlide } from "./view-renderer";
 
 export interface HtmlExportResultSlide {
   index: number;
-  slideFile: string;
+  slideId: string;
   title?: string;
 }
 
@@ -30,34 +31,39 @@ export async function exportHtml({
 }): Promise<HtmlExportResult> {
   const deck = path.resolve(process.cwd(), deckPath);
   const outputPath = path.resolve(process.cwd(), outFile);
-  const manifestSlides = getManifestSlides(deck);
-  const slides: HtmlExportSlide[] = manifestSlides.map((slide) => ({
-    file: slide.file,
-    ...(slide.title ? { title: slide.title } : {}),
-    ...(slide.hidden ? { hidden: slide.hidden } : {}),
-    htmlSource: fs.readFileSync(slide.filePath, "utf8"),
-  }));
-  const html = createSingleHtmlExportDocument({
-    title: path.basename(deck),
-    slides,
-  });
-  const exportedSlides = planHtmlExportSlides(slides);
-
+  const source = loadVerifyDeckSource(deck);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, html, "utf8");
+  const tempDir = fs.mkdtempSync(path.join(path.dirname(outputPath), ".starry-slides-html-"));
+  try {
+    const slides: HtmlExportSlide[] = source.slides.map((slide) => ({
+      id: slide.id,
+      ...(slide.title ? { title: slide.title } : {}),
+      ...(slide.hidden ? { hidden: slide.hidden } : {}),
+      htmlSource: fs.readFileSync(materializeRenderableSlide(slide, source.deck, tempDir), "utf8"),
+    }));
+    const html = createSingleHtmlExportDocument({
+      title: path.basename(source.deck),
+      slides,
+    });
+    const exportedSlides = planHtmlExportSlides(slides);
 
-  return {
-    deck,
-    mode: "all",
-    outFile: outputPath,
-    path: outputPath,
-    slides: exportedSlides.map((slide) => {
-      const manifestSlide = manifestSlides.find((item) => item.file === slide.file);
-      return {
-        index: manifestSlide?.index ?? 0,
-        slideFile: slide.file,
-        ...(slide.title ? { title: slide.title } : {}),
-      };
-    }),
-  };
+    fs.writeFileSync(outputPath, html, "utf8");
+
+    return {
+      deck: source.deck,
+      mode: "all",
+      outFile: outputPath,
+      path: outputPath,
+      slides: exportedSlides.map((slide) => {
+        const manifestSlide = source.slides.find((item) => item.id === slide.id);
+        return {
+          index: manifestSlide?.index ?? 0,
+          slideId: slide.id,
+          ...(slide.title ? { title: slide.title } : {}),
+        };
+      }),
+    };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }

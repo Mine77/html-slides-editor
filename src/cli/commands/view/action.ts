@@ -52,7 +52,7 @@ export async function runView(
   }
 
   if (!options.slide && !options.all) {
-    throw new Error("view requires either --slide <manifest-file> or --all");
+    throw new Error("view requires either --slide <slide-id> or --all");
   }
 
   const deckPath = resolveDeckPath(deckPathArg);
@@ -65,7 +65,7 @@ export async function runView(
 
   const manifest = await renderPreviewManifest({
     deckPath,
-    slideFile: options.all ? undefined : options.slide,
+    slideId: options.all ? undefined : options.slide,
     outDir: options.outDir,
   });
   writeJson(manifest);

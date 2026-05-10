@@ -37,7 +37,7 @@ starry-slides [deck]
 starry-slides open [deck]
 starry-slides verify [deck]
 starry-slides verify [deck] --static
-starry-slides view [deck] --slide <manifest-file>
+starry-slides view [deck] --slide <slide-id>
 starry-slides view [deck] --all
 starry-slides add-skill
 ```
@@ -47,7 +47,7 @@ starry-slides add-skill
 `starry-slides view` has two modes:
 
 - single-slide preview: render and return one slide preview image selected by
-  manifest `file`
+  exact slide `id`
 - all-slides preview: render and return preview images for the whole deck
 
 Preview rendering belongs to the Starry Slides CLI runtime. It should not be
@@ -57,25 +57,21 @@ implemented as a separate standalone CLI.
 run Complete Verify, because agents may need preview images while diagnosing
 rendered overflow or other visual issues.
 
-`--slide` accepts only an exact `manifest.json` slide `file` value. It does not
-accept numeric indexes, slide titles, or inferred slug ids. Agents are expected
-to read the manifest and pass the file path explicitly, which avoids ambiguous
-index or title semantics.
+`--slide` accepts only an exact slide `id` value. It does not accept numeric
+indexes, slide titles, or inferred partial matches.
 
 Preview files default to `<deck>/.starry-slides/view/`. Each view run should
 clear previous Starry Slides preview files from the target output directory
 before writing new results, so agents do not read stale previews. `--out-dir`
 may override the output directory.
 
-Preview filenames are derived from the manifest slide `file` value in a stable
-collision-resistant way. For example, `slides/intro.html` may become
-`slides-intro.png`, rather than just `intro.png`, so same-named files in
-different directories do not collide.
+Preview filenames are derived from the slide `id` in a stable
+collision-resistant way.
 
 ### View output contract
 
 `starry-slides view` writes preview PNG files to disk and writes a structured
-JSON manifest to stdout. It must not stream image binaries to stdout.
+JSON report to stdout. It must not stream image binaries to stdout.
 
 Human-readable progress logs, warnings, and diagnostic messages should go to
 stderr so agents can parse stdout reliably.
@@ -89,7 +85,7 @@ Example stdout shape:
   "slides": [
     {
       "index": 3,
-      "slideFile": "slides/title.html",
+      "slideId": "03-title",
       "file": "slides-title.png",
       "path": "/absolute/path/to/deck/.starry-slides/view/slides-title.png",
       "width": 1920,
@@ -124,7 +120,7 @@ The verify result shape should include the mode that ran:
     {
       "severity": "error",
       "code": "overflow.element",
-      "slideFile": "03-title.html",
+      "slideId": "03-title",
       "selector": "[data-editor-id=\"title-1\"]",
       "message": "Element content overflows vertically",
       "details": {

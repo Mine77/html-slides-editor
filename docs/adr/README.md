@@ -43,10 +43,10 @@ Update this directory whenever a change affects:
 | [0011](./0011-adopt-starry-slides-agent-facing-cli.md)                          | Adopt starry-slides as the agent-facing CLI                                     | accepted              |
 | [0012](./0012-keep-sample-slides-out-of-project-git.md)                         | Keep sample slides out of project Git                                           | accepted              |
 | [0013](./0013-adopt-editing-e2e-coverage-contract.md)                           | Adopt editing E2E coverage contract                                             | superseded            |
-| [0014](./0014-adopt-cli-and-core-verification-test-contract.md)                 | Adopt CLI and core verification test contract                                   | proposed              |
+| [0014](./0014-adopt-cli-and-core-verification-test-contract.md)                 | Adopt CLI and core verification test contract                                   | implemented-reference |
 | [0015](./0015-adopt-minimal-mono-editor-chrome-direction.md)                    | Adopt Minimal Mono editor chrome direction                                      | implemented-reference |
 | [0016](./0016-adopt-pdf-export-pipeline-through-core-runtime-cli-and-editor.md) | Adopt a PDF export pipeline through core, runtime, CLI, and editor entry points | accepted              |
-| [0017](./0017-adopt-deck-level-slide-operations-for-thumbnail-sidebar.md)       | Adopt deck-level slide operations for the thumbnail sidebar                     | proposed              |
+| [0017](./0017-adopt-deck-level-slide-operations-for-thumbnail-sidebar.md)       | Adopt deck-level slide operations for the thumbnail sidebar                     | implemented-reference |
 | [0018](./0018-adopt-pointer-depth-selection-and-hover-preselection.md)          | Adopt pointer-depth selection and hover preselection                            | accepted              |
 | [0019](./0019-adopt-progressive-pdf-export-dialog.md)                           | Adopt a progressive PDF export dialog in the editor                             | accepted              |
 | [0020](./0020-adopt-block-flatten-through-ungroup.md)                           | Adopt block flatten through Ungroup                                             | accepted              |
@@ -54,4 +54,4 @@ Update this directory whenever a change affects:
 | [0023](./0023-delegate-skill-installation-to-skills-cli.md)                     | Delegate skill installation to the skills CLI                                   | proposed              |
 | [0024](./0024-adopt-marquee-selection-for-stage-elements.md)                    | Adopt marquee selection for stage elements                                      | accepted              |
 | [0025](./0025-adopt-docs-e2e-md-as-the-e2e-source-of-truth.md)                  | Adopt `docs/e2e.md` as the E2E source of truth                                 | accepted              |
-| [0026](./0026-adopt-single-file-html-deck-contract.md)                          | Replace manifest decks with a single-file custom-tag slide contract             | proposed              |
+| [0026](./0026-adopt-single-file-html-deck-contract.md)                          | Replace manifest decks with a single-file custom-tag slide contract             | accepted              |

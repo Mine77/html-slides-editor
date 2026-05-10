@@ -16,30 +16,42 @@ export interface SlideModel {
   width: number;
   height: number;
   elements: EditableElement[];
-  sourceFile?: string;
   hidden?: boolean;
+  archetype?: string;
+  notes?: string;
 }
 
-export interface SlideDeckManifestEntry {
-  file: string;
-  title?: string;
-  hidden?: boolean;
+export interface DeckMetadata {
+  title: string;
+  description: string;
+  generatedAt: string;
+  width: number;
+  height: number;
 }
 
-export interface SlideDeckManifest {
-  topic?: string;
-  slides?: SlideDeckManifestEntry[];
-}
-
-export interface ImportedSlideDeck {
-  manifest: SlideDeckManifest;
+export interface ImportedDeckDocument {
+  metadata: DeckMetadata;
+  htmlSource: string;
   slides: SlideModel[];
+  primaryFileName?: string;
+}
+
+export interface PersistedSlideRecord {
+  id: string;
+  title: string;
+  hidden: boolean;
+  archetype: string;
+  notes: string;
+  innerHtml: string;
 }
 
 export const SELECTOR_ATTR = "data-editor-id";
 export const SLIDE_ROOT_ATTR = "data-slide-root";
+export const SLIDES_TAG = "slides";
+export const SLIDE_TAG = "slide";
 export const DEFAULT_SLIDE_WIDTH = 1920;
 export const DEFAULT_SLIDE_HEIGHT = 1080;
+export const DEFAULT_DECK_TITLE = "Untitled deck";
 
 export function getSlideElementSelector(elementId: string): string {
   return `[${SELECTOR_ATTR}="${elementId}"]`;
@@ -70,4 +82,8 @@ export function parseDimension(value: string | null, fallback: number): number {
 
 export function normalizeSlideId(slideId: string): string {
   return slugify(slideId);
+}
+
+export function parseBooleanAttribute(value: string | null | undefined): boolean {
+  return (value || "").trim().toLowerCase() === "true";
 }

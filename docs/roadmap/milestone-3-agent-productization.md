@@ -56,7 +56,7 @@ Expected workflow:
 1. User provides topic, audience, goals, source material, style direction, and
    slide count constraints.
 2. Agent creates or selects a slide plan.
-3. Agent generates protocol-compatible HTML slides and a manifest.
+3. Agent generates a protocol-compatible `deck.html` document.
 4. Protocol validation runs before slides enter the editor.
 5. The editor loads the generated deck with stable editable markers,
    thumbnails, and full edit/write-back support.

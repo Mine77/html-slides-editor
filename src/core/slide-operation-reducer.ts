@@ -14,7 +14,6 @@ function preserveSlideSource(sourceSlide: SlideModel, nextSlide: SlideModel): Sl
   return {
     ...nextSlide,
     hidden: sourceSlide.hidden,
-    sourceFile: sourceSlide.sourceFile,
   };
 }
 

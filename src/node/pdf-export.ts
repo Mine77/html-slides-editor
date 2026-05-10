@@ -12,13 +12,14 @@ import {
   parseDimension,
   planPdfExport,
 } from "../core";
-import { type RenderedSlide, getManifestSlides } from "./view-renderer";
+import { loadVerifyDeckSource } from "../core/verify-deck";
+import { materializeRenderableSlide, type RenderedSlide } from "./view-renderer";
 
 type ChromiumLauncher = typeof import("@playwright/test").chromium;
 
 export interface PdfExportSlide {
   index: number;
-  slideFile: string;
+  slideId: string;
   title?: string;
   width: number;
   height: number;
@@ -32,6 +33,10 @@ export interface PdfExportResult {
   slides: PdfExportSlide[];
 }
 
+interface ExportRuntimeSlide extends RenderedSlide {
+  filePath: string;
+}
+
 export async function exportPdf({
   deckPath,
   outFile,
@@ -43,88 +48,101 @@ export async function exportPdf({
 }): Promise<PdfExportResult> {
   const deck = path.resolve(process.cwd(), deckPath);
   const outputPath = path.resolve(process.cwd(), outFile);
-  const manifestSlides = getManifestSlides(deck);
-  const plan = planPdfExport({ slides: manifestSlides, selection });
-  const selectedSlides = resolveSelectedSlides(
-    manifestSlides,
-    plan.slides.map((slide) => slide.file)
-  );
-
-  if (selectedSlides.length === 0) {
-    throw new Error("PDF export requires at least one manifest slide.");
-  }
-
-  const sizedSlides = selectedSlides.map((slide) => ({
-    ...slide,
-    ...readSlideSize(slide.filePath),
+  const source = loadVerifyDeckSource(deck);
+  const renderDir = fs.mkdtempSync(path.join(os.tmpdir(), "starry-slides-pdf-render-"));
+  const runtimeSlides: ExportRuntimeSlide[] = source.slides.map((slide) => ({
+    index: slide.index,
+    id: slide.id,
+    file: slide.id,
+    ...(slide.title ? { title: slide.title } : {}),
+    ...(slide.hidden ? { hidden: slide.hidden } : {}),
+    filePath: materializeRenderableSlide(slide, source.deck, renderDir),
   }));
-  const [firstSlide] = sizedSlides;
-  const mismatchedSlide = sizedSlides.find(
-    (slide) => slide.width !== firstSlide.width || slide.height !== firstSlide.height
-  );
-  if (mismatchedSlide) {
-    throw new Error(
-      `PDF export requires selected slides to share one size; ${mismatchedSlide.file} is ${mismatchedSlide.width}x${mismatchedSlide.height}, expected ${firstSlide.width}x${firstSlide.height}.`
-    );
-  }
-
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "starry-slides-pdf-"));
-  const printFile = path.join(tempDir, "print.html");
+  const plan = planPdfExport({ slides: runtimeSlides, selection });
+  const selectedSlides = resolveSelectedSlides(runtimeSlides, plan.slides.map((slide) => slide.id));
 
   try {
-    fs.writeFileSync(
-      printFile,
-      createPrintDocument({
-        slides: sizedSlides,
-        width: firstSlide.width,
-        height: firstSlide.height,
-      }),
-      "utf8"
-    );
-
-    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    const chromium = await loadChromium();
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const page = await browser.newPage();
-      await page.goto(pathToFileURL(printFile).href, { waitUntil: "load" });
-      await page.evaluate("document.fonts ? document.fonts.ready : Promise.resolve()");
-      await page.pdf({
-        path: outputPath,
-        width: `${firstSlide.width}px`,
-        height: `${firstSlide.height}px`,
-        margin: { top: "0", right: "0", bottom: "0", left: "0" },
-        printBackground: true,
-        preferCSSPageSize: true,
-      });
-    } finally {
-      await browser.close();
+    if (selectedSlides.length === 0) {
+      throw new Error("PDF export requires at least one slide.");
     }
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  }
 
-  return {
-    deck,
-    mode: plan.mode,
-    outFile: outputPath,
-    path: outputPath,
-    slides: sizedSlides.map((slide) => ({
-      index: slide.index,
-      slideFile: slide.file,
-      ...(slide.title ? { title: slide.title } : {}),
-      width: slide.width,
-      height: slide.height,
-    })),
-  };
+    const sizedSlides = selectedSlides.map((slide) => ({
+      ...slide,
+      ...readSlideSize(slide.filePath),
+    }));
+    const [firstSlide] = sizedSlides;
+    const mismatchedSlide = sizedSlides.find(
+      (slide) => slide.width !== firstSlide.width || slide.height !== firstSlide.height
+    );
+    if (mismatchedSlide) {
+      throw new Error(
+        `PDF export requires selected slides to share one size; ${mismatchedSlide.id} is ${mismatchedSlide.width}x${mismatchedSlide.height}, expected ${firstSlide.width}x${firstSlide.height}.`
+      );
+    }
+
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "starry-slides-pdf-"));
+    const printFile = path.join(tempDir, "print.html");
+
+    try {
+      fs.writeFileSync(
+        printFile,
+        createPrintDocument({
+          slides: sizedSlides,
+          width: firstSlide.width,
+          height: firstSlide.height,
+        }),
+        "utf8"
+      );
+
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+      const chromium = await loadChromium();
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const page = await browser.newPage();
+        await page.goto(pathToFileURL(printFile).href, { waitUntil: "load" });
+        await page.evaluate("document.fonts ? document.fonts.ready : Promise.resolve()");
+        await page.pdf({
+          path: outputPath,
+          width: `${firstSlide.width}px`,
+          height: `${firstSlide.height}px`,
+          margin: { top: "0", right: "0", bottom: "0", left: "0" },
+          printBackground: true,
+          preferCSSPageSize: true,
+        });
+      } finally {
+        await browser.close();
+      }
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+
+    return {
+      deck,
+      mode: plan.mode,
+      outFile: outputPath,
+      path: outputPath,
+      slides: sizedSlides.map((slide) => ({
+        index: slide.index,
+        slideId: slide.id,
+        ...(slide.title ? { title: slide.title } : {}),
+        width: slide.width,
+        height: slide.height,
+      })),
+    };
+  } finally {
+    fs.rmSync(renderDir, { recursive: true, force: true });
+  }
 }
 
-function resolveSelectedSlides(slides: RenderedSlide[], selectedFiles: string[]): RenderedSlide[] {
-  const slideByFile = new Map(slides.map((slide) => [slide.file, slide]));
-  return selectedFiles.map((file) => {
-    const slide = slideByFile.get(file);
+function resolveSelectedSlides(
+  slides: ExportRuntimeSlide[],
+  selectedIds: string[]
+): ExportRuntimeSlide[] {
+  const slideById = new Map(slides.map((slide) => [slide.id, slide]));
+  return selectedIds.map((id) => {
+    const slide = slideById.get(id);
     if (!slide) {
-      throw new Error(`PDF export could not resolve selected slide file: ${file}`);
+      throw new Error(`PDF export could not resolve selected slide id: ${id}`);
     }
     return slide;
   });
@@ -147,7 +165,7 @@ function createPrintDocument({
   width,
   height,
 }: {
-  slides: Array<RenderedSlide & { width: number; height: number }>;
+  slides: Array<ExportRuntimeSlide & { width: number; height: number }>;
   width: number;
   height: number;
 }): string {
@@ -178,7 +196,7 @@ function createPrintDocument({
     ${slides
       .map(
         (slide) =>
-          `<iframe title="${escapeAttribute(slide.title ?? slide.file)}" src="${pathToFileURL(slide.filePath).href}"></iframe>`
+          `<iframe title="${escapeAttribute(slide.title ?? slide.id)}" src="${pathToFileURL(slide.filePath).href}"></iframe>`
       )
       .join("\n    ")}
   </body>

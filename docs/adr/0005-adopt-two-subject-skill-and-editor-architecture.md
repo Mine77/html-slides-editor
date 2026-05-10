@@ -142,6 +142,10 @@ generation logic should become an editor E2E test tool.
 
 ## Skill Contract Specs
 
+Historical note: this section is superseded by ADR-0026. The current deck
+contract is a single `deck.html` document with `<slides>` and `<slide>` tags,
+not a manifest plus per-slide HTML files.
+
 `starry-slides-skill` outputs a deck package, not a single HTML string.
 
 Recommended structure:

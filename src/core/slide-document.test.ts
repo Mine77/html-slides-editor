@@ -5,21 +5,42 @@ import {
   ensureEditableSelectors,
   getSlideInlineStyleValue,
   parseSlide,
+  serializeDeckDocument,
   querySlideElement,
 } from "./index";
 
-describe("slide document contract", () => {
-  test("adds stable data-editor-id values to slide root and editable nodes", () => {
-    const html = `<!DOCTYPE html>
+function createDeckHtml(slides: string) {
+  return `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container">
-      <h1 data-editable="text">Title</h1>
-      <p data-editable="text">Body</p>
-      <div data-editable="block"><span data-editable="text">Nested</span></div>
-    </div>
+    <slides title="Deck Title" width="${DEFAULT_SLIDE_WIDTH}" height="${DEFAULT_SLIDE_HEIGHT}">
+${slides}
+    </slides>
   </body>
 </html>`;
+}
+
+function createSlideHtml(content: string, head = "") {
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>${head}</head>
+  <body>
+    <main data-slide-root="true" data-slide-width="${DEFAULT_SLIDE_WIDTH}" data-slide-height="${DEFAULT_SLIDE_HEIGHT}">
+      ${content}
+    </main>
+  </body>
+</html>`;
+}
+
+describe("slide document contract", () => {
+  test("adds stable data-editor-id values to slide root and editable nodes", () => {
+    const html = createDeckHtml(`      <slide id="slide-1" title="Title">
+        <div class="slide-container">
+          <h1 data-editable="text">Title</h1>
+          <p data-editable="text">Body</p>
+          <div data-editable="block"><span data-editable="text">Nested</span></div>
+        </div>
+      </slide>`);
 
     const normalizedHtml = ensureEditableSelectors(html);
     const doc = new DOMParser().parseFromString(normalizedHtml, "text/html");
@@ -35,15 +56,12 @@ describe("slide document contract", () => {
   });
 
   test("preserves existing data-editor-id values", () => {
-    const html = `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true" data-editor-id="custom-root">
-      <h1 data-editable="text" data-editor-id="hero-title">Title</h1>
-      <p data-editable="text">Body</p>
-    </div>
-  </body>
-</html>`;
+    const html = createDeckHtml(`      <slide id="slide-1" title="Title">
+        <div class="slide-container" data-slide-root="true" data-editor-id="custom-root">
+          <h1 data-editable="text" data-editor-id="hero-title">Title</h1>
+          <p data-editable="text">Body</p>
+        </div>
+      </slide>`);
 
     const normalizedHtml = ensureEditableSelectors(html);
     const doc = new DOMParser().parseFromString(normalizedHtml, "text/html");
@@ -59,15 +77,9 @@ describe("slide document contract", () => {
 
   test("parseSlide returns editor-compatible metadata", () => {
     const slide = parseSlide(
-      `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container">
+      createSlideHtml(`
       <h1 data-editable="text">Hero</h1>
-      <div data-editable="block">Card</div>
-    </div>
-  </body>
-</html>`,
+      <div data-editable="block">Card</div>`),
       "Generated Slide 1"
     );
 
@@ -84,19 +96,13 @@ describe("slide document contract", () => {
 
   test("parseSlide treats data-group block containers as distinct group elements", () => {
     const slide = parseSlide(
-      `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container">
+      createSlideHtml(`
       <div data-editable="block" data-group="true">
         <p data-editable="text">Grouped text</p>
       </div>
       <div data-editable="block">
         <p data-editable="text">Normal nested text</p>
-      </div>
-    </div>
-  </body>
-</html>`,
+      </div>`),
       "slide-1"
     );
 
@@ -110,19 +116,39 @@ describe("slide document contract", () => {
 
   test("querySlideElement and getSlideInlineStyleValue hide selector details", () => {
     const slide = parseSlide(
-      `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text" style="font-size: 48px;">Title</h1>
-    </div>
-  </body>
-</html>`,
+      createSlideHtml(`
+      <h1 data-editable="text" style="font-size: 48px;">Title</h1>`),
       "slide-1"
     );
     const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
 
     expect(querySlideElement(doc, "text-1")?.textContent).toBe("Title");
     expect(getSlideInlineStyleValue(slide, "text-1", "font-size")).toBe("48px");
+  });
+
+  test("serializeDeckDocument preserves slide head assets and metadata", () => {
+    const html = serializeDeckDocument({
+      metadata: {
+        title: "Deck Title",
+        description: "Summary",
+        generatedAt: "2026-05-10T00:00:00.000Z",
+        width: 1920,
+        height: 1080,
+      },
+      slides: [
+        parseSlide(
+          createSlideHtml(
+            `
+      <h1 data-editable="text">Hello</h1>`,
+            "<style>.example{color:red}</style>"
+          ),
+          "slide-1"
+        ),
+      ],
+    });
+    const doc = new DOMParser().parseFromString(html, "text/html");
+
+    expect(doc.querySelector("slides")?.getAttribute("title")).toBe("Deck Title");
+    expect(doc.querySelector("slide")?.querySelector("style")?.textContent).toContain(".example");
   });
 });

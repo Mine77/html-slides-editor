@@ -7,8 +7,8 @@ export function registerViewCommand(program: Command) {
   program
     .command("view")
     .argument("[deck]", "deck path")
-    .option("--slide <manifest-file>", "render exactly one manifest slide file")
-    .option("--all", "render every manifest slide")
+    .option("--slide <slide-id>", "render exactly one slide by id")
+    .option("--all", "render every slide in the deck")
     .option("--out-dir <directory>", "write previews to a specific directory")
     .option("--static", "invalid for view; kept to produce a helpful error")
     .description("Render preview images for a deck.")

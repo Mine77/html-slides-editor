@@ -20,7 +20,6 @@ function fixtureSlide(id: string, title: string) {
 </html>`,
       id
     ),
-    sourceFile: `${id}.html`,
     title,
   };
 }

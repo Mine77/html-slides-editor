@@ -1,19 +1,17 @@
 import { planPresentationSlides } from "./presentation";
-import {
-  DEFAULT_SLIDE_HEIGHT,
-  DEFAULT_SLIDE_WIDTH,
-  type SlideDeckManifestEntry,
-  parseDimension,
-} from "./slide-contract";
+import { DEFAULT_SLIDE_HEIGHT, DEFAULT_SLIDE_WIDTH, parseDimension } from "./slide-contract";
 
-export interface HtmlExportSlide extends SlideDeckManifestEntry {
+export interface HtmlExportSlide {
+  id: string;
+  title?: string;
+  hidden?: boolean;
   htmlSource: string;
   width?: number;
   height?: number;
 }
 
 export interface ResolvedHtmlExportSlide {
-  file: string;
+  id: string;
   title?: string;
   htmlSource: string;
   width: number;
@@ -33,7 +31,7 @@ export function resolveHtmlExportSlides(slides: HtmlExportSlide[]): ResolvedHtml
   return planHtmlExportSlides(slides).map((slide) => {
     const size = getSlideSize(slide);
     return {
-      file: slide.file,
+      id: slide.id,
       ...(slide.title ? { title: slide.title } : {}),
       htmlSource: slide.htmlSource,
       width: size.width,
@@ -50,8 +48,8 @@ export function createSingleHtmlExportDocument({
   const deckPayload = {
     title,
     slides: resolvedSlides.map((slide) => ({
-      file: slide.file,
-      title: slide.title ?? slide.file,
+      id: slide.id,
+      title: slide.title ?? slide.id,
       htmlSource: slide.htmlSource,
       width: slide.width,
       height: slide.height,
@@ -218,149 +216,133 @@ const STANDALONE_PRESENTER_SCRIPT = `
       button.type = "button";
       button.className = "presenter-swatch";
       button.setAttribute("aria-label", "Use pen color " + color);
-      button.dataset.active = color === penColor ? "true" : "false";
       button.style.background = color;
+      button.dataset.active = color === penColor ? "true" : "false";
       button.addEventListener("click", () => {
         penColor = color;
-        updateCursor();
         renderPenColors();
       });
       return button;
     }));
   }
 
-  function createPenCursor(color) {
-    const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><circle cx='12' cy='12' r='6' fill='" + color + "' stroke='#111827' stroke-width='2'/></svg>";
-    return "url(\\"data:image/svg+xml," + encodeURIComponent(svg) + "\\") 12 12, auto";
+  function showToolbar() {
+    toolbar.dataset.visible = "true";
+    clearTimeout(hideTimer);
+    hideTimer = window.setTimeout(() => {
+      toolbar.dataset.visible = "false";
+    }, 1600);
   }
 
   function updateCursor() {
     if (tool === "laser") {
-      stage.style.cursor = "none";
-    } else if (tool === "pen") {
-      stage.style.cursor = createPenCursor(penColor);
-    } else {
-      stage.style.cursor = "default";
+      laser.style.opacity = "1";
+      return;
     }
+    laser.style.opacity = "0";
   }
 
-  function showToolbar() {
-    toolbar.dataset.visible = "true";
-    window.clearTimeout(hideTimer);
-    hideTimer = window.setTimeout(() => {
-      toolbar.dataset.visible = "false";
-    }, 1500);
-  }
-
-  function maybeShowToolbar(event) {
-    if (event.clientY >= window.innerHeight - 96) {
-      showToolbar();
-    }
-  }
-
-  function pointInFrame(event) {
+  function stagePoint(event) {
     const rect = frame.getBoundingClientRect();
-    const scale = Number(inkLayer.dataset.scale || "1");
+    const slide = activeSlide();
+    if (!slide) return null;
+    const scale = slide.width ? rect.width / slide.width : 1;
     return {
-      x: Math.min(Math.max(event.clientX - rect.left, 0), rect.width) / scale,
-      y: Math.min(Math.max(event.clientY - rect.top, 0), rect.height) / scale,
-      inside: event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom,
+      x: (event.clientX - rect.left) / scale,
+      y: (event.clientY - rect.top) / scale,
     };
   }
 
-  function beginInk(event) {
-    if (tool !== "pen") return;
-    if (!frame.contains(event.target)) return;
-    const point = pointInFrame(event);
-    if (!point.inside) return;
+  window.addEventListener("resize", renderSlide);
+  stage.addEventListener("mousemove", (event) => {
+    showToolbar();
+    laser.style.left = event.clientX + "px";
+    laser.style.top = event.clientY + "px";
+    if (tool !== "pen" || !drawing) {
+      return;
+    }
+    const point = stagePoint(event);
+    if (!point) return;
+    drawing.push(point);
+    const d = drawing.map((value, pointIndex) => (pointIndex === 0 ? "M" : "L") + value.x + " " + value.y).join(" ");
+    drawing.path.setAttribute("d", d);
+  });
+  stage.addEventListener("mousedown", (event) => {
+    if (tool !== "pen") {
+      return;
+    }
+    const point = stagePoint(event);
+    if (!point) return;
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("stroke", penColor);
-    path.setAttribute("d", "M " + point.x.toFixed(1) + " " + point.y.toFixed(1));
-    inkLayer.append(path);
-    drawing = { path, d: path.getAttribute("d") };
-  }
-
-  function extendInk(event) {
-    if (!drawing) return;
-    const point = pointInFrame(event);
-    drawing.d += " L " + point.x.toFixed(1) + " " + point.y.toFixed(1);
-    drawing.path.setAttribute("d", drawing.d);
-  }
-
-  function goToIndex(nextIndex) {
-    setTool("none");
-    index = Math.min(Math.max(nextIndex, 0), deck.slides.length - 1);
+    path.setAttribute("d", "M" + point.x + " " + point.y);
+    inkLayer.appendChild(path);
+    drawing = [{ ...point, path }];
+    drawing.path = path;
+  });
+  stage.addEventListener("mouseup", () => {
+    drawing = null;
+  });
+  stage.addEventListener("mouseleave", () => {
+    drawing = null;
+  });
+  frame.addEventListener("click", (event) => {
+    if (event.target && event.target.closest(".presenter-toolbar")) {
+      return;
+    }
+    if (tool !== "none") {
+      return;
+    }
+    index = Math.min(index + 1, deck.slides.length - 1);
     renderSlide();
-  }
-
-  function goNext() {
-    goToIndex(index + 1);
-  }
-
-  function updateFullscreenButton() {
-    const button = toolbar.querySelector("[data-action='fullscreen']");
-    const isFullscreen = Boolean(document.fullscreenElement);
-    button.setAttribute("aria-label", isFullscreen ? "Exit fullscreen" : "Enter fullscreen");
-    button.textContent = isFullscreen ? "Window" : "Fullscreen";
-    renderSlide();
-  }
-
+    showToolbar();
+  });
   toolbar.addEventListener("click", (event) => {
     const button = event.target.closest("button");
     if (!button) return;
+    const action = button.dataset.action;
+    const nextTool = button.dataset.tool;
+    if (action === "previous") index = Math.max(index - 1, 0);
+    if (action === "next") index = Math.min(index + 1, deck.slides.length - 1);
+    if (action === "fullscreen" && document.fullscreenElement == null) document.documentElement.requestFullscreen?.();
+    if (action === "exit") window.close();
+    if (nextTool) setTool(nextTool);
+    renderSlide();
     showToolbar();
-    if (button.dataset.action === "previous") {
-      goToIndex(index - 1);
-    } else if (button.dataset.action === "next") {
-      goNext();
-    } else if (button.dataset.action === "fullscreen") {
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.();
-      } else if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-      }
-    } else if (button.dataset.action === "exit") {
-      window.close();
-    } else if (button.dataset.tool) {
-      setTool(button.dataset.tool);
-    }
-  });
-  toolbar.addEventListener("pointerenter", showToolbar);
-  toolbar.addEventListener("pointermove", showToolbar);
-
-  window.addEventListener("resize", renderSlide);
-  document.addEventListener("fullscreenchange", updateFullscreenButton);
-  window.addEventListener("pointermove", (event) => {
-    maybeShowToolbar(event);
-    if (tool === "laser") {
-      laser.style.transform = "translate(" + event.clientX + "px," + event.clientY + "px) translate(-50%,-50%)";
-    }
-    extendInk(event);
-  });
-  window.addEventListener("pointerdown", beginInk);
-  window.addEventListener("click", (event) => {
-    if (tool !== "none") return;
-    if (!frame.contains(event.target)) return;
-    goNext();
-  });
-  window.addEventListener("pointerup", () => {
-    drawing = null;
   });
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      if (tool === "pen") {
-        setTool("none");
-        clearInk();
-      }
+    if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+      index = Math.min(index + 1, deck.slides.length - 1);
+      renderSlide();
       showToolbar();
-    } else if (event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "PageDown") {
-      goNext();
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp" || event.key === "PageUp") {
-      goToIndex(index - 1);
+    }
+    if (event.key === "ArrowLeft" || event.key === "PageUp") {
+      index = Math.max(index - 1, 0);
+      renderSlide();
+      showToolbar();
+    }
+    if (event.key === "Escape") {
+      if (tool !== "none") {
+        setTool("none");
+        renderSlide();
+        showToolbar();
+      }
+    }
+    if ((event.key === "l" || event.key === "L") && !event.metaKey && !event.ctrlKey) {
+      setTool("laser");
+      showToolbar();
+    }
+    if ((event.key === "p" || event.key === "P") && !event.metaKey && !event.ctrlKey) {
+      setTool("pen");
+      showToolbar();
+    }
+    if ((event.key === "c" || event.key === "C") && tool === "pen" && !event.metaKey && !event.ctrlKey) {
+      clearInk();
+      showToolbar();
     }
   });
   renderPenColors();
-  updateCursor();
   renderSlide();
+  showToolbar();
 })();
 `;

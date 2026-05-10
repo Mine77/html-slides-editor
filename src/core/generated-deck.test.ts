@@ -5,12 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
-import {
-  DEFAULT_SLIDE_HEIGHT,
-  DEFAULT_SLIDE_WIDTH,
-  loadSlidesFromManifest,
-  parseSlide,
-} from "./index";
+import { DEFAULT_SLIDE_HEIGHT, DEFAULT_SLIDE_WIDTH, loadDeckDocument } from "./index";
 
 const regressionDeckConfig = JSON.parse(
   fs.readFileSync(
@@ -19,123 +14,14 @@ const regressionDeckConfig = JSON.parse(
   )
 ) as {
   topic: string;
-  summary: string;
   points: string[];
   heroKicker: string;
 };
 
 describe("generated deck import", () => {
-  test("loadSlidesFromManifest applies generated-deck defaults while allowing overrides", async () => {
-    const requests: Array<{ input: RequestInfo | URL; init: RequestInit | undefined }> = [];
-    const fetchImpl: typeof fetch = async (input, init) => {
-      requests.push({ input, init });
-
-      const url =
-        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-
-      if (url.endsWith("/manifest.json") || url.includes("/manifest.json?")) {
-        return new Response(
-          JSON.stringify({
-            topic: "Contract Deck",
-            slides: [{ file: "slide-1.html", title: "Slide A", hidden: true }],
-          }),
-          {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }
-        );
-      }
-
-      if (url.endsWith("/slide-1.html") || url.includes("/slide-1.html?")) {
-        return new Response(
-          `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container">
-      <h1 data-editable="text">Imported title</h1>
-    </div>
-  </body>
-</html>`,
-          {
-            status: 200,
-            headers: { "content-type": "text/html" },
-          }
-        );
-      }
-
-      return new Response("not found", { status: 404 });
-    };
-
-    const deck = await loadSlidesFromManifest({
-      manifestUrl: "https://example.com/sample-slides/manifest.json",
-      fetchImpl,
-      requestInit: {
-        credentials: "same-origin",
-      },
-    });
-
-    expect(deck?.slides[0]?.id).toBe("generated-slide-1");
-    expect(deck?.slides[0]?.title).toBe("Slide A");
-    expect(deck?.slides[0]?.hidden).toBe(true);
-    expect(deck?.slides[0]?.sourceFile).toBe("slide-1.html");
-    expect(requests).toHaveLength(2);
-    expect(requests[0]?.init).toMatchObject({
-      cache: "no-store",
-      credentials: "same-origin",
-    });
-    expect(requests[1]?.init).toMatchObject({
-      cache: "no-store",
-      credentials: "same-origin",
-    });
-  });
-
-  test("loadSlidesFromManifest propagates manifest cache busters to slide HTML requests", async () => {
-    const requestedUrls: string[] = [];
-    const fetchImpl: typeof fetch = async (input) => {
-      const url =
-        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-      requestedUrls.push(url);
-
-      if (url.includes("/manifest.json")) {
-        return new Response(
-          JSON.stringify({
-            topic: "Contract Deck",
-            slides: [{ file: "slide-1.html", title: "Slide A" }],
-          }),
-          {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }
-        );
-      }
-
-      return new Response(
-        `<!DOCTYPE html>
-<html lang="en">
-  <body>
-    <div class="slide-container">
-      <h1 data-editable="text">Imported title</h1>
-    </div>
-  </body>
-</html>`,
-        {
-          status: 200,
-          headers: { "content-type": "text/html" },
-        }
-      );
-    };
-
-    await loadSlidesFromManifest({
-      manifestUrl: "https://example.com/sample-slides/manifest.json?v=123",
-      fetchImpl,
-    });
-
-    expect(requestedUrls[1]).toBe("https://example.com/sample-slides/slide-1.html?v=123");
-  });
-
-  test("parseSlide returns editor-compatible metadata for generated slides", () => {
+  test("loadDeckDocument parses the generated single-file deck contract", async () => {
     const workspaceRoot = path.resolve(import.meta.dirname, "../..");
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hse-generated-"));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "hse-generated-deck-"));
     const outputRoot = path.join(tempRoot, "generated");
     const appOutputRoot = path.join(tempRoot, "synced");
 
@@ -154,31 +40,31 @@ describe("generated deck import", () => {
       }
     );
 
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(outputRoot, "manifest.json"), "utf8")
-    ) as {
-      topic: string;
-      slides: Array<{ file: string; title: string }>;
-    };
-    const firstSlideHtml = fs.readFileSync(path.join(outputRoot, manifest.slides[0].file), "utf8");
-    const firstSlide = parseSlide(firstSlideHtml, "generated-slide-1");
-    const secondSlideHtml = fs.readFileSync(path.join(outputRoot, manifest.slides[1].file), "utf8");
-    const secondSlide = parseSlide(secondSlideHtml, "generated-slide-2");
+    const deckPath = path.join(outputRoot, "deck.html");
+    const deckUrl = new URL(`file://${deckPath}`);
+    const fetchImpl: typeof fetch = async () =>
+      new Response(fs.readFileSync(deckPath, "utf8"), {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
 
-    expect(manifest.topic).toBe(regressionDeckConfig.topic);
-    expect(manifest.slides).toHaveLength(16);
-    expect(firstSlide.id).toBe("generated-slide-1");
-    expect(firstSlide.width).toBe(DEFAULT_SLIDE_WIDTH);
-    expect(firstSlide.height).toBe(DEFAULT_SLIDE_HEIGHT);
-    expect(firstSlide.rootSelector).toBe('[data-editor-id="slide-root"]');
+    const deck = await loadDeckDocument({
+      deckUrl: deckUrl.toString(),
+      fetchImpl,
+    });
+
+    expect(deck?.metadata.title).toBe(regressionDeckConfig.topic);
+    expect(deck?.slides).toHaveLength(16);
+    expect(deck?.slides[0]?.title).toBe(regressionDeckConfig.topic);
+    expect(deck?.slides[0]?.width).toBe(DEFAULT_SLIDE_WIDTH);
+    expect(deck?.slides[0]?.height).toBe(DEFAULT_SLIDE_HEIGHT);
     expect(
-      firstSlide.elements.some((element) => element.content === regressionDeckConfig.heroKicker)
+      deck?.slides[0]?.elements.some((element) => element.content === regressionDeckConfig.heroKicker)
     ).toBe(true);
-    expect(firstSlide.elements.some((element) => element.tagName === "div")).toBe(true);
-    expect(secondSlide.elements.some((element) => element.type === "block")).toBe(true);
     expect(
-      secondSlide.elements.some((element) => element.content === regressionDeckConfig.points[0])
+      deck?.slides[1]?.elements.some((element) => element.content === regressionDeckConfig.points[0])
     ).toBe(true);
+    expect(fs.existsSync(deckPath)).toBe(true);
 
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });

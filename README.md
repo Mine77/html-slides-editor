@@ -3,9 +3,13 @@
 ## Overview
 
 Starry Slides is a local-first, agent-native slide workflow for HTML slide
-decks. Agents generate Contract-compatible deck packages, Starry Slides
-validates them, and the browser editor lets people revise the same HTML files
-without converting them into a proprietary slide model.
+decks. Agents generate contract-compatible `deck.html` files, Starry Slides
+validates them, and the browser editor lets people revise the same HTML source
+without converting it into a proprietary slide model.
+
+The primary persisted deck format is a single `deck.html` document containing
+`<slides>` and `<slide>` tags. Editor persistence, runtime loading, preview,
+verification, and export all consume that single-file format directly.
 
 The project rule is simple: HTML stays the source of truth. A deck remains a
 set of files on disk rather than data trapped inside a separate editor model,
@@ -57,7 +61,7 @@ starry-slides [deck]
 starry-slides open [deck]
 starry-slides verify [deck]
 starry-slides verify [deck] --static
-starry-slides view [deck] --slide <manifest-file>
+starry-slides view [deck] --slide <slide-id>
 starry-slides view [deck] --all
 starry-slides view [deck] --all --out-dir <directory>
 ```
@@ -69,7 +73,7 @@ starry-slides view [deck] --all --out-dir <directory>
 | Feature                         | Status      | Notes                                                                                  |
 | ------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
 | HTML Contract validation        | Done        | Validates generated slide packages before editor import.                               |
-| Manifest-based deck loading     | Done        | Loads `manifest.json`, slide HTML, titles, hidden state, and source files.             |
+| Single-file deck loading        | Done        | Loads `deck.html` with `<slides>/<slide>` metadata as the only deck format.   |
 | Browser editor for local decks  | Done        | Opens generated decks locally and writes committed edits back to disk.                 |
 | Direct text editing             | Done        | Supports in-slide text edits with undo/redo and persistence.                           |
 | Element selection and styling   | Done        | Supports editable text, image, block, and group elements through toolbar controls.     |

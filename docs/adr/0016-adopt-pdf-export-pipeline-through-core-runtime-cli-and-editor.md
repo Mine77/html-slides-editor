@@ -50,15 +50,15 @@ The export command shape is:
 ```bash
 starry-slides export pdf [deck] --out <file>
 starry-slides export pdf [deck] --all --out <file>
-starry-slides export pdf [deck] --slide <manifest-file> --out <file>
-starry-slides export pdf [deck] --slides <manifest-file> --out <file>
+starry-slides export pdf [deck] --slide <slide-id> --out <file>
+starry-slides export pdf [deck] --slides <slide-id> --out <file>
 ```
 
 The editor entry point uses the same selection model, but it sends the request
 to a local server endpoint instead of spawning a separate process.
 
-The PDF exporter must preserve slide order from the manifest and must reject
-slide references that do not match exact manifest `file` values.
+The PDF exporter must preserve slide order from `deck.html` and must reject
+slide references that do not match exact slide `id` values.
 
 ## Consequences
 
@@ -95,13 +95,13 @@ slide references that do not match exact manifest `file` values.
   - `docs/adr/README.md`
 
 - **Pattern**:
-  - use a core-owned selection resolver for `all`, `single slide`, and `selected slide files`
+  - use a core-owned selection resolver for `all`, `single slide`, and `selected slide ids`
   - keep PDF generation in runtime and use Chromium `page.pdf()`
   - return machine-readable results from CLI commands and a binary PDF response from the editor endpoint
   - keep the editor header as a trigger only; it must not implement PDF generation itself
 
 - **Tests**:
-  - core tests cover selection resolution and manifest-file validation
+  - core tests cover selection resolution and slide-id validation
   - runtime tests cover PDF generation output and selection order
   - CLI tests cover `export pdf` command parsing, JSON/file side effects, and exit codes
   - editor tests cover the export trigger path and the middleware endpoint contract
@@ -109,9 +109,9 @@ slide references that do not match exact manifest `file` values.
 ## Verification
 
 - [ ] `starry-slides export pdf ...` writes a valid PDF file for a single slide
-- [ ] `starry-slides export pdf ... --all` exports every manifest slide in order
-- [ ] `starry-slides export pdf ... --slide <manifest-file>` exports exactly one slide
-- [ ] `starry-slides export pdf ... --slides <manifest-file>` exports the requested subset in order
+- [ ] `starry-slides export pdf ... --all` exports every slide in order
+- [ ] `starry-slides export pdf ... --slide <slide-id>` exports exactly one slide
+- [ ] `starry-slides export pdf ... --slides <slide-id>` exports the requested subset in order
 - [ ] the editor header can trigger the same export pipeline through the local runtime endpoint
 - [ ] the exported PDF bytes begin with the PDF header and the output file is non-empty
 - [ ] CLI and editor export behavior remain stable under automated tests

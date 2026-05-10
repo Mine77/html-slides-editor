@@ -1,7 +1,13 @@
 # ADR-0017: Adopt deck-level slide operations for the thumbnail sidebar
 
-- Status: proposed
+- Status: implemented-reference
 - Date: 2026-05-07
+
+Historical note: this ADR predates the single-file `deck.html` contract adopted
+in ADR-0026. References below to manifests, slide files, or `sourceFile`
+describe the earlier persistence model and are retained only as historical
+context. The implemented system now persists deck order, visibility, and slide
+content through one `deck.html` document with `<slide id>` metadata.
 
 ## Context
 
