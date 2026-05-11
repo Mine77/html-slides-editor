@@ -1,19 +1,24 @@
 # Starry Slides Contract
 
-This document is the single source of truth for the slide deck contract in this
+This document is the single source of truth for the Starry Slides deck contract in this
 repository.
 
-The contract exists so the same HTML deck can be:
+The contract exists so the same deck can be:
 
-- loaded by `src/core`
-- verified by the CLI
-- previewed by `starry-slides view`
+- verified and previewed by the CLI
 - edited by the browser editor
 
-## Scope
+The contract has three parts:
 
-A deck is a normal directory that contains `manifest.json`, a `slides/`
-directory, and optional supporting assets.
+1. deck directory structure
+2. `manifest.json`
+3. per-slide HTML files
+
+The contract is DOM-marker based, not CSS-framework based.
+
+## Deck Directory Structure
+
+A deck is a normal directory with this shape:
 
 ```text
 my-deck/
@@ -26,153 +31,104 @@ my-deck/
     hero.png
 ```
 
-Each slide is a standalone HTML document that renders as one presentation page.
-The contract is DOM-marker based, not CSS-framework based.
+Required structure:
 
-## Rule 1: Every Slide Must Have Exactly One Slide Root
+- the deck directory must contain `manifest.json`
+- the deck directory must contain a `slides/` directory
+- each presentation page is stored as a standalone HTML file
 
-Each slide document must contain exactly one element with:
+## manifest.json
 
-```html
-data-slide-root="true"
+Each deck must include a `manifest.json` file at the deck root.
+
+Top-level fields:
+
+| Field         | Required | Description                                                                                    |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `slides`      | yes      | Ordered list of slides in the deck. No default. Must be present.                               |
+| `deckTitle`   | yes      | Human-readable deck title. No default. Must be present.                                        |
+| `description` | yes      | Human-readable deck description. No default. Must be present.                                  |
+| `generatedAt` | no       | Generation or provenance timestamp. If omitted, the CLI may add it in a later write-back flow. |
+
+Per-slide fields:
+
+| Field       | Required | Description                                                                                        |
+| ----------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `file`      | yes      | Deck-relative path to a slide HTML file. No default. Must be present.                              |
+| `title`     | yes      | Human-readable slide title. No default. Must be present.                                           |
+| `archetype` | no       | Optional slide archetype label. No archetype is assumed when omitted.                              |
+| `hidden`    | no       | Whether the slide is hidden from consumers that honor visibility. Treated as `false` when omitted. |
+| `notes`     | no       | Optional slide notes. No notes are assumed when omitted.                                           |
+
+Manifest example:
+
+```json
+{
+  "deckTitle": "Future of Team Workflows",
+  "description": "A three-slide deck about source-native collaboration.",
+  "slides": [
+    {
+      "file": "slides/01-title.html",
+      "title": "Future of Team Workflows",
+      "archetype": "title"
+    },
+    {
+      "file": "slides/02-agenda.html",
+      "title": "Why teams are changing how they ship"
+    },
+    {
+      "file": "slides/03-content.html",
+      "title": "Source-native decks are easier to trust",
+      "notes": "Optional presenter note."
+    }
+  ]
+}
 ```
 
-This root defines the page boundary used by parsing, verification, preview, and
-editing.
+## Each Slide HTML File
 
-Required behavior:
+### 1. Root Node
 
-- zero slide roots is invalid
-- multiple slide roots is invalid
+Each slide HTML file uses its `body` element as the slide root.
 
-Recommended root attributes:
+- Root size may be specified only by directly setting a fixed numeric `width`
+  and `height` on the `body` in CSS, such as `width: 1920px` and
+  `height: 1080px`.
+- If `body` size is not specified, the default root size is `1920 x 1080`.
+- Any other sizing method is not part of the contract and is treated as not
+  specified. This includes percentage-based sizing, viewport-based sizing,
+  content-driven sizing, inherited sizing, and other indirect sizing methods.
+- Root overflow is forbidden. The `body` must not allow visible or scrolling
+  overflow and must not produce scroll overflow during normal rendering.
 
-- `data-slide-width="1920"`
-- `data-slide-height="1080"`
-- `data-editor-id="slide-root"`
 
-Default behavior when dimensions are omitted:
 
-- width defaults to `1920`
-- height defaults to `1080`
-
-## Rule 2: Every Editable Element Must Declare Its Editable Semantics
+### 2. Editable Element Attributes
 
 Every user-editable node must declare one supported editable type:
-
-- `data-editable="text"` for editable text
-- `data-editable="image"` for replaceable images
-- `data-editable="block"` for selectable or movable containers
 
 Nodes without `data-editable` are treated as non-editable. Decorative-only
 layers should stay unmarked.
 
-Required behavior:
+Editable attributes and values:
 
-- unknown `data-editable` values are invalid
+| Attribute        | Description                                                                                                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-editable`  | Marks a node as user-editable. If `data-editable` is omitted, the node is treated as non-editable. The validity table below defines which values are currently supported and which values are not. |
+| `data-editable-id` | Optional stable identity for an editable node. Runtime normalization may derive deterministic ids when omitted.                                                                                |
+| `data-allow-overflow` | Bare optional marker that allows intentional overflow on a non-root element. This does not apply to the slide root, because root overflow is forbidden.                                     |
+| `data-role`      | Provides an optional semantic hint such as `title`, `subtitle`, `body`, `caption`, `metric`, or `callout`. No semantic role is assumed when omitted.                                               |
 
-Recommended editor identity:
+Editable type validity:
 
-- editable elements should include stable `data-editor-id` values
-- when omitted, tooling may derive deterministic ids such as `text-1`,
-  `image-1`, or `block-1`
+| Value           | Supported | Meaning                                                                                                                                                                      |
+| --------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`          | yes       | Editable text node                                                                                                                                                           |
+| `image`         | yes       | Replaceable image node                                                                                                                                                       |
+| `block`         | yes       | Selectable or movable container node. A block may also act as a composition container whose editable children can later be flattened or regrouped through editor operations. |
+| any other value | no        | Invalid editable type. May support in the future.                                                                                                                            |
 
-Recommended semantic hints:
-
-- `data-role` for semantic intent such as `title`, `subtitle`, `body`,
-  `caption`, `metric`, or `callout`
-- `data-group` when related editable elements should carry a grouping hint
-
-Warnings, not hard failures:
-
-- a slide with no editable nodes should warn
-- an editable image that is not an `<img>` element should warn
-
-## Rule 3: Every Deck Must Be Manifest-Addressable
-
-Decks must include a `manifest.json` beside the slide files.
-
-Required manifest fields:
-
-- top-level `slides`
-- for each slide entry: `file`
-- for each slide entry: `title`
-
-Optional manifest fields:
-
-- top-level `deckTitle`
-- top-level `topic`
-- top-level `generatedAt`
-- per-slide `archetype`
-- per-slide `hidden`
-- per-slide `notes`
-- per-slide `stylePack`
-
-Default behavior when optional metadata is omitted:
-
-- missing optional metadata does not block parsing or editing
-- missing per-slide `hidden` is treated as `false`
-
-When present:
-
-- `hidden` must be a boolean
-- `hidden: true` marks a slide as hidden for consumers that honor visibility
-  semantics, while authoring tools may still show it for editing
-
-## Optional Hints
-
-These attributes are optional but recommended because they stabilize generation
-and editing behavior:
-
-- `data-archetype` on the slide root
-- `data-style-pack` on the slide root
-- `data-role` on editable nodes
-- `data-group` on editable nodes
-
-Default behavior when omitted:
-
-- no archetype is assumed
-- no style pack is assumed
-- no semantic role is assumed
-- no group hint is assumed
-
-The canonical v1 archetypes are:
-
-- `title`
-- `section`
-- `thesis`
-- `concept`
-- `comparison`
-- `list`
-- `timeline`
-- `data`
-- `media`
-- `closing`
-
-Guidance for archetypes:
-
-- a style system should cover the same fixed archetype set
-- decorative structure is fine, but editable content should stay clearly
-  separable from decorative layers
-- standard HTML and existing contract attributes should be preferred over
-  inventing new protocol attributes
-
-## Validation Summary
-
-A validator should fail when:
-
-- a slide has zero slide roots
-- a slide has multiple slide roots
-- an editable node uses an unknown `data-editable` value
-
-A validator should warn when:
-
-- the slide root omits width or height
-- a slide has no editable nodes
-- a slide root omits `data-archetype`
-- an editable image is not an `<img>` element
-
-## Reference Markup
+## Slide HTML Example
 
 ```html
 <!DOCTYPE html>
@@ -181,195 +137,48 @@ A validator should warn when:
     <meta charset="UTF-8" />
     <style>
       * { box-sizing: border-box; }
-      html, body {
+      html {
+        margin: 0;
+      }
+      body {
         margin: 0;
         width: 1920px;
         height: 1080px;
-      }
-      body {
         overflow: hidden;
         font-family: sans-serif;
       }
       .slide {
-        width: 1920px;
-        height: 1080px;
+        min-height: 100%;
         padding: 96px;
+        display: grid;
+        align-content: start;
+        gap: 32px;
       }
     </style>
   </head>
   <body>
-    <main
-      class="slide"
-      data-slide-root="true"
-      data-slide-width="1920"
-      data-slide-height="1080"
-      data-archetype="title"
-      data-style-pack="example-pack"
-      data-editor-id="slide-root"
-    >
-      <h1 data-editable="text" data-role="title" data-editor-id="text-1">
+    <main class="slide">
+      <h1 data-editable="text" data-editable-id="text-1" data-role="title">
         Future of Team Workflows
       </h1>
-      <p data-editable="text" data-role="subtitle" data-editor-id="text-2">
+      <p data-editable="text" data-editable-id="text-2" data-role="body">
         Why source-native collaboration changes how teams ship.
       </p>
       <img
         data-editable="image"
-        data-role="hero"
-        data-editor-id="image-1"
-        src="./assets/hero.png"
-        alt=""
+        data-editable-id="image-1"
+        src="../assets/hero.png"
+        alt="Abstract illustration for the deck cover"
       />
-      <section data-editable="block" data-group="hero" data-editor-id="block-1">
-        <p data-editable="text" data-role="body" data-editor-id="text-3">
-          Movable grouped content.
+      <section data-editable="block" data-editable-id="block-1">
+        <p data-editable="text" data-editable-id="text-3" data-role="body">
+          Source-native slides keep authored structure easy to inspect.
+        </p>
+        <p data-editable="text" data-editable-id="text-4" data-role="body">
+          Block structure is also the basis for group and ungroup behavior.
         </p>
       </section>
     </main>
   </body>
 </html>
-```
-
-## Contract Example
-
-This normalized specimen deck model captures the shared v1 archetype set and
-sample content used to exercise the contract:
-
-```json
-{
-  "deckTitle": "Protocol Specimen Deck",
-  "topic": "Future of Team Workflows",
-  "author": "Starry Slides",
-  "slides": [
-    {
-      "id": "01-title",
-      "archetype": "title",
-      "title": "Future of Team Workflows",
-      "fields": {
-        "title": "Future of Team Workflows",
-        "subtitle": "Why source-native collaboration changes how teams ship.",
-        "meta": "Protocol Specimen Deck"
-      }
-    },
-    {
-      "id": "02-section",
-      "archetype": "section",
-      "title": "The shift",
-      "fields": {
-        "title": "The shift",
-        "subtitle": "From static documents to editable, inspectable HTML artifacts."
-      }
-    },
-    {
-      "id": "03-thesis",
-      "archetype": "thesis",
-      "title": "Source-native decks are easier to trust",
-      "fields": {
-        "title": "Source-native decks are easier to trust",
-        "points": [
-          "HTML stays readable in version control.",
-          "Editors can preserve original structure instead of flattening it.",
-          "Teams can review content and layout in the same artifact."
-        ]
-      }
-    },
-    {
-      "id": "04-concept",
-      "archetype": "concept",
-      "title": "Protocol before automation",
-      "fields": {
-        "title": "Protocol before automation",
-        "body": "A stable document contract makes generation, editing, validation, and rendering part of the same workflow instead of separate conversions.",
-        "points": [
-          "The style pack defines visual slices.",
-          "The protocol defines editable semantics.",
-          "Tools validate and normalize the output."
-        ]
-      }
-    },
-    {
-      "id": "05-comparison",
-      "archetype": "comparison",
-      "title": "Schema-first vs HTML-native",
-      "fields": {
-        "leftTitle": "Schema-first",
-        "leftPoints": [
-          "Import into a private document model",
-          "Round-tripping can become lossy",
-          "Source and presentation drift apart"
-        ],
-        "rightTitle": "HTML-native",
-        "rightPoints": [
-          "Keep HTML as the source of truth",
-          "Preserve DOM structure and semantics",
-          "Edit and validate the same files"
-        ],
-        "summary": "The contract should reduce translation boundaries, not add more of them."
-      }
-    },
-    {
-      "id": "06-list",
-      "archetype": "list",
-      "title": "What teams need from deck tooling",
-      "fields": {
-        "title": "What teams need from deck tooling",
-        "points": [
-          "Clear page boundaries",
-          "Predictable editable markers",
-          "Stable selectors for write-back",
-          "A visual system that covers common page forms"
-        ]
-      }
-    },
-    {
-      "id": "07-timeline",
-      "archetype": "timeline",
-      "title": "Adoption path",
-      "fields": {
-        "title": "Adoption path",
-        "milestones": [
-          "Phase 1: define the protocol",
-          "Phase 2: ship a starter style pack",
-          "Phase 3: add validation and annotation tools"
-        ]
-      }
-    },
-    {
-      "id": "08-data",
-      "archetype": "data",
-      "title": "Why protocol coverage matters",
-      "fields": {
-        "title": "Why protocol coverage matters",
-        "primaryMetric": "10",
-        "primaryLabel": "core archetypes in v1",
-        "secondaryMetrics": [
-          "1 contract",
-          "3 tooling entry points",
-          "0 required visual system assumptions"
-        ],
-        "note": "The protocol should stay smaller than the style surface built on top of it."
-      }
-    },
-    {
-      "id": "09-media",
-      "archetype": "media",
-      "title": "The editor should understand real slides",
-      "fields": {
-        "title": "The editor should understand real slides",
-        "imageAlt": "Abstract specimen visual",
-        "caption": "Media-heavy layouts should still expose clear editable zones."
-      }
-    },
-    {
-      "id": "10-closing",
-      "archetype": "closing",
-      "title": "A good style pack makes the protocol feel invisible",
-      "fields": {
-        "title": "A good style pack makes the protocol feel invisible",
-        "body": "Authors should feel like they are choosing a design language, while the system quietly preserves editability underneath it.",
-        "action": "Build style packs against the specimen deck, then map user content into those same archetypes."
-      }
-    }
-  ]
-}
 ```
