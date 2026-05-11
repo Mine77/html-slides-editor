@@ -1,661 +1,501 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML Should Be the Source Format for Digital Content</title>
-  <style>
-    :root {
-      --fg: #1a1a1a;
-      --fg-secondary: #555;
-      --fg-tertiary: #888;
-      --bg: #fff;
-      --bg-subtle: #f7f7f5;
-      --border: #e5e5e3;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --max-width: 720px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--fg);
-      background: var(--bg);
-      line-height: 1.75;
-      font-size: 17px;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    article {
-      max-width: var(--max-width);
-      margin: 0 auto;
-      padding: 80px 24px 120px;
-    }
-
-    /* --- Header --- */
-    .meta {
-      font-size: 13px;
-      color: var(--fg-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      font-size: 2.4em;
-      font-weight: 700;
-      line-height: 1.2;
-      letter-spacing: -0.02em;
-      margin-bottom: 20px;
-    }
-
-    .subtitle {
-      font-size: 1.15em;
-      color: var(--fg-secondary);
-      line-height: 1.6;
-      margin-bottom: 40px;
-    }
-
-    hr {
-      border: none;
-      border-top: 1px solid var(--border);
-      margin: 48px 0;
-    }
-
-    /* --- Body --- */
-    h2 {
-      font-size: 1.4em;
-      font-weight: 650;
-      margin: 48px 0 16px;
-      letter-spacing: -0.01em;
-    }
-
-    h3 {
-      font-size: 1.1em;
-      font-weight: 600;
-      margin: 32px 0 12px;
-      color: var(--fg-secondary);
-    }
-
-    p {
-      margin-bottom: 20px;
-    }
-
-    ul, ol {
-      margin: 0 0 20px 24px;
-    }
-
-    li {
-      margin-bottom: 8px;
-    }
-
-    li p {
-      margin-bottom: 4px;
-    }
-
-    strong {
-      font-weight: 600;
-    }
-
-    a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-
-    blockquote {
-      border-left: 3px solid var(--border);
-      padding: 4px 0 4px 20px;
-      margin: 24px 0;
-      color: var(--fg-secondary);
-      font-style: italic;
-    }
-
-    code {
-      font-family: "SF Mono", "Fira Code", "Fira Mono", monospace;
-      font-size: 0.88em;
-      background: var(--bg-subtle);
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-
-    /* --- Example cards --- */
-    .example-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin: 24px 0;
-    }
-    @media (max-width: 600px) {
-      .example-grid { grid-template-columns: 1fr; }
-    }
-
-    .example-card {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px;
-      background: var(--bg-subtle);
-    }
-    .example-card h4 {
-      font-size: 0.85em;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--fg-tertiary);
-      margin-bottom: 8px;
-    }
-    .example-card p {
-      font-size: 0.92em;
-      color: var(--fg-secondary);
-      margin: 0;
-      line-height: 1.6;
-    }
-
-    /* --- Comparison table --- */
-    .comparison {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 24px 0;
-      font-size: 0.92em;
-    }
-    .comparison th, .comparison td {
-      text-align: left;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-    }
-    .comparison th {
-      font-weight: 600;
-      font-size: 0.85em;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--fg-tertiary);
-    }
-    .comparison td:not(:first-child),
-    .comparison th:not(:first-child) {
-      text-align: center;
-    }
-    .check { color: #16a34a; }
-    .cross { color: #dc2626; }
-    .partial { color: #d97706; }
-
-    /* --- Callout --- */
-    .callout {
-      background: var(--bg-subtle);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px 28px;
-      margin: 32px 0;
-    }
-    .callout p:last-child { margin-bottom: 0; }
-
-    /* --- Copy button --- */
-    .copy-bar {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 100;
-    }
-    .copy-btn {
-      background: var(--fg);
-      color: var(--bg);
-      border: none;
-      border-radius: 8px;
-      padding: 10px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-      transition: background 0.15s, transform 0.1s;
-    }
-    .copy-btn:hover { background: #333; }
-    .copy-btn:active { transform: scale(0.97); }
-    .copy-btn.copied { background: #16a34a; }
-
-    /* --- Footer --- */
-    footer {
-      margin-top: 64px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      font-size: 0.85em;
-      color: var(--fg-tertiary);
-    }
-  </style>
-</head>
-<body>
-  <article>
-    <div class="meta">StarryKit · May 2026</div>
-    <h1>HTML Should Be the Source Format for Digital Content</h1>
-    <p class="subtitle">
-      Slides, documents, videos, interactive explainers — the next generation of digital content
-      should be authored in HTML. Not because it's trendy, but because it's the only format that
-      is simultaneously human-readable, machine-writable, and universally renderable.
-    </p>
-
-    <hr>
-
-    <!-- ===== POINT 1 ===== -->
-    <h2>1. Better Expressiveness</h2>
-
-    <h3>For humans: beyond flat text</h3>
-    <p>
-      PowerPoint gave us slides. Word gave us documents. Each tool created its own island format,
-      and each format carries the limitations of the era it was born in. HTML, by contrast, is a
-      <strong>living standard</strong> — it has evolved over 30 years to support everything from
-      simple text to embedded video, interactive charts, animated transitions, and responsive
-      layouts that adapt to any screen.
-    </p>
-    <p>
-      When your source file is HTML, a slide deck can contain an embedded data visualization that
-      updates in real time. A course module can include an interactive code playground. A research
-      paper can embed a runnable experiment. No export step, no conversion loss, no "this feature
-      is not supported in this format."
-    </p>
-
-    <h3>For agents: semantic, structured, and programmable</h3>
-    <p>
-      LLMs don't see pixels — they see text. HTML is the richest text-based format that still
-      carries <strong>explicit structure</strong>: headings, lists, tables, sections, and semantic
-      tags like <code>&lt;article&gt;</code>, <code>&lt;figure&gt;</code>, and
-      <code>&lt;nav&gt;</code>. An agent can read an HTML document and understand not just
-      <em>what</em> the content says, but <em>how</em> it is organized.
-    </p>
-    <p>
-      Compare this to a <code>.pptx</code> file: to an agent, it's a zip archive of XML blobs
-      with coordinate-based positioning. To modify a single bullet point, the agent must parse
-      OPC packaging, navigate <code>slide1.xml</code>, locate the right
-      <code>&lt;a:p&gt;</code> element among dozens, and reconstruct the XML without breaking
-      the slide layout. With HTML, the same change is a one-line text edit.
-    </p>
-
-    <!-- ===== POINT 2 ===== -->
-    <h2>2. No Vendor Lock-in</h2>
-
-    <p>
-      The dominant content formats today — <code>.pptx</code>, <code>.docx</code>,
-      <code>.key</code>, <code>.aep</code> — are controlled by single vendors. They can change
-      the spec, discontinue the tool, or raise the price, and your content goes along for the
-      ride.
-    </p>
-    <p>
-      HTML is an open standard maintained by the W3C. Every browser renders it. Every operating
-      system supports it. No single company can deprecate it. Your content, authored in HTML today,
-      will be readable in 2040 without asking anyone's permission.
-    </p>
-
-    <p>For the agent-human collaboration era, this matters even more:</p>
-    <ul>
-      <li>
-        <strong>Agents can generate HTML natively.</strong> No need for specialized libraries or
-        reverse-engineered file format specs. The agent writes text, and the text <em>is</em>
-        the content.
-      </li>
-      <li>
-        <strong>Humans can edit HTML in any tool.</strong> A browser, a text editor, an IDE,
-        a visual editor — all of them work. There is no "you need this specific app to open
-        this file" problem.
-      </li>
-      <li>
-        <strong>Version control is natural.</strong> HTML is plain text. <code>git diff</code>
-        shows you exactly what changed, line by line. Try diffing two <code>.pptx</code> files.
-      </li>
-    </ul>
-
-    <!-- ===== POINT 3 ===== NEW ===== -->
-    <h2>3. Composable with the Web Platform</h2>
-    <p>
-      HTML doesn't exist in isolation. It sits on top of CSS and JavaScript — the most widely
-      deployed programming platform in history. This means an HTML source file can:
-    </p>
-    <ul>
-      <li>Use CSS for <strong>visual design</strong> without embedding styles in the content structure.</li>
-      <li>Use JavaScript for <strong>interactivity</strong> — animations, data binding, user input.</li>
-      <li>Fetch <strong>live data</strong> from APIs and render it inline.</li>
-      <li>Be <strong>embedded</strong> in other HTML pages, shared via URL, or printed to PDF.</li>
-    </ul>
-    <p>
-      No other content format offers this level of composability. A PPTX file is a dead artifact.
-      An HTML file is a living application.
-    </p>
-
-    <!-- ===== POINT 4 ===== NEW ===== -->
-    <h2>4. Accessibility by Default</h2>
-    <p>
-      HTML has built-in accessibility semantics. Screen readers understand
-      <code>&lt;h1&gt;</code> through <code>&lt;h6&gt;</code>, <code>&lt;nav&gt;</code>,
-      <code>&lt;table&gt;</code>, <code>alt</code> attributes on images, and ARIA roles.
-      When you author content in HTML, accessibility is a natural byproduct of good structure.
-    </p>
-    <p>
-      Proprietary formats require separate accessibility passes — and most authors skip them.
-      The result: millions of PowerPoint presentations that are invisible to screen readers.
-      HTML makes the accessible path the easy path.
-    </p>
-
-    <!-- ===== POINT 5 ===== NEW ===== -->
-    <h2>5. The Agent-Native Content Layer</h2>
-    <p>
-      We are entering an era where AI agents will author, edit, and remix content alongside
-      humans. This collaboration requires a format that both parties can read and write
-      fluently. HTML is the only candidate:
-    </p>
-
-    <table class="comparison">
-      <thead>
-        <tr>
-          <th>Capability</th>
-          <th>HTML</th>
-          <th>PPTX</th>
-          <th>PDF</th>
-          <th>Markdown</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Human-readable source</td>
-          <td class="check">✓</td>
-          <td class="cross">✗</td>
-          <td class="cross">✗</td>
-          <td class="check">✓</td>
-        </tr>
-        <tr>
-          <td>Agent-writable without libraries</td>
-          <td class="check">✓</td>
-          <td class="cross">✗</td>
-          <td class="cross">✗</td>
-          <td class="check">✓</td>
-        </tr>
-        <tr>
-          <td>Rich layout & design</td>
-          <td class="check">✓</td>
-          <td class="check">✓</td>
-          <td class="check">✓</td>
-          <td class="cross">✗</td>
-        </tr>
-        <tr>
-          <td>Interactivity</td>
-          <td class="check">✓</td>
-          <td class="partial">~</td>
-          <td class="cross">✗</td>
-          <td class="cross">✗</td>
-        </tr>
-        <tr>
-          <td>Native version control</td>
-          <td class="check">✓</td>
-          <td class="cross">✗</td>
-          <td class="cross">✗</td>
-          <td class="check">✓</td>
-        </tr>
-        <tr>
-          <td>Universal rendering</td>
-          <td class="check">✓</td>
-          <td class="partial">~</td>
-          <td class="check">✓</td>
-          <td class="partial">~</td>
-        </tr>
-        <tr>
-          <td>Embeddable in web pages</td>
-          <td class="check">✓</td>
-          <td class="cross">✗</td>
-          <td class="cross">✗</td>
-          <td class="check">✓</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p>
-      Markdown is readable and writable, but it lacks layout, design, and interactivity.
-      PPTX and PDF are visually rich, but opaque to agents and hostile to version control.
-      HTML is the <strong>only format that scores well on every axis</strong>.
-    </p>
-
-    <!-- ===== EXAMPLES ===== -->
-    <h2>What Does This Look Like in Practice?</h2>
-
-    <div class="example-grid">
-      <div class="example-card">
-        <h4>Slides</h4>
-        <p>
-          A slide deck as a single HTML file. Each slide is a <code>&lt;slide&gt;</code> tag.
-          An agent generates the content; a visual editor handles the layout. The same file is
-          viewable in any browser, editable in any text editor, and printable as PDF.
-        </p>
-      </div>
-      <div class="example-card">
-        <h4>Interactive Tutorials</h4>
-        <p>
-          A coding tutorial with embedded <code>&lt;textarea&gt;</code> elements that run
-          JavaScript in real time. The agent writes the tutorial; the student interacts with
-          it — all in the same file format.
-        </p>
-      </div>
-      <div class="example-card">
-        <h4>Research Papers</h4>
-        <p>
-          An academic paper with embedded charts that respond to hover, expandable methodology
-          sections, and live data tables. No supplementary materials needed — everything is in
-          the source file.
-        </p>
-      </div>
-      <div class="example-card">
-        <h4>Video Storyboards</h4>
-        <p>
-          A video storyboard as HTML with timeline annotations, embedded preview frames, and
-          cue notes. An agent generates the storyboard from a script; the director reviews and
-          edits it in a browser.
-        </p>
-      </div>
-    </div>
-
-    <hr>
-
-    <!-- ===== TOOLING ===== -->
-    <h2>The Missing Piece: Tooling</h2>
-
-    <p>
-      If HTML is such a great source format, why isn't everyone using it already? Because the
-      <strong>tooling gap</strong> is real.
-    </p>
-    <p>
-      Writing raw HTML by hand is tedious. Existing visual editors (Figma, Canva, Google Slides)
-      export to HTML but don't use it as their source format. Web IDEs understand HTML but aren't
-      designed for content creation workflows — they think in terms of components and builds, not
-      slides and chapters.
-    </p>
-    <p>
-      What we need is a new class of tools that:
-    </p>
-    <ul>
-      <li>Use <strong>HTML as the native source format</strong> — not an export target.</li>
-      <li>Provide <strong>visual editing</strong> for humans — drag, resize, style — without hiding the HTML.</li>
-      <li>Expose a <strong>structured contract</strong> for agents — so AI can generate, verify, and edit content programmatically.</li>
-      <li>Treat the source file as <strong>the single source of truth</strong> — no sidecar metadata, no hidden state.</li>
-    </ul>
-
-    <!-- ===== STARRYKIT ===== -->
-    <div class="callout">
-      <p>
-        <strong>This is what we're building at StarryKit.</strong>
-      </p>
-      <p>
-        Our first product, Starry Slides, uses a single HTML file as the source of truth for an
-        entire slide deck. An agent can generate a deck from a contract, verify it against a
-        schema, and open it in a visual editor — all without converting between formats. The
-        human edits visually; the agent reads and writes the same HTML. No lock-in, no conversion
-        loss, no gap between what the human sees and what the agent understands.
-      </p>
-      <p>
-        We believe this pattern — HTML as source, contract as schema, editor as interface —
-        will extend beyond slides to documents, storyboards, dashboards, and formats we haven't
-        imagined yet.
-      </p>
-    </div>
-
-    <hr>
-
-    <h2>The Argument in One Sentence</h2>
-    <p>
-      HTML is the only content format that is simultaneously readable by humans, writable by
-      agents, renderable by every browser, controllable by version systems, and extensible
-      without anyone's permission. That's not a coincidence — it's the result of 30 years of
-      open standards work. It's time to stop treating HTML as "just for web pages" and start
-      treating it as the universal source format for digital content.
-    </p>
-
-    <footer>
-      <p>StarryKit · <a href="https://github.com/StarryKit">github.com/StarryKit</a></p>
-    </footer>
-  </article>
-
-  <!-- ===== Copy as Markdown ===== -->
-  <div class="copy-bar">
-    <button class="copy-btn" id="copyBtn" onclick="copyAsMarkdown()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-      <span id="copyLabel">Copy as Markdown</span>
-    </button>
-  </div>
-
-  <script>
-    function copyAsMarkdown() {
-      const article = document.querySelector('article');
-      let md = '';
-
-      for (const node of article.children) {
-        md += convertNode(node);
-      }
-
-      navigator.clipboard.writeText(md.trim() + '\n').then(() => {
-        const btn = document.getElementById('copyBtn');
-        const label = document.getElementById('copyLabel');
-        btn.classList.add('copied');
-        label.textContent = 'Copied!';
-        setTimeout(() => {
-          btn.classList.remove('copied');
-          label.textContent = 'Copy as Markdown';
-        }, 2000);
-      });
-    }
-
-    function convertNode(node) {
-      if (node.classList && node.contains(document.querySelector('.meta'))) {
-        // Skip the header area, handle individually
-      }
-
-      const tag = node.tagName?.toLowerCase();
-
-      switch (tag) {
-        case 'div':
-          if (node.classList.contains('meta')) return '';
-          if (node.classList.contains('subtitle')) {
-            return `> ${node.textContent.trim()}\n\n`;
-          }
-          if (node.classList.contains('example-grid')) {
-            let out = '';
-            for (const card of node.querySelectorAll('.example-card')) {
-              const title = card.querySelector('h4')?.textContent || '';
-              const text = card.querySelector('p')?.textContent || '';
-              out += `**${title}**\n${text}\n\n`;
-            }
-            return out;
-          }
-          if (node.classList.contains('callout')) {
-            let out = '';
-            for (const p of node.querySelectorAll('p')) {
-              out += `> ${p.textContent.trim()}\n>\n`;
-            }
-            return out.trim() + '\n\n';
-          }
-          return node.textContent + '\n\n';
-
-        case 'h1': return `# ${node.textContent}\n\n`;
-        case 'h2': return `## ${node.textContent}\n\n`;
-        case 'h3': return `### ${node.textContent}\n\n`;
-
-        case 'p':
-          if (node.classList.contains('subtitle')) return '';
-          return convertInline(node) + '\n\n';
-
-        case 'hr': return '---\n\n';
-
-        case 'ul': {
-          let out = '';
-          for (const li of node.querySelectorAll(':scope > li')) {
-            out += `- ${convertInline(li)}\n`;
-          }
-          return out + '\n';
-        }
-
-        case 'ol': {
-          let out = '';
-          let i = 1;
-          for (const li of node.querySelectorAll(':scope > li')) {
-            out += `${i}. ${convertInline(li)}\n`;
-            i++;
-          }
-          return out + '\n';
-        }
-
-        case 'table': return convertTable(node) + '\n';
-
-        case 'blockquote': {
-          let out = '';
-          for (const child of node.children) {
-            out += `> ${convertInline(child)}\n`;
-          }
-          return out + '\n';
-        }
-
-        case 'footer': return `---\n\n_${node.textContent.trim()}_\n`;
-
-        default: return convertInline(node) + '\n\n';
-      }
-    }
-
-    function convertInline(node) {
-      let text = '';
-      for (const child of node.childNodes) {
-        if (child.nodeType === 3) {
-          text += child.textContent;
-        } else if (child.nodeType === 1) {
-          const t = child.tagName.toLowerCase();
-          const inner = convertInline(child);
-          if (t === 'strong' || t === 'b') text += `**${inner}**`;
-          else if (t === 'em' || t === 'i') text += `*${inner}*`;
-          else if (t === 'code') text += `\`${inner}\``;
-          else if (t === 'a') text += `[${inner}](${child.href})`;
-          else text += inner;
-        }
-      }
-      return text;
-    }
-
-    function convertTable(table) {
-      const rows = [];
-      const thead = table.querySelector('thead');
-      const tbody = table.querySelector('tbody');
-
-      if (thead) {
-        const ths = thead.querySelectorAll('th');
-        rows.push(Array.from(ths).map(th => th.textContent.trim()));
-        rows.push(ths.length > 0 ? Array.from(ths).fill('---') : []);
-      }
-
-      if (tbody) {
-        for (const tr of tbody.querySelectorAll('tr')) {
-          rows.push(Array.from(tr.querySelectorAll('td')).map(td => {
-            return td.textContent.trim();
-          }));
-        }
-      }
-
-      return rows.map(row => '| ' + row.join(' | ') + ' |').join('\n') + '\n';
-    }
-  </script>
-</body>
-</html>
+     1|<!DOCTYPE html>
+     2|<html lang="en">
+     3|<head>
+     4|  <meta charset="UTF-8">
+     5|  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     6|  <title>HTML Should Be the Source Format for Digital Content</title>
+     7|  <style>
+     8|    :root {
+     9|      --fg: #1a1a1a;
+    10|      --fg-secondary: #555;
+    11|      --fg-tertiary: #888;
+    12|      --bg: #fff;
+    13|      --bg-subtle: #f7f7f5;
+    14|      --border: #e5e5e3;
+    15|      --accent: #2563eb;
+    16|      --accent-hover: #1d4ed8;
+    17|      --max-width: 720px;
+    18|    }
+    19|
+    20|    * { box-sizing: border-box; margin: 0; padding: 0; }
+    21|
+    22|    body {
+    23|      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    24|      color: var(--fg);
+    25|      background: var(--bg);
+    26|      line-height: 1.75;
+    27|      font-size: 17px;
+    28|      -webkit-font-smoothing: antialiased;
+    29|    }
+    30|
+    31|    article {
+    32|      max-width: var(--max-width);
+    33|      margin: 0 auto;
+    34|      padding: 80px 24px 120px;
+    35|    }
+    36|
+    37|    /* --- Header --- */
+    38|    .meta {
+    39|      font-size: 13px;
+    40|      color: var(--fg-tertiary);
+    41|      text-transform: uppercase;
+    42|      letter-spacing: 0.08em;
+    43|      margin-bottom: 16px;
+    44|    }
+    45|
+    46|    h1 {
+    47|      font-size: 2.4em;
+    48|      font-weight: 700;
+    49|      line-height: 1.2;
+    50|      letter-spacing: -0.02em;
+    51|      margin-bottom: 20px;
+    52|    }
+    53|
+    54|    .subtitle {
+    55|      font-size: 1.15em;
+    56|      color: var(--fg-secondary);
+    57|      line-height: 1.6;
+    58|      margin-bottom: 40px;
+    59|    }
+    60|
+    61|    hr {
+    62|      border: none;
+    63|      border-top: 1px solid var(--border);
+    64|      margin: 48px 0;
+    65|    }
+    66|
+    67|    /* --- Body --- */
+    68|    h2 {
+    69|      font-size: 1.4em;
+    70|      font-weight: 650;
+    71|      margin: 48px 0 16px;
+    72|      letter-spacing: -0.01em;
+    73|    }
+    74|
+    75|    h3 {
+    76|      font-size: 1.1em;
+    77|      font-weight: 600;
+    78|      margin: 32px 0 12px;
+    79|      color: var(--fg-secondary);
+    80|    }
+    81|
+    82|    p {
+    83|      margin-bottom: 20px;
+    84|    }
+    85|
+    86|    ul, ol {
+    87|      margin: 0 0 20px 24px;
+    88|    }
+    89|
+    90|    li {
+    91|      margin-bottom: 8px;
+    92|    }
+    93|
+    94|    li p {
+    95|      margin-bottom: 4px;
+    96|    }
+    97|
+    98|    strong {
+    99|      font-weight: 600;
+   100|    }
+   101|
+   102|    a {
+   103|      color: var(--accent);
+   104|      text-decoration: none;
+   105|    }
+   106|    a:hover {
+   107|      text-decoration: underline;
+   108|    }
+   109|
+   110|    blockquote {
+   111|      border-left: 3px solid var(--border);
+   112|      padding: 4px 0 4px 20px;
+   113|      margin: 24px 0;
+   114|      color: var(--fg-secondary);
+   115|      font-style: italic;
+   116|    }
+   117|
+   118|    code {
+   119|      font-family: "SF Mono", "Fira Code", "Fira Mono", monospace;
+   120|      font-size: 0.88em;
+   121|      background: var(--bg-subtle);
+   122|      padding: 2px 6px;
+   123|      border-radius: 4px;
+   124|    }
+   125|
+   126|    /* --- Example cards --- */
+   127|    .example-grid {
+   128|      display: grid;
+   129|      grid-template-columns: 1fr 1fr;
+   130|      gap: 16px;
+   131|      margin: 24px 0;
+   132|    }
+   133|    @media (max-width: 600px) {
+   134|      .example-grid { grid-template-columns: 1fr; }
+   135|    }
+   136|
+   137|    .example-card {
+   138|      border: 1px solid var(--border);
+   139|      border-radius: 10px;
+   140|      padding: 20px;
+   141|      background: var(--bg-subtle);
+   142|    }
+   143|    .example-card h4 {
+   144|      font-size: 0.85em;
+   145|      font-weight: 600;
+   146|      text-transform: uppercase;
+   147|      letter-spacing: 0.06em;
+   148|      color: var(--fg-tertiary);
+   149|      margin-bottom: 8px;
+   150|    }
+   151|    .example-card p {
+   152|      font-size: 0.92em;
+   153|      color: var(--fg-secondary);
+   154|      margin: 0;
+   155|      line-height: 1.6;
+   156|    }
+   157|
+   158|    /* --- Comparison table --- */
+   159|    .comparison {
+   160|      width: 100%;
+   161|      border-collapse: collapse;
+   162|      margin: 24px 0;
+   163|      font-size: 0.92em;
+   164|    }
+   165|    .comparison th, .comparison td {
+   166|      text-align: left;
+   167|      padding: 10px 14px;
+   168|      border-bottom: 1px solid var(--border);
+   169|    }
+   170|    .comparison th {
+   171|      font-weight: 600;
+   172|      font-size: 0.85em;
+   173|      text-transform: uppercase;
+   174|      letter-spacing: 0.05em;
+   175|      color: var(--fg-tertiary);
+   176|    }
+   177|    .comparison td:not(:first-child),
+   178|    .comparison th:not(:first-child) {
+   179|      text-align: center;
+   180|    }
+   181|    .check { color: #16a34a; }
+   182|    .cross { color: #dc2626; }
+   183|    .partial { color: #d97706; }
+   184|
+   185|    /* --- Callout --- */
+   186|    .callout {
+   187|      background: var(--bg-subtle);
+   188|      border: 1px solid var(--border);
+   189|      border-radius: 10px;
+   190|      padding: 24px 28px;
+   191|      margin: 32px 0;
+   192|    }
+   193|    .callout p:last-child { margin-bottom: 0; }
+   194|
+   195|    /* --- Copy button --- */
+   196|    .copy-bar {
+   197|      position: fixed;
+   198|      bottom: 24px;
+   199|      right: 24px;
+   200|      z-index: 100;
+   201|    }
+   202|    .copy-btn {
+   203|      background: var(--fg);
+   204|      color: var(--bg);
+   205|      border: none;
+   206|      border-radius: 8px;
+   207|      padding: 10px 18px;
+   208|      font-size: 13px;
+   209|      font-weight: 500;
+   210|      cursor: pointer;
+   211|      display: flex;
+   212|      align-items: center;
+   213|      gap: 6px;
+   214|      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+   215|      transition: background 0.15s, transform 0.1s;
+   216|    }
+   217|    .copy-btn:hover { background: #333; }
+   218|    .copy-btn:active { transform: scale(0.97); }
+   219|    .copy-btn.copied { background: #16a34a; }
+   220|
+   221|    /* --- Footer --- */
+   222|    footer {
+   223|      margin-top: 64px;
+   224|      padding-top: 24px;
+   225|      border-top: 1px solid var(--border);
+   226|      font-size: 0.85em;
+   227|      color: var(--fg-tertiary);
+   228|    }
+   229|  </style>
+   230|</head>
+   231|<body>
+   232|  <article>
+   233|    <div class="meta">StarryKit · May 2026</div>
+   234|    <h1>HTML Should Be the Source Format for Digital Content</h1>
+   235|    <p class="subtitle">
+   236|      Slides, documents, videos, interactive explainers — the next generation of digital content
+   237|      should be authored in HTML. Not because it's trendy, but because it's the only format that
+   238|      is simultaneously human-readable, machine-writable, and universally renderable.
+   239|    </p>
+   240|
+   241|    <hr>
+   242|
+   243|    <!-- ===== POINT 1 ===== -->
+   244|    <h2>1. Better Expressiveness</h2>
+   245|
+   246|    <h3>For humans: beyond flat text</h3>
+   247|    <p>
+   248|      PowerPoint gave us slides. Word gave us documents. Each tool created its own island format,
+   249|      and each format carries the limitations of the era it was born in. HTML, by contrast, is a
+   250|      <strong>living standard</strong> — it has evolved over 30 years to support everything from
+   251|      simple text to embedded video, interactive charts, animated transitions, and responsive
+   252|      layouts that adapt to any screen.
+   253|    </p>
+   254|    <p>
+   255|      When your source file is HTML, a slide deck can contain an embedded data visualization that
+   256|      updates in real time. A course module can include an interactive code playground. A research
+   257|      paper can embed a runnable experiment. No export step, no conversion loss, no "this feature
+   258|      is not supported in this format."
+   259|    </p>
+   260|
+   261|    <h3>For agents: semantic, structured, and programmable</h3>
+   262|    <p>
+   263|      LLMs don't see pixels — they see text. HTML is the richest text-based format that still
+   264|      carries <strong>explicit structure</strong>: headings, lists, tables, sections, and semantic
+   265|      tags like <code>&lt;article&gt;</code>, <code>&lt;figure&gt;</code>, and
+   266|      <code>&lt;nav&gt;</code>. An agent can read an HTML document and understand not just
+   267|      <em>what</em> the content says, but <em>how</em> it is organized.
+   268|    </p>
+   269|    <p>
+   270|      Compare this to a <code>.pptx</code> file: to an agent, it's a zip archive of XML blobs
+   271|      with coordinate-based positioning. To modify a single bullet point, the agent must parse
+   272|      OPC packaging, navigate <code>slide1.xml</code>, locate the right
+   273|      <code>&lt;a:p&gt;</code> element among dozens, and reconstruct the XML without breaking
+   274|      the slide layout. With HTML, the same change is a one-line text edit.
+   275|    </p>
+   276|
+   277|    <!-- ===== POINT 2 ===== -->
+   278|    <h2>2. No Vendor Lock-in</h2>
+   279|
+   280|    <p>
+   281|      The dominant content formats today — <code>.pptx</code>, <code>.docx</code>,
+   282|      <code>.key</code>, <code>.aep</code> — are controlled by single vendors. They can change
+   283|      the spec, discontinue the tool, or raise the price, and your content goes along for the
+   284|      ride.
+   285|    </p>
+   286|    <p>
+   287|      HTML is an open standard maintained by the W3C. Every browser renders it. Every operating
+   288|      system supports it. No single company can deprecate it. Your content, authored in HTML today,
+   289|      will be readable in 2040 without asking anyone's permission.
+   290|    </p>
+   291|
+   292|    <p>For the agent-human collaboration era, this matters even more:</p>
+   293|    <ul>
+   294|      <li>
+   295|        <strong>Agents can generate HTML natively.</strong> No need for specialized libraries or
+   296|        reverse-engineered file format specs. The agent writes text, and the text <em>is</em>
+   297|        the content.
+   298|      </li>
+   299|      <li>
+   300|        <strong>Humans can edit HTML in any tool.</strong> A browser, a text editor, an IDE,
+   301|        a visual editor — all of them work. There is no "you need this specific app to open
+   302|        this file" problem.
+   303|      </li>
+   304|      <li>
+   305|        <strong>Version control is natural.</strong> HTML is plain text. <code>git diff</code>
+   306|        shows you exactly what changed, line by line. Try diffing two <code>.pptx</code> files.
+   307|      </li>
+   308|    </ul>
+   309|
+   310|    <!-- ===== POINT 3 ===== NEW ===== -->
+   311|    <h2>3. Composable with the Web Platform</h2>
+   312|    <p>
+   313|      HTML doesn't exist in isolation. It sits on top of CSS and JavaScript — the most widely
+   314|      deployed programming platform in history. This means an HTML source file can:
+   315|    </p>
+   316|    <ul>
+   317|      <li>Use CSS for <strong>visual design</strong> without embedding styles in the content structure.</li>
+   318|      <li>Use JavaScript for <strong>interactivity</strong> — animations, data binding, user input.</li>
+   319|      <li>Fetch <strong>live data</strong> from APIs and render it inline.</li>
+   320|      <li>Be <strong>embedded</strong> in other HTML pages, shared via URL, or printed to PDF.</li>
+   321|    </ul>
+   322|    <p>
+   323|      No other content format offers this level of composability. A PPTX file is a dead artifact.
+   324|      An HTML file is a living application.
+   325|    </p>
+   326|
+   327|    <!-- ===== POINT 4 ===== NEW ===== -->
+   328|    <h2>4. Accessibility by Default</h2>
+   329|    <p>
+   330|      HTML has built-in accessibility semantics. Screen readers understand
+   331|      <code>&lt;h1&gt;</code> through <code>&lt;h6&gt;</code>, <code>&lt;nav&gt;</code>,
+   332|      <code>&lt;table&gt;</code>, <code>alt</code> attributes on images, and ARIA roles.
+   333|      When you author content in HTML, accessibility is a natural byproduct of good structure.
+   334|    </p>
+   335|    <p>
+   336|      Proprietary formats require separate accessibility passes — and most authors skip them.
+   337|      The result: millions of PowerPoint presentations that are invisible to screen readers.
+   338|      HTML makes the accessible path the easy path.
+   339|    </p>
+   340|
+   341|    <!-- ===== POINT 5 ===== NEW ===== -->
+   342|    <h2>5. The Agent-Native Content Layer</h2>
+   343|    <p>
+   344|      We are entering an era where AI agents will author, edit, and remix content alongside
+   345|      humans. This collaboration requires a format that both parties can read and write
+   346|      fluently. HTML is the only candidate:
+   347|    </p>
+   348|
+   349|    <table class="comparison">
+   350|      <thead>
+   351|        <tr>
+   352|          <th>Capability</th>
+   353|          <th>HTML</th>
+   354|          <th>PPTX</th>
+   355|          <th>PDF</th>
+   356|          <th>Markdown</th>
+   357|        </tr>
+   358|      </thead>
+   359|      <tbody>
+   360|        <tr>
+   361|          <td>Human-readable source</td>
+   362|          <td class="check">✓</td>
+   363|          <td class="cross">✗</td>
+   364|          <td class="cross">✗</td>
+   365|          <td class="check">✓</td>
+   366|        </tr>
+   367|        <tr>
+   368|          <td>Agent-writable without libraries</td>
+   369|          <td class="check">✓</td>
+   370|          <td class="cross">✗</td>
+   371|          <td class="cross">✗</td>
+   372|          <td class="check">✓</td>
+   373|        </tr>
+   374|        <tr>
+   375|          <td>Rich layout & design</td>
+   376|          <td class="check">✓</td>
+   377|          <td class="check">✓</td>
+   378|          <td class="check">✓</td>
+   379|          <td class="cross">✗</td>
+   380|        </tr>
+   381|        <tr>
+   382|          <td>Interactivity</td>
+   383|          <td class="check">✓</td>
+   384|          <td class="partial">~</td>
+   385|          <td class="cross">✗</td>
+   386|          <td class="cross">✗</td>
+   387|        </tr>
+   388|        <tr>
+   389|          <td>Native version control</td>
+   390|          <td class="check">✓</td>
+   391|          <td class="cross">✗</td>
+   392|          <td class="cross">✗</td>
+   393|          <td class="check">✓</td>
+   394|        </tr>
+   395|        <tr>
+   396|          <td>Universal rendering</td>
+   397|          <td class="check">✓</td>
+   398|          <td class="partial">~</td>
+   399|          <td class="check">✓</td>
+   400|          <td class="partial">~</td>
+   401|        </tr>
+   402|        <tr>
+   403|          <td>Embeddable in web pages</td>
+   404|          <td class="check">✓</td>
+   405|          <td class="cross">✗</td>
+   406|          <td class="cross">✗</td>
+   407|          <td class="check">✓</td>
+   408|        </tr>
+   409|      </tbody>
+   410|    </table>
+   411|
+   412|    <p>
+   413|      Markdown is readable and writable, but it lacks layout, design, and interactivity.
+   414|      PPTX and PDF are visually rich, but opaque to agents and hostile to version control.
+   415|      HTML is the <strong>only format that scores well on every axis</strong>.
+   416|    </p>
+   417|
+   418|    <!-- ===== EXAMPLES ===== -->
+   419|    <h2>What Does This Look Like in Practice?</h2>
+   420|
+   421|    <div class="example-grid">
+   422|      <div class="example-card">
+   423|        <h4>Slides</h4>
+   424|        <p>
+   425|          A slide deck as a single HTML file. Each slide is a <code>&lt;slide&gt;</code> tag.
+   426|          An agent generates the content; a visual editor handles the layout. The same file is
+   427|          viewable in any browser, editable in any text editor, and printable as PDF.
+   428|        </p>
+   429|      </div>
+   430|      <div class="example-card">
+   431|        <h4>Interactive Tutorials</h4>
+   432|        <p>
+   433|          A coding tutorial with embedded <code>&lt;textarea&gt;</code> elements that run
+   434|          JavaScript in real time. The agent writes the tutorial; the student interacts with
+   435|          it — all in the same file format.
+   436|        </p>
+   437|      </div>
+   438|      <div class="example-card">
+   439|        <h4>Research Papers</h4>
+   440|        <p>
+   441|          An academic paper with embedded charts that respond to hover, expandable methodology
+   442|          sections, and live data tables. No supplementary materials needed — everything is in
+   443|          the source file.
+   444|        </p>
+   445|      </div>
+   446|      <div class="example-card">
+   447|        <h4>Video Storyboards</h4>
+   448|        <p>
+   449|          A video storyboard as HTML with timeline annotations, embedded preview frames, and
+   450|          cue notes. An agent generates the storyboard from a script; the director reviews and
+   451|          edits it in a browser.
+   452|        </p>
+   453|      </div>
+   454|    </div>
+   455|
+   456|    <hr>
+   457|
+   458|    <!-- ===== TOOLING ===== -->
+   459|    <h2>The Missing Piece: Tooling</h2>
+   460|
+   461|    <p>
+   462|      If HTML is such a great source format, why isn't everyone using it already? Because the
+   463|      <strong>tooling gap</strong> is real.
+   464|    </p>
+   465|    <p>
+   466|      Writing raw HTML by hand is tedious. Existing visual editors (Figma, Canva, Google Slides)
+   467|      export to HTML but don't use it as their source format. Web IDEs understand HTML but aren't
+   468|      designed for content creation workflows — they think in terms of components and builds, not
+   469|      slides and chapters.
+   470|    </p>
+   471|    <p>
+   472|      What we need is a new class of tools that:
+   473|    </p>
+   474|    <ul>
+   475|      <li>Use <strong>HTML as the native source format</strong> — not an export target.</li>
+   476|      <li>Provide <strong>visual editing</strong> for humans — drag, resize, style — without hiding the HTML.</li>
+   477|      <li>Expose a <strong>structured contract</strong> for agents — so AI can generate, verify, and edit content programmatically.</li>
+   478|      <li>Treat the source file as <strong>the single source of truth</strong> — no sidecar metadata, no hidden state.</li>
+   479|    </ul>
+   480|
+   481|    <!-- ===== STARRYKIT ===== -->
+   482|    <div class="callout">
+   483|      <p>
+   484|        <strong>This is what we're building at StarryKit.</strong>
+   485|      </p>
+   486|      <p>
+   487|        Our first product, Starry Slides, uses a single HTML file as the source of truth for an
+   488|        entire slide deck. An agent can generate a deck from a contract, verify it against a
+   489|        schema, and open it in a visual editor — all without converting between formats. The
+   490|        human edits visually; the agent reads and writes the same HTML. No lock-in, no conversion
+   491|        loss, no gap between what the human sees and what the agent understands.
+   492|      </p>
+   493|      <p>
+   494|        We believe this pattern — HTML as source, contract as schema, editor as interface —
+   495|        will extend beyond slides to documents, storyboards, dashboards, and formats we haven't
+   496|        imagined yet.
+   497|      </p>
+   498|    </div>
+   499|
+   500|    <hr>
+   501|
