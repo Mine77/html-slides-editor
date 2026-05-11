@@ -73,40 +73,40 @@ export function buildProblemSlide() {
     `
       <div class="title-row">
         <div>
-          <div class="kicker" data-editable="text">Problem</div>
-          <h1 data-editable="text">Most slide editors only work after converting your content into their own private model</h1>
+          <p class="kicker">Problem</p>
+          <h1>Most slide editors only work after converting your content into their own private model</h1>
         </div>
-        <div class="summary-chip" data-editable="block">
-          <strong data-editable="text">Why now</strong>
-          <p data-editable="text">AI tools increasingly output HTML-based presentations, but downstream editing still breaks the original structure.</p>
+        <div class="summary-chip">
+          <strong>Why now</strong>
+          <p>AI tools increasingly output HTML-based presentations, but downstream editing still breaks the original structure.</p>
         </div>
       </div>
       <div class="problem-grid">
-        <article class="problem-card" data-editable="block">
-          <strong data-editable="text">Format lock-in</strong>
-          <p data-editable="text">Existing editors often require import into a proprietary JSON or canvas schema before any visual editing can happen.</p>
+        <article class="problem-card">
+          <strong>Format lock-in</strong>
+          <p>Existing editors often require import into a proprietary JSON or canvas schema before any visual editing can happen.</p>
           <ul>
-            <li data-editable="text">Round-tripping becomes lossy.</li>
-            <li data-editable="text">Generated HTML cannot stay canonical.</li>
-            <li data-editable="text">Custom markup gets flattened away.</li>
+            <li>Round-tripping becomes lossy.</li>
+            <li>Generated HTML cannot stay canonical.</li>
+            <li>Custom markup gets flattened away.</li>
           </ul>
         </article>
-        <article class="problem-card" data-editable="block">
-          <strong data-editable="text">AI-first workflows need direct HTML</strong>
-          <p data-editable="text">Teams want to generate, inspect, patch, version, and re-edit slides without a format translation boundary in the middle.</p>
+        <article class="problem-card">
+          <strong>AI-first workflows need direct HTML</strong>
+          <p>Teams want to generate, inspect, patch, version, and re-edit slides without a format translation boundary in the middle.</p>
           <ul>
-            <li data-editable="text">Generated decks should stay readable in git.</li>
-            <li data-editable="text">Editing should preserve original semantics.</li>
-            <li data-editable="text">Render and source should remain aligned.</li>
+            <li>Generated decks should stay readable in git.</li>
+            <li>Editing should preserve original semantics.</li>
+            <li>Render and source should remain aligned.</li>
           </ul>
         </article>
-        <article class="problem-card" data-editable="block">
-          <strong data-editable="text">Testing needs realism</strong>
-          <p data-editable="text">A three-slide toy deck is enough for text editing, but not enough to pressure-test broader presentation structures.</p>
+        <article class="problem-card">
+          <strong>Testing needs realism</strong>
+          <p>A three-slide toy deck is enough for text editing, but not enough to pressure-test broader presentation structures.</p>
           <ul>
-            <li data-editable="text">Tables surface alignment and overflow issues.</li>
-            <li data-editable="text">Charts stress SVG and mixed-content layouts.</li>
-            <li data-editable="text">Images expose cropping and sizing edge cases.</li>
+            <li>Tables surface alignment and overflow issues.</li>
+            <li>Charts stress SVG and mixed-content layouts.</li>
+            <li>Images expose cropping and sizing edge cases.</li>
           </ul>
         </article>
       </div>
@@ -191,45 +191,45 @@ export function buildArchitectureSlide() {
     `
       <div class="header">
         <div>
-          <div class="kicker" data-editable="text">Architecture</div>
-          <h1 data-editable="text">One pipeline from generated HTML to live iframe editing</h1>
+          <p class="kicker">Architecture</p>
+          <h1>One pipeline from generated HTML to live iframe editing</h1>
         </div>
-        <p data-editable="text">The same files serve as generated artifacts, app input, and editor runtime source. That keeps the system inspectable end to end.</p>
+        <p>The same files serve as generated artifacts, app input, and editor runtime source. That keeps the system inspectable end to end.</p>
       </div>
       <div class="flow">
-        <section class="flow-card" data-editable="block">
-          <strong data-editable="text">1. Generate</strong>
-          <p data-editable="text">A local skill writes standalone HTML slides plus a manifest. The generator is deterministic enough for tests and rich enough for demos.</p>
+        <section class="flow-card">
+          <strong>1. Generate</strong>
+          <p>A local skill writes standalone HTML slides plus a manifest. The generator is deterministic enough for tests and rich enough for demos.</p>
           <ul>
-            <li data-editable="text">Self-contained 1920x1080 HTML documents</li>
-            <li data-editable="text">Stable data-editable markers</li>
-            <li data-editable="text">Latest output synced into the app</li>
+            <li>Self-contained 1920x1080 HTML documents</li>
+            <li>Stable editor ids</li>
+            <li>Latest output synced into the app</li>
           </ul>
         </section>
-        <div class="arrow" data-editable="block">
-          <span data-editable="text">Manifest</span>
+        <div class="arrow">
+          <span>Manifest</span>
           <div class="arrow-line"></div>
         </div>
-        <section class="flow-card" data-editable="block">
-          <strong data-editable="text">2. Parse</strong>
-          <p data-editable="text">Core utilities fetch the manifest, load each HTML file, normalize selector IDs, and derive a SlideModel without inventing a second document format.</p>
+        <section class="flow-card">
+          <strong>2. Parse</strong>
+          <p>Core utilities fetch the manifest, load each HTML file, normalize selector IDs, and derive a SlideModel without inventing a second document format.</p>
           <ul>
-            <li data-editable="text">Node IDs like text-1 and block-4</li>
-            <li data-editable="text">Root dimensions preserved from source</li>
-            <li data-editable="text">Title inferred from heading structure</li>
+            <li>Node IDs like text-1 and block-4</li>
+            <li>Root dimensions preserved from source</li>
+            <li>Title inferred from heading structure</li>
           </ul>
         </section>
-        <div class="arrow" data-editable="block">
-          <span data-editable="text">Iframe</span>
+        <div class="arrow">
+          <span>Iframe</span>
           <div class="arrow-line"></div>
         </div>
-        <section class="flow-card" data-editable="block">
-          <strong data-editable="text">3. Edit</strong>
-          <p data-editable="text">The editor renders raw HTML in an iframe, overlays selection geometry, exposes styles, and commits text edits back into the slide source.</p>
+        <section class="flow-card">
+          <strong>3. Edit</strong>
+          <p>The editor renders raw HTML in an iframe, overlays selection geometry, exposes styles, and commits text edits back into the slide source.</p>
           <ul>
-            <li data-editable="text">Direct text editing on double click</li>
-            <li data-editable="text">Undo and redo on source-level operations</li>
-            <li data-editable="text">Selection overlay for block inspection</li>
+            <li>Direct text editing on double click</li>
+            <li>Undo and redo on source-level operations</li>
+            <li>Selection overlay for block inspection</li>
           </ul>
         </section>
       </div>

@@ -1,4 +1,10 @@
-import { SELECTOR_ATTR, querySlideElement } from "../../core";
+import {
+  SELECTOR_ATTR,
+  isBlockEditableElement,
+  isEditableElement,
+  isTextEditableElement,
+  querySlideElement,
+} from "../../core";
 
 export function hasDirectEditableChildren(html: string, elementId: string): boolean {
   if (typeof DOMParser === "undefined") {
@@ -7,14 +13,13 @@ export function hasDirectEditableChildren(html: string, elementId: string): bool
 
   const doc = new DOMParser().parseFromString(html, "text/html");
   const node = querySlideElement<HTMLElement>(doc, elementId);
-  if (!node || node.getAttribute("data-editable") !== "block") {
+  if (!(node instanceof HTMLElement) || !isBlockEditableElement(node)) {
     return false;
   }
 
   return Array.from(node.children).some(
     (child) =>
-      child instanceof HTMLElement &&
-      (child.hasAttribute("data-editable") || isListWrapperWithEditableItems(child))
+      child instanceof HTMLElement && (isEditableElement(child) || isListWrapperWithEditableItems(child))
   );
 }
 
@@ -72,7 +77,7 @@ export function isListWrapperWithEditableItems(node: Element): node is HTMLEleme
   }
 
   return Array.from(node.children).some(
-    (child) => child.tagName.toLowerCase() === "li" && child.hasAttribute("data-editable")
+    (child) => child.tagName.toLowerCase() === "li" && isTextEditableElement(child)
   );
 }
 
@@ -87,13 +92,13 @@ export function getScopedTextTargetAtPoint(
   }
 
   const directTarget = doc.elementFromPoint(point.x, point.y);
-  const directText = directTarget?.closest<HTMLElement>(`[data-editable="text"][${SELECTOR_ATTR}]`);
+  const directText = directTarget?.closest<HTMLElement>(`[${SELECTOR_ATTR}]`);
   if (directText && activeGroup.contains(directText)) {
-    return directText;
+    return isTextEditableElement(directText) ? directText : null;
   }
 
-  const candidates = Array.from(
-    activeGroup.querySelectorAll<HTMLElement>(`[data-editable="text"][${SELECTOR_ATTR}]`)
+  const candidates = Array.from(activeGroup.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)).filter(
+    isTextEditableElement
   );
   const directHit = candidates.find((candidate) => {
     const rect = candidate.getBoundingClientRect();

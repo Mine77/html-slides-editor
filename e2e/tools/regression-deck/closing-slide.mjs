@@ -53,22 +53,22 @@ export function buildClosingSlide() {
     `
       <div class="wrap">
         <section class="copy">
-          <div class="kicker" data-editable="text">Closing</div>
-          <h1 data-editable="text">The fixture should explain the project and also make the product harder to fake</h1>
-          <p data-editable="text">A richer deck forces the editor to deal with the kinds of layouts, content density, and media structures a real product pitch would use. That makes it better both as documentation and as a regression target.</p>
+          <p class="kicker">Closing</p>
+          <h1>The fixture should explain the project and also make the product harder to fake</h1>
+          <p>A richer deck forces the editor to deal with the kinds of layouts, content density, and media structures a real product pitch would use. That makes it better both as documentation and as a regression target.</p>
         </section>
         <aside class="actions">
-          <div class="action" data-editable="block">
-            <strong data-editable="text">Immediate use</strong>
-            <p data-editable="text">Use this deck for local demos, screenshots, and current end-to-end text editing tests.</p>
+          <div class="action">
+            <strong>Immediate use</strong>
+            <p>Use this deck for local demos, screenshots, and current end-to-end text editing tests.</p>
           </div>
-          <div class="action" data-editable="block">
-            <strong data-editable="text">Next milestone</strong>
-            <p data-editable="text">Extend operations beyond text so image cards, tables, and layout blocks become editable without schema conversion.</p>
+          <div class="action">
+            <strong>Next milestone</strong>
+            <p>Extend operations beyond text so image cards, tables, and layout blocks become editable without schema conversion.</p>
           </div>
-          <div class="action" data-editable="block">
-            <strong data-editable="text">Longer term</strong>
-            <p data-editable="text">Turn generated HTML into the backbone for authoring, presenting, collaboration, and export.</p>
+          <div class="action">
+            <strong>Longer term</strong>
+            <p>Turn generated HTML into the backbone for authoring, presenting, collaboration, and export.</p>
           </div>
         </aside>
       </div>

@@ -84,10 +84,10 @@ export function buildChartSlide() {
     }`,
     `
       <div class="layout">
-        <section class="chart-card" data-editable="block">
-          <div class="kicker" data-editable="text">Charts</div>
-          <h1 data-editable="text">Inline SVG gives the deck a realistic chart slide without extra runtime dependencies</h1>
-          <p data-editable="text">The editor does not yet understand charts semantically, but this slide still matters because it exercises block selection around vector-heavy content.</p>
+        <section class="chart-card">
+          <p class="kicker">Charts</p>
+          <h1>Inline SVG gives the deck a realistic chart slide without extra runtime dependencies</h1>
+          <p>The editor does not yet understand charts semantically, but this slide still matters because it exercises block selection around vector-heavy content.</p>
           <svg viewBox="0 0 980 500" width="100%" height="500" aria-label="Project milestones chart">
             <defs>
               <linearGradient id="areaFill" x1="0%" x2="0%" y1="0%" y2="100%">
@@ -134,25 +134,25 @@ export function buildChartSlide() {
             </g>
           </svg>
           <div class="legend">
-            <div class="legend-item" data-editable="block"><span class="legend-dot" style="background:#0f766e"></span><span data-editable="text">Delivery coverage</span></div>
-            <div class="legend-item" data-editable="block"><span class="legend-dot" style="background:#38bdf8"></span><span data-editable="text">Visual complexity</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:#0f766e"></span><span>Delivery coverage</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span><span>Visual complexity</span></div>
           </div>
         </section>
         <aside class="stats">
-          <div class="stat" data-editable="block">
-            <strong data-editable="text">10 slides</strong>
-            <span data-editable="text">Broad fixture</span>
-            <p data-editable="text">Enough surface area to catch styling regressions that a minimal regression deck would miss.</p>
+          <div class="stat">
+            <strong>10 slides</strong>
+            <span>Broad fixture</span>
+            <p>Enough surface area to catch styling regressions that a minimal regression deck would miss.</p>
           </div>
-          <div class="stat" data-editable="block">
-            <strong data-editable="text">Mixed media</strong>
-            <span data-editable="text">SVG + text</span>
-            <p data-editable="text">Useful for verifying selection logic around dense, nested DOM structures.</p>
+          <div class="stat">
+            <strong>Mixed media</strong>
+            <span>SVG + text</span>
+            <p>Useful for verifying selection logic around dense, nested DOM structures.</p>
           </div>
-          <div class="stat" data-editable="block">
-            <strong data-editable="text">Next target</strong>
-            <span data-editable="text">Block editing</span>
-            <p data-editable="text">The current fixture should already be good enough to drive future block and image operations.</p>
+          <div class="stat">
+            <strong>Next target</strong>
+            <span>Block editing</span>
+            <p>The current fixture should already be good enough to drive future block and image operations.</p>
           </div>
         </aside>
       </div>

@@ -14,7 +14,7 @@ function fixtureSlide(id: string, title: string) {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">${title}</h1>
+      <h1>${title}</h1>
     </div>
   </body>
 </html>`,
@@ -31,8 +31,8 @@ describe("history reducer", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Title</h1>
-      <p data-editable="text">Summary</p>
+      <h1>Title</h1>
+      <p>Summary</p>
     </div>
   </body>
 </html>`,
@@ -78,8 +78,8 @@ describe("history reducer", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Title</h1>
-      <p data-editable="text">Summary</p>
+      <h1>Title</h1>
+      <p>Summary</p>
     </div>
   </body>
 </html>`,
@@ -126,7 +126,7 @@ describe("history reducer", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Title</h1>
+      <h1>Title</h1>
     </div>
   </body>
 </html>`,
@@ -150,7 +150,7 @@ describe("history reducer", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Fresh title</h1>
+      <h1>Fresh title</h1>
     </div>
   </body>
 </html>`,

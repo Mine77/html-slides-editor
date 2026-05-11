@@ -2,6 +2,7 @@ import {
   type AtomicSlideOperation,
   type EditableElement,
   SELECTOR_ATTR,
+  queryEditableElements,
   type SlideOperation,
 } from "../../core";
 
@@ -45,8 +46,9 @@ export function getAllSelectableElementIds(doc: Document | null | undefined): st
     return [];
   }
 
-  return Array.from(doc.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`))
-    .filter((node) => !node.parentElement?.closest(`[data-editable][${SELECTOR_ATTR}]`))
+  const editableNodes = queryEditableElements(doc);
+  return editableNodes
+    .filter((node) => !node.parentElement || !editableNodes.includes(node.parentElement as HTMLElement))
     .map((node) => node.getAttribute(SELECTOR_ATTR))
     .filter((elementId): elementId is string => Boolean(elementId));
 }

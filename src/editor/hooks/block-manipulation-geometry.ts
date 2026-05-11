@@ -1,5 +1,6 @@
 import {
   type EditableElement,
+  isEditableElement,
   SELECTOR_ATTR,
   type SlideModel,
   type StageGeometry,
@@ -164,7 +165,9 @@ export function getManipulationElementIds({
 
     resizeElementIds.add(elementId);
     if (node.getAttribute("data-group") === "true") {
-      for (const child of node.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)) {
+      for (const child of Array.from(node.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)).filter(
+        isEditableElement
+      )) {
         const childElementId = child.getAttribute(SELECTOR_ATTR);
         if (childElementId) {
           resizeElementIds.add(childElementId);

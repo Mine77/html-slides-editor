@@ -287,7 +287,7 @@ test("context menu ungroups a card with list bullets without moving the list", a
   );
   await menu.getByRole("menuitem", { name: "Ungroup", exact: true }).click();
 
-  const slideList = frame.locator('ul[data-editable="block"]').first();
+  const slideList = frame.locator('ul[data-editor-id]').first();
   const slideFirstItem = slideList.locator("li").nth(0);
   const slideSecondItem = slideList.locator("li").nth(1);
   const slideThirdItem = slideList.locator("li").nth(2);
@@ -361,7 +361,7 @@ test("context menu disables irrelevant group commands for a normal single block"
   await page.getByLabel("Slide 5").click();
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('table[data-editable="block"]');
+  const blockCard = frame.locator("table");
   const { selectionOverlay } = getHistoryControls(page);
 
   await blockCard.click({ position: { x: 12, y: 12 } });

@@ -9,6 +9,7 @@ import {
   createVerifyIssue,
   loadVerifyDeckSource,
 } from "../core/verify-deck";
+import { isEditableElement } from "../core";
 
 type PlaywrightPage = import("@playwright/test").Page;
 type ChromiumLauncher = typeof import("@playwright/test").chromium;
@@ -211,9 +212,7 @@ async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasuremen
     const selectorFor = (node) =>
       node.getAttribute("data-editor-id")
         ? '[data-editor-id="' + node.getAttribute("data-editor-id") + '"]'
-        : node.getAttribute("data-editable")
-          ? node.tagName.toLowerCase() + '[data-editable="' + node.getAttribute("data-editable") + '"]'
-          : node.tagName.toLowerCase();
+        : node.tagName.toLowerCase();
     const hasAllowedOverflow = (node) =>
       Boolean(node.closest('[data-allow-overflow="true"]'));
     const rootRect = root.getBoundingClientRect();
@@ -268,7 +267,9 @@ async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasuremen
       }
     }
 
-    for (const node of Array.from(document.querySelectorAll("[data-editable]"))) {
+    for (const node of Array.from(document.querySelectorAll("[data-editor-id]")).filter(
+      isEditableElement
+    )) {
       if (hasAllowedOverflow(node)) {
         continue;
       }

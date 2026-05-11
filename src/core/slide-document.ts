@@ -18,6 +18,7 @@ import {
   parseBooleanAttribute,
   parseDimension,
 } from "./slide-contract";
+import { getEditableElementType, hasEditableSelector, isEditableElement } from "./editable-dom";
 import { parseHtmlDocument, serializeHtmlDocument } from "./slide-html-document";
 
 function cloneDocument(doc: Document): Document | null {
@@ -54,66 +55,36 @@ function ensureSlidesRoot(doc: Document): HTMLElement | null {
 }
 
 function classifyEditableType(node: HTMLElement): EditableType {
-  if (node.getAttribute("data-group") === "true") {
-    return "group";
-  }
-
-  const explicitType = node.getAttribute("data-editable");
-  if (explicitType === "text" || explicitType === "image" || explicitType === "block") {
-    return explicitType;
-  }
-
-  const tagName = node.tagName.toLowerCase();
-  if (tagName === "img" || tagName === "video" || tagName === "svg" || tagName === "canvas") {
-    return "image";
-  }
-  if (
-    [
-      "p",
-      "span",
-      "strong",
-      "em",
-      "b",
-      "i",
-      "small",
-      "mark",
-      "code",
-      "pre",
-      "blockquote",
-      "cite",
-      "time",
-      "figcaption",
-      "label",
-      "a",
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "li",
-      "dt",
-      "dd",
-      "td",
-      "th",
-      "caption",
-    ].includes(tagName)
-  ) {
-    return "text";
-  }
-
-  return "block";
+  return getEditableElementType(node) ?? "block";
 }
 
-function createNodeSelectorId(node: HTMLElement, index: number): string {
+function createUniqueNodeSelectorId(
+  node: HTMLElement,
+  index: number,
+  usedIds: Set<string>
+): string {
   const existingId = node.getAttribute(SELECTOR_ATTR)?.trim();
   if (existingId) {
+    usedIds.add(existingId);
     return existingId;
   }
 
   const type = classifyEditableType(node);
   const normalizedType = type === "group" ? "block" : type;
-  return createElementId(index, normalizedType);
+  let candidateId = createElementId(index, normalizedType);
+  if (!usedIds.has(candidateId)) {
+    usedIds.add(candidateId);
+    return candidateId;
+  }
+
+  let suffix = index + 2;
+  while (usedIds.has(`${candidateId}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  candidateId = `${candidateId}-${suffix}`;
+  usedIds.add(candidateId);
+  return candidateId;
 }
 
 function isEditableNode(node: HTMLElement, slideRoot: HTMLElement): boolean {
@@ -121,7 +92,7 @@ function isEditableNode(node: HTMLElement, slideRoot: HTMLElement): boolean {
     return false;
   }
 
-  return node.hasAttribute("data-editable") || node.getAttribute("data-group") === "true";
+  return isEditableElement(node);
 }
 
 function ensureEditableSelectorsInSlideRoot(slideRoot: HTMLElement) {
@@ -129,19 +100,24 @@ function ensureEditableSelectorsInSlideRoot(slideRoot: HTMLElement) {
     slideRoot.setAttribute(SELECTOR_ATTR, "slide-root");
   }
 
+  const usedIds = new Set<string>([slideRoot.getAttribute(SELECTOR_ATTR) || "slide-root"]);
+  for (const node of Array.from(slideRoot.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`))) {
+    const existingId = node.getAttribute(SELECTOR_ATTR)?.trim();
+    if (existingId) {
+      usedIds.add(existingId);
+    }
+  }
   const editableNodes = Array.from(slideRoot.querySelectorAll<HTMLElement>("*")).filter((node) =>
     isEditableNode(node, slideRoot)
   );
 
   editableNodes.forEach((node, index) => {
     if (!node.getAttribute(SELECTOR_ATTR)) {
-      node.setAttribute(SELECTOR_ATTR, createNodeSelectorId(node, index));
+      node.setAttribute(SELECTOR_ATTR, createUniqueNodeSelectorId(node, index, usedIds));
+      return;
     }
 
-    if (!node.getAttribute("data-editable")) {
-      const type = classifyEditableType(node);
-      node.setAttribute("data-editable", type === "group" ? "block" : type);
-    }
+    createUniqueNodeSelectorId(node, index, usedIds);
   });
 }
 
@@ -235,12 +211,12 @@ function collectEditableElements(doc: Document): EditableElement[] {
   }
 
   const editableNodes = Array.from(root.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)).filter(
-    (node) => node !== root && isEditableNode(node, root)
+    (node) => node !== root && isEditableElement(node)
   );
 
   return editableNodes.map((node, index) => {
     const type = classifyEditableType(node);
-    const selectorValue = node.getAttribute(SELECTOR_ATTR) || createNodeSelectorId(node, index);
+    const selectorValue = node.getAttribute(SELECTOR_ATTR) || createElementId(index, type);
 
     return {
       id: selectorValue,

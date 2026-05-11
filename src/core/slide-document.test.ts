@@ -4,7 +4,9 @@ import {
   DEFAULT_SLIDE_WIDTH,
   ensureEditableSelectors,
   getSlideInlineStyleValue,
+  hasEditableSelector,
   parseSlide,
+  queryEditableElements,
   serializeDeckDocument,
   querySlideElement,
 } from "./index";
@@ -36,16 +38,16 @@ describe("slide document contract", () => {
   test("adds stable data-editor-id values to slide root and editable nodes", () => {
     const html = createDeckHtml(`      <slide id="slide-1" title="Title">
         <div class="slide-container">
-          <h1 data-editable="text">Title</h1>
-          <p data-editable="text">Body</p>
-          <div data-editable="block"><span data-editable="text">Nested</span></div>
+          <h1>Title</h1>
+          <p>Body</p>
+          <div><span>Nested</span></div>
         </div>
       </slide>`);
 
     const normalizedHtml = ensureEditableSelectors(html);
     const doc = new DOMParser().parseFromString(normalizedHtml, "text/html");
     const root = doc.querySelector('[data-slide-root="true"]');
-    const ids = Array.from(doc.querySelectorAll("[data-editable]")).map((node) =>
+    const ids = queryEditableElements(doc).map((node) =>
       node.getAttribute("data-editor-id")
     );
 
@@ -58,14 +60,14 @@ describe("slide document contract", () => {
   test("preserves existing data-editor-id values", () => {
     const html = createDeckHtml(`      <slide id="slide-1" title="Title">
         <div class="slide-container" data-slide-root="true" data-editor-id="custom-root">
-          <h1 data-editable="text" data-editor-id="hero-title">Title</h1>
-          <p data-editable="text">Body</p>
+          <h1 data-editor-id="hero-title">Title</h1>
+          <p>Body</p>
         </div>
       </slide>`);
 
     const normalizedHtml = ensureEditableSelectors(html);
     const doc = new DOMParser().parseFromString(normalizedHtml, "text/html");
-    const ids = Array.from(doc.querySelectorAll("[data-editable]")).map((node) =>
+    const ids = queryEditableElements(doc).map((node) =>
       node.getAttribute("data-editor-id")
     );
 
@@ -78,8 +80,8 @@ describe("slide document contract", () => {
   test("parseSlide returns editor-compatible metadata", () => {
     const slide = parseSlide(
       createSlideHtml(`
-      <h1 data-editable="text">Hero</h1>
-      <div data-editable="block">Card</div>`),
+      <h1>Hero</h1>
+      <div>Card</div>`),
       "Generated Slide 1"
     );
 
@@ -97,11 +99,11 @@ describe("slide document contract", () => {
   test("parseSlide treats data-group block containers as distinct group elements", () => {
     const slide = parseSlide(
       createSlideHtml(`
-      <div data-editable="block" data-group="true">
-        <p data-editable="text">Grouped text</p>
+      <div data-group="true">
+        <p>Grouped text</p>
       </div>
-      <div data-editable="block">
-        <p data-editable="text">Normal nested text</p>
+      <div>
+        <p>Normal nested text</p>
       </div>`),
       "slide-1"
     );
@@ -117,7 +119,7 @@ describe("slide document contract", () => {
   test("querySlideElement and getSlideInlineStyleValue hide selector details", () => {
     const slide = parseSlide(
       createSlideHtml(`
-      <h1 data-editable="text" style="font-size: 48px;">Title</h1>`),
+      <h1 style="font-size: 48px;">Title</h1>`),
       "slide-1"
     );
     const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
@@ -139,7 +141,7 @@ describe("slide document contract", () => {
         parseSlide(
           createSlideHtml(
             `
-      <h1 data-editable="text">Hello</h1>`,
+      <h1>Hello</h1>`,
             "<style>.example{color:red}</style>"
           ),
           "slide-1"
@@ -150,5 +152,21 @@ describe("slide document contract", () => {
 
     expect(doc.querySelector("slides")?.getAttribute("title")).toBe("Deck Title");
     expect(doc.querySelector("slide")?.querySelector("style")?.textContent).toContain(".example");
+  });
+
+  test("editable detection follows supported tag whitelist instead of authored markers", () => {
+    const slide = parseSlide(
+      createSlideHtml(`
+      <h1>Title</h1>
+      <address data-editor-id="address-1">Unsupported</address>
+      <div data-editor-id="block-1">Card</div>`),
+      "slide-1"
+    );
+    const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
+    const address = doc.querySelector("address");
+    const editableIds = queryEditableElements(doc).map((node) => node.getAttribute("data-editor-id"));
+
+    expect(hasEditableSelector(address)).toBe(false);
+    expect(editableIds).toEqual(["text-1", "block-1"]);
   });
 });

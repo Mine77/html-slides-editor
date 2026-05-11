@@ -69,19 +69,35 @@ describe("verifyDeck core verifier", () => {
     expect(issueCodes(result.issues)).toContain("structure.empty-deck");
   });
 
-  test("invalid data-editable values return structure.invalid-editable", () => {
+  test("legacy data-editable attributes return structure.legacy-editable-attr", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
         id: "slide-1",
-        html: slideHtml('<div data-editable="shape" data-editor-id="shape-1">Bad</div>'),
+        html: slideHtml('<div data-editable="block" data-editor-id="shape-1">Bad</div>'),
       },
     ]);
 
     const result = verifyDeck(deck);
 
     expect(result.ok).toBe(false);
-    expect(issueCodes(result.issues)).toContain("structure.invalid-editable");
+    expect(issueCodes(result.issues)).toContain("structure.legacy-editable-attr");
+  });
+
+  test("unsupported tags remain non-editable authored content", () => {
+    const deck = createDeck();
+    writeDeck(deck, [
+      {
+        id: "slide-1",
+        html:
+          '<!DOCTYPE html><html><body><slides title="Deck"><slide id="slide-1" title="One"><main data-slide-root="true" data-editor-id="slide-root"><address data-editor-id="address-1">Bad</address></main></slide></slides></body></html>',
+      },
+    ]);
+
+    const result = verifyDeck(deck);
+
+    expect(result.ok).toBe(true);
+    expect(issueCodes(result.issues)).not.toContain("structure.unsupported-tag");
   });
 
   test('invalid data-group="true" usage returns structure.invalid-group', () => {
@@ -89,9 +105,7 @@ describe("verifyDeck core verifier", () => {
     writeDeck(deck, [
       {
         id: "slide-1",
-        html: slideHtml(
-          '<h1 data-editable="text" data-group="true" data-editor-id="text-1">Bad</h1>'
-        ),
+        html: slideHtml('<h1 data-group="true" data-editor-id="text-1">Bad</h1>'),
       },
     ]);
 
@@ -192,7 +206,7 @@ describe("verifyDeck core verifier", () => {
 
     fs.writeFileSync(
       path.join(deck, "deck.html"),
-      '<!DOCTYPE html><html><body><slides title="Deck"><slide id="slide-1" title="One"><main data-slide-root="true" data-editor-id="slide-root"><div data-editable="bad" data-editor-id="bad-1">Bad</div></main></slide></slides></body></html>'
+      '<!DOCTYPE html><html><body><slides title="Deck"><slide id="slide-1" title="One"><main data-slide-root="true" data-editor-id="slide-root"><div data-editable="block" data-editor-id="bad-1">Bad</div></main></slide></slides></body></html>'
     );
     const resultWithError = verifyDeck(deck);
 

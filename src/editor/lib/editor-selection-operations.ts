@@ -12,6 +12,7 @@ import type {
 } from "../../core";
 import {
   SELECTOR_ATTR,
+  isEditableElement,
   captureElementLayoutStyleSnapshot,
   composeTransform,
   createElementPlacement,
@@ -222,7 +223,7 @@ export function createGroupElementRectMap({
   const rects: GroupElementRectMap = {};
   const structuralListIds = createStructuralListIdMap(doc, flattenRootElementId);
   const rectNodes = [
-    ...Array.from(doc.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)),
+    ...Array.from(doc.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)).filter(isEditableElement),
     ...Array.from(structuralListIds.keys()),
   ];
   for (const node of rectNodes) {
@@ -234,7 +235,7 @@ export function createGroupElementRectMap({
     const rect = node.getBoundingClientRect();
     const parent = node.parentElement;
     const parentId =
-      parent?.hasAttribute("data-editable") && parent.getAttribute(SELECTOR_ATTR)
+      parent && isEditableElement(parent) && parent.getAttribute(SELECTOR_ATTR)
         ? parent.getAttribute(SELECTOR_ATTR)
         : null;
     const parentRect = parentId
@@ -271,7 +272,7 @@ export function createElementPresentationStyleMap({
   const result: ElementPresentationStyleMap = {};
   const structuralListIds = createStructuralListIdMap(doc, elementId);
   for (const child of Array.from(selectedNode.children)) {
-    if (!child.hasAttribute("data-editable") && !isListWrapperWithEditableItems(child)) {
+    if (!isEditableElement(child) && !isListWrapperWithEditableItems(child)) {
       continue;
     }
 
@@ -297,7 +298,7 @@ export function createElementPresentationStyleMap({
     };
 
     for (const descendant of Array.from(
-      child.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
+      child.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)
     )) {
       const descendantElementId = descendant.getAttribute(SELECTOR_ATTR);
       const descendantComputedStyle =

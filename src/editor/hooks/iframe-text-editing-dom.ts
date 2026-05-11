@@ -1,10 +1,16 @@
-import { SELECTOR_ATTR } from "../../core";
+import {
+  SELECTOR_ATTR,
+  getClosestEditableElement,
+  isGroupEditableElement,
+  isTextEditableElement,
+  queryEditableElements,
+} from "../../core";
 
 const EDITING_TEXT_STYLE_ID = "hse-editing-text-style";
 const EDITING_TEXT_STYLE = `
 html:not([data-hse-allow-native-selection]),
 html:not([data-hse-allow-native-selection]) body,
-html:not([data-hse-allow-native-selection]) [data-editable] {
+html:not([data-hse-allow-native-selection]) [data-editor-id] {
   user-select: none;
   -webkit-user-select: none;
 }
@@ -25,23 +31,23 @@ html:not([data-hse-allow-native-selection]) [data-editable] {
   box-shadow: none !important;
 }
 
-body[data-hse-group-scope] [data-editable] {
+body[data-hse-group-scope] [data-editor-id] {
   transition: opacity 120ms ease, filter 120ms ease;
 }
 
-body[data-hse-group-scope] [data-editable][data-hse-outside-group-scope="true"] {
+body[data-hse-group-scope] [data-editor-id][data-hse-outside-group-scope="true"] {
   opacity: 0.28;
   filter: blur(1.5px);
 }
 
-body[data-hse-group-scope] [data-editable][data-hse-active-group-scope="true"] {
+body[data-hse-group-scope] [data-editor-id][data-hse-active-group-scope="true"] {
   outline: 1px solid rgba(15, 23, 42, 0.22);
   outline-offset: 4px;
 }
 `;
 
 export function getEditableSelectionTarget(target: Element): HTMLElement | null {
-  return target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
+  return getClosestEditableElement(target);
 }
 
 export function getDeepestEditableElementFromPoint(
@@ -82,7 +88,7 @@ export function getOutermostSelectedAncestorFromPoint(
   while (current) {
     const currentId = current.getAttribute(SELECTOR_ATTR);
     if (
-      current.matches(`[data-editable][${SELECTOR_ATTR}]`) &&
+      current.matches(`[${SELECTOR_ATTR}]`) &&
       currentId &&
       selectedIdSet.has(currentId)
     ) {
@@ -95,7 +101,7 @@ export function getOutermostSelectedAncestorFromPoint(
 }
 
 export function applyGroupScopeFocus(doc: Document, activeGroupScopeId: string | null): void {
-  const editableNodes = Array.from(doc.querySelectorAll<HTMLElement>("[data-editable]"));
+  const editableNodes = queryEditableElements(doc);
   for (const node of editableNodes) {
     node.removeAttribute("data-hse-active-group-scope");
     node.removeAttribute("data-hse-outside-group-scope");
@@ -107,17 +113,15 @@ export function applyGroupScopeFocus(doc: Document, activeGroupScopeId: string |
   }
 
   doc.body.setAttribute("data-hse-group-scope", activeGroupScopeId);
-  const group = doc.querySelector<HTMLElement>(
-    `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
-  );
-  if (!group) {
+  const group = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${activeGroupScopeId}"]`);
+  if (!group || !isGroupEditableElement(group)) {
     doc.body.removeAttribute("data-hse-group-scope");
     return;
   }
-
-  group.setAttribute("data-hse-active-group-scope", "true");
+  const activeGroup = group;
+  activeGroup.setAttribute("data-hse-active-group-scope", "true");
   for (const node of editableNodes) {
-    if (node !== group && !group.contains(node)) {
+    if (node !== activeGroup && !activeGroup.contains(node)) {
       node.setAttribute("data-hse-outside-group-scope", "true");
     }
   }
@@ -133,17 +137,42 @@ export function getEditableSelectionTargetInScope(
   }
 
   if (!activeGroupScopeId) {
-    const groupTarget = editableTarget.closest<HTMLElement>(
-      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}]`
-    );
-    return groupTarget ?? editableTarget;
+    let current: HTMLElement | null = editableTarget;
+    let outermostGroup: HTMLElement | null = null;
+    while (current) {
+      if (current.matches(`[${SELECTOR_ATTR}]`) && isGroupEditableElement(current)) {
+        outermostGroup = current;
+      }
+      current = current.parentElement;
+    }
+
+    if (outermostGroup) {
+      return outermostGroup;
+    }
+    return editableTarget;
   }
 
-  const activeGroup = editableTarget.closest<HTMLElement>(
-    `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
-  );
+  const activeGroup = editableTarget.closest<HTMLElement>(`[${SELECTOR_ATTR}="${activeGroupScopeId}"]`);
 
-  return activeGroup ? editableTarget : null;
+  return activeGroup && isGroupEditableElement(activeGroup) ? editableTarget : null;
+}
+
+export function getClosestTextEditableSelectionTargetInScope(
+  target: Element,
+  activeGroupScopeId: string | null
+): HTMLElement | null {
+  let current: HTMLElement | null =
+    target.nodeType === target.ELEMENT_NODE ? (target as HTMLElement) : target.parentElement;
+
+  while (current) {
+    const editableTarget = getEditableSelectionTargetInScope(current, activeGroupScopeId);
+    if (editableTarget && isTextEditableElement(editableTarget)) {
+      return editableTarget;
+    }
+    current = current.parentElement;
+  }
+
+  return null;
 }
 
 export function ensureEditingTextStyle(doc: Document): void {
@@ -176,9 +205,11 @@ export function getEditableTextTargetFromPoint(
   activeScopeId: string | null
 ): HTMLElement | null {
   const candidates = Array.from(
-    doc.querySelectorAll<HTMLElement>(`[data-editable="text"][${SELECTOR_ATTR}]`)
+    doc.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)
   ).filter(
-    (candidate) => getEditableSelectionTargetInScope(candidate, activeScopeId) === candidate
+    (candidate) =>
+      isTextEditableElement(candidate) &&
+      getEditableSelectionTargetInScope(candidate, activeScopeId) === candidate
   );
   const directHit = candidates.find((candidate) => {
     const rect = candidate.getBoundingClientRect();

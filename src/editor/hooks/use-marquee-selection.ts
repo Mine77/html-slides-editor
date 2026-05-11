@@ -8,6 +8,9 @@ import {
   useState,
 } from "react";
 import {
+  isBlockEditableElement,
+  isGroupEditableElement,
+  queryEditableElements,
   SELECTOR_ATTR,
   type SlideModel,
   type StageGeometry,
@@ -100,14 +103,24 @@ export function useMarqueeSelection({
       const rootRect = rootNode.getBoundingClientRect();
       const touchedTargets = new Map<string, HTMLElement>();
 
-      for (const candidate of Array.from(
-        doc.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
-      )) {
+      for (const candidate of queryEditableElements(doc)) {
         if (!isElementInMarqueeScope(candidate, activeGroupScopeId)) {
           continue;
         }
 
-        const target = getMarqueeSelectionTarget(candidate, activeGroupScopeId);
+        const target = getMarqueeSelectionTarget(
+          candidate,
+          marqueeRect,
+          rootRect,
+          {
+            offsetX,
+            offsetY,
+            scale,
+            slideHeight,
+            slideWidth,
+          },
+          activeGroupScopeId
+        );
         const targetId = target?.getAttribute(SELECTOR_ATTR);
         if (!target || !targetId || touchedTargets.has(targetId)) {
           continue;
@@ -354,21 +367,28 @@ function isElementInMarqueeScope(
   activeGroupScopeId: string | null
 ): boolean {
   if (!activeGroupScopeId) {
-    const groupTarget = candidate.closest<HTMLElement>(
-      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}]`
-    );
-    return !groupTarget || groupTarget === candidate;
+    const groupTarget = candidate.closest<HTMLElement>(`[${SELECTOR_ATTR}]`);
+    if (groupTarget && isGroupEditableElement(groupTarget)) {
+      return groupTarget === candidate;
+    }
+    return true;
   }
 
-  return Boolean(
-    candidate.closest<HTMLElement>(
-      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
-    )
-  );
+  const groupTarget = candidate.closest<HTMLElement>(`[${SELECTOR_ATTR}="${activeGroupScopeId}"]`);
+  return Boolean(groupTarget && isGroupEditableElement(groupTarget));
 }
 
 function getMarqueeSelectionTarget(
   candidate: HTMLElement,
+  marqueeRect: StageRect,
+  rootRect: DOMRect,
+  stageGeometry: {
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+    slideHeight: number;
+    slideWidth: number;
+  },
   activeGroupScopeId: string | null
 ): HTMLElement | null {
   const editableAncestors = getEditableAncestors(candidate);
@@ -377,12 +397,18 @@ function getMarqueeSelectionTarget(
   }
 
   if (!activeGroupScopeId) {
-    const groupAncestor = editableAncestors.find(
+    const groupAncestor = editableAncestors.find((ancestor) => isGroupEditableElement(ancestor));
+    if (groupAncestor) {
+      return groupAncestor;
+    }
+
+    const nearestBlockAncestor = editableAncestors.find(
       (ancestor) =>
-        ancestor.getAttribute("data-editable") === "block" &&
-        ancestor.getAttribute("data-group") === "true"
+        ancestor !== candidate &&
+        isBlockEditableElement(ancestor) &&
+        marqueeMostlyCoversAncestor(candidate, ancestor, marqueeRect, rootRect, stageGeometry)
     );
-    return groupAncestor ?? editableAncestors[editableAncestors.length - 1] ?? null;
+    return nearestBlockAncestor ?? candidate;
   }
 
   const activeGroupIndex = editableAncestors.findIndex(
@@ -395,12 +421,54 @@ function getMarqueeSelectionTarget(
   return editableAncestors[activeGroupIndex - 1] ?? editableAncestors[activeGroupIndex] ?? null;
 }
 
+function marqueeMostlyCoversAncestor(
+  candidate: HTMLElement,
+  ancestor: HTMLElement,
+  marqueeRect: StageRect,
+  rootRect: DOMRect,
+  stageGeometry: {
+    offsetX: number;
+    offsetY: number;
+    scale: number;
+    slideHeight: number;
+    slideWidth: number;
+  }
+): boolean {
+  const candidateRect = elementRectToStageRect(candidate.getBoundingClientRect(), rootRect, stageGeometry);
+  const ancestorRect = elementRectToStageRect(ancestor.getBoundingClientRect(), rootRect, stageGeometry);
+  const candidateCenter = {
+    x: candidateRect.x + candidateRect.width / 2,
+    y: candidateRect.y + candidateRect.height / 2,
+  };
+
+  const ancestorCenter = {
+    x: ancestorRect.x + ancestorRect.width / 2,
+    y: ancestorRect.y + ancestorRect.height / 2,
+  };
+
+  const containsAncestorCenter =
+    ancestorCenter.x >= marqueeRect.x &&
+    ancestorCenter.x <= marqueeRect.x + marqueeRect.width &&
+    ancestorCenter.y >= marqueeRect.y &&
+    ancestorCenter.y <= marqueeRect.y + marqueeRect.height;
+  if (!containsAncestorCenter) {
+    return false;
+  }
+
+  const horizontalCoverage = marqueeRect.width / Math.max(ancestorRect.width, 1);
+  const verticalCoverage = marqueeRect.height / Math.max(ancestorRect.height, 1);
+  const startedOutsideCandidate =
+    marqueeRect.x < candidateCenter.x || marqueeRect.y < candidateCenter.y;
+
+  return startedOutsideCandidate && horizontalCoverage >= 0.6 && verticalCoverage >= 0.6;
+}
+
 function getEditableAncestors(candidate: HTMLElement): HTMLElement[] {
   const ancestors: HTMLElement[] = [];
   let current: HTMLElement | null = candidate;
 
   while (current) {
-    if (current.matches(`[data-editable][${SELECTOR_ATTR}]`)) {
+    if (current.matches(`[${SELECTOR_ATTR}]`)) {
       ancestors.push(current);
     }
     current = current.parentElement;

@@ -111,42 +111,42 @@ export function buildHeroSlide(topic, summary) {
       color: rgba(226, 232, 240, 0.84);
     }`,
     `
-      <div class="hero-grid">
-        <section class="hero-copy">
-          <div class="kicker" data-editable="text">Starry Slides</div>
-          <h1 data-editable="text">${escapeHtml(topic)}</h1>
-          <p data-editable="text">${escapeHtml(summary)}</p>
-          <div class="notes">
-            <div class="note-card" data-editable="block">
-              <strong data-editable="text">Core idea</strong>
-              <span data-editable="text">Edit raw HTML slides directly instead of converting them into a private document schema.</span>
+      <hero-grid class="hero-grid">
+        <hero-copy class="hero-copy">
+          <p class="kicker" data-editor-id="text-1">Starry Slides</p>
+          <h1 data-editor-id="text-2">${escapeHtml(topic)}</h1>
+          <p data-editor-id="text-3">${escapeHtml(summary)}</p>
+          <hero-notes class="notes">
+            <div class="note-card" data-editor-id="block-4">
+              <strong data-editor-id="text-5">Core idea</strong>
+              <span data-editor-id="text-6">Edit raw HTML slides directly instead of converting them into a private document schema.</span>
             </div>
-            <div class="note-card" data-editable="block">
-              <strong data-editable="text">Test deck</strong>
-              <span data-editable="text">This generated deck doubles as product storytelling and broad feature coverage for QA.</span>
+            <div class="note-card" data-editor-id="block-7">
+              <strong data-editor-id="text-8">Test deck</strong>
+              <span data-editor-id="text-9">This generated deck doubles as product storytelling and broad feature coverage for QA.</span>
             </div>
-          </div>
-        </section>
-        <aside class="hero-panel" data-editable="block">
-          <div class="window-dots">
+          </hero-notes>
+        </hero-copy>
+        <hero-panel class="hero-panel">
+          <window-dots class="window-dots">
             <span></span><span></span><span></span>
-          </div>
-          <div class="mock-browser">
-            <div class="frame" data-editable="block">
-              <strong data-editable="text">Generator</strong>
-              <p data-editable="text">Creates valid standalone HTML slides with stable editable markers.</p>
-            </div>
-            <div class="frame" data-editable="block">
-              <strong data-editable="text">Editor</strong>
-              <p data-editable="text">Loads the same HTML in an iframe, maps editable nodes, and supports direct text editing with undo and redo.</p>
-            </div>
-            <div class="frame" data-editable="block">
-              <strong data-editable="text">Future</strong>
-              <p data-editable="text">Expand from text edits into richer block, image, chart, and layout manipulation without abandoning HTML as the source of truth.</p>
-            </div>
-          </div>
-        </aside>
-      </div>
+          </window-dots>
+          <mock-browser class="mock-browser">
+            <browser-frame class="frame">
+              <strong>Generator</strong>
+              <p>Creates valid standalone HTML slides with stable editable markers.</p>
+            </browser-frame>
+            <browser-frame class="frame">
+              <strong>Editor</strong>
+              <p>Loads the same HTML in an iframe, maps editable nodes, and supports direct text editing with undo and redo.</p>
+            </browser-frame>
+            <browser-frame class="frame">
+              <strong>Future</strong>
+              <p>Expand from text edits into richer block, image, chart, and layout manipulation without abandoning HTML as the source of truth.</p>
+            </browser-frame>
+          </mock-browser>
+        </hero-panel>
+      </hero-grid>
     `
   );
 }
@@ -155,13 +155,13 @@ export function buildAgendaSlide(topic, points) {
   const items = points
     .map(
       (point, index) => `
-        <li class="agenda-item surface" data-editable="block">
-          <span class="agenda-index" data-editable="text">${String(index + 1).padStart(2, "0")}</span>
-          <div>
-            <strong data-editable="text">${escapeHtml(point)}</strong>
-            <p data-editable="text">${escapeHtml(`How ${topic.toLowerCase()} handles ${point.toLowerCase()} in a browser-native workflow.`)}</p>
-          </div>
-        </li>
+        <agenda-item class="agenda-item surface">
+          <span class="agenda-index">${String(index + 1).padStart(2, "0")}</span>
+          <article${index === 0 ? ' data-editor-id="block-4"' : ""}>
+            <strong${index === 0 ? ' data-editor-id="text-6"' : ""}>${escapeHtml(point)}</strong>
+            <p${index === 0 ? ' data-editor-id="text-7"' : ""}>${escapeHtml(`How ${topic.toLowerCase()} handles ${point.toLowerCase()} in a browser-native workflow.`)}</p>
+          </article>
+        </agenda-item>
       `
     )
     .join("");
@@ -229,16 +229,16 @@ export function buildAgendaSlide(topic, points) {
       color: rgba(31, 41, 55, 0.72);
     }`,
     `
-      <div class="layout">
-        <section class="intro">
-          <div class="kicker" data-editable="text">Agenda</div>
-          <h1 data-editable="text">A full-spectrum deck for product explanation and QA coverage</h1>
-          <p data-editable="text">This deck is intentionally broad. It exercises typography, cards, tables, inline SVG charts, images, timelines, comparison layouts, and mixed-content slides.</p>
-        </section>
-        <ol class="agenda">
+      <agenda-layout class="layout">
+        <agenda-intro class="intro">
+          <p class="kicker">Agenda</p>
+          <h1>A full-spectrum deck for product explanation and QA coverage</h1>
+          <p>This deck is intentionally broad. It exercises typography, cards, tables, inline SVG charts, images, timelines, comparison layouts, and mixed-content slides.</p>
+        </agenda-intro>
+        <agenda-list class="agenda">
           ${items}
-        </ol>
-      </div>
+        </agenda-list>
+      </agenda-layout>
     `
   );
 }

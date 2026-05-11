@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { SlideModel, SlideOperation, StageRect } from "../../core";
-import { SELECTOR_ATTR, elementRectToStageRect, querySlideElement } from "../../core";
+import {
+  getClosestEditableElement,
+  SELECTOR_ATTR,
+  elementRectToStageRect,
+  querySlideElement,
+} from "../../core";
 import { createStyleUpdateOperation } from "../editor-operations";
 import type { ResizeHandleCorner } from "../lib/block-snap-types";
 import {
@@ -262,7 +267,7 @@ function useImageCrop({
 
     const exitOnBlankClick = (event: MouseEvent) => {
       const target = event.target;
-      if (target instanceof Element && target.closest(`[data-editable][${SELECTOR_ATTR}]`)) {
+      if (target instanceof Element && getClosestEditableElement(target)) {
         return;
       }
 

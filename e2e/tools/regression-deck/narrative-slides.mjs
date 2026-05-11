@@ -84,46 +84,46 @@ export function buildTimelineSlide() {
     `
       <div class="header">
         <div>
-          <div class="kicker" data-editable="text">Timeline</div>
-          <h1 data-editable="text">The roadmap slide adds chronology, repeated cards, and another layout pattern for testing</h1>
+          <p class="kicker">Timeline</p>
+          <h1>The roadmap slide adds chronology, repeated cards, and another layout pattern for testing</h1>
         </div>
-        <p data-editable="text">This one is useful for verifying repeated block cards and how the editor behaves when nodes are arranged along a horizontal narrative.</p>
+        <p>This one is useful for verifying repeated block cards and how the editor behaves when nodes are arranged along a horizontal narrative.</p>
       </div>
       <div class="timeline">
-        <article class="milestone" data-editable="block">
-          <strong data-editable="text">Phase 1 · Ground truth</strong>
-          <p data-editable="text">Establish the core parser and source-preserving slide contract.</p>
+        <article class="milestone">
+          <strong>Phase 1 · Ground truth</strong>
+          <p>Establish the core parser and source-preserving slide contract.</p>
           <ul>
-            <li data-editable="text">Slide root markers</li>
-            <li data-editable="text">Editable node extraction</li>
-            <li data-editable="text">Manifest-based import</li>
+            <li>Slide root markers</li>
+            <li>Editable node extraction</li>
+            <li>Manifest-based import</li>
           </ul>
         </article>
-        <article class="milestone" data-editable="block">
-          <strong data-editable="text">Phase 2 · Editing loop</strong>
-          <p data-editable="text">Make text edits possible directly on rendered HTML and persist them as operations.</p>
+        <article class="milestone">
+          <strong>Phase 2 · Editing loop</strong>
+          <p>Make text edits possible directly on rendered HTML and persist them as operations.</p>
           <ul>
-            <li data-editable="text">Double click to edit</li>
-            <li data-editable="text">Undo and redo</li>
-            <li data-editable="text">Selection overlays</li>
+            <li>Double click to edit</li>
+            <li>Undo and redo</li>
+            <li>Selection overlays</li>
           </ul>
         </article>
-        <article class="milestone" data-editable="block">
-          <strong data-editable="text">Phase 3 · Rich fixture deck</strong>
-          <p data-editable="text">Replace the toy regression deck with a presentation that actually represents the project.</p>
+        <article class="milestone">
+          <strong>Phase 3 · Rich fixture deck</strong>
+          <p>Replace the toy regression deck with a presentation that actually represents the project.</p>
           <ul>
-            <li data-editable="text">Table slide</li>
-            <li data-editable="text">Chart slide</li>
-            <li data-editable="text">Image slide</li>
+            <li>Table slide</li>
+            <li>Chart slide</li>
+            <li>Image slide</li>
           </ul>
         </article>
-        <article class="milestone" data-editable="block">
-          <strong data-editable="text">Phase 4 · Richer operations</strong>
-          <p data-editable="text">Move beyond text into block, image, and structured layout editing while keeping HTML canonical.</p>
+        <article class="milestone">
+          <strong>Phase 4 · Richer operations</strong>
+          <p>Move beyond text into block, image, and structured layout editing while keeping HTML canonical.</p>
           <ul>
-            <li data-editable="text">Resize and reposition blocks</li>
-            <li data-editable="text">Swap images safely</li>
-            <li data-editable="text">Chart-aware transforms</li>
+            <li>Resize and reposition blocks</li>
+            <li>Swap images safely</li>
+            <li>Chart-aware transforms</li>
           </ul>
         </article>
       </div>
@@ -197,34 +197,34 @@ export function buildComparisonSlide() {
     }`,
     `
       <div class="header">
-        <div class="kicker" data-editable="text">Comparison</div>
-        <h1 data-editable="text">The project is easier to explain when contrasted with schema-first slide editors</h1>
+        <p class="kicker">Comparison</p>
+        <h1>The project is easier to explain when contrasted with schema-first slide editors</h1>
       </div>
       <div class="compare">
-        <section class="panel left" data-editable="block">
-          <strong data-editable="text">Schema-first editors</strong>
-          <p data-editable="text">Traditional tools often require translation into an internal model before editing can begin.</p>
+        <section class="panel left">
+          <strong>Schema-first editors</strong>
+          <p>Traditional tools often require translation into an internal model before editing can begin.</p>
           <ul>
-            <li data-editable="text">Imported HTML becomes an approximation.</li>
-            <li data-editable="text">Round-trip fidelity is hard to guarantee.</li>
-            <li data-editable="text">Generated markup is no longer the source of truth.</li>
-            <li data-editable="text">Testing tends to happen on private model fixtures, not on real generated output.</li>
+            <li>Imported HTML becomes an approximation.</li>
+            <li>Round-trip fidelity is hard to guarantee.</li>
+            <li>Generated markup is no longer the source of truth.</li>
+            <li>Testing tends to happen on private model fixtures, not on real generated output.</li>
           </ul>
-          <div class="quote" data-editable="block">
-            <span data-editable="text">Good for native ecosystems. Weak fit if the product promise is direct manipulation of arbitrary HTML slides.</span>
+          <div class="quote">
+            <span>Good for native ecosystems. Weak fit if the product promise is direct manipulation of arbitrary HTML slides.</span>
           </div>
         </section>
-        <section class="panel right" data-editable="block">
-          <strong data-editable="text">Starry Slides</strong>
-          <p data-editable="text">This project keeps the generated HTML as the canonical document and layers editing behavior on top.</p>
+        <section class="panel right">
+          <strong>Starry Slides</strong>
+          <p>This project keeps the generated HTML as the canonical document and layers editing behavior on top.</p>
           <ul>
-            <li data-editable="text">Generated files stay inspectable and git-friendly.</li>
-            <li data-editable="text">Parser helpers derive structure without replacing the source.</li>
-            <li data-editable="text">Edits can be reasoned about as source-preserving operations.</li>
-            <li data-editable="text">QA runs against the same kind of deck users would actually care about.</li>
+            <li>Generated files stay inspectable and git-friendly.</li>
+            <li>Parser helpers derive structure without replacing the source.</li>
+            <li>Edits can be reasoned about as source-preserving operations.</li>
+            <li>QA runs against the same kind of deck users would actually care about.</li>
           </ul>
-          <div class="quote" data-editable="block">
-            <span data-editable="text">Harder implementation path, but a much stronger product story if HTML-native workflows are the goal.</span>
+          <div class="quote">
+            <span>Harder implementation path, but a much stronger product story if HTML-native workflows are the goal.</span>
           </div>
         </section>
       </div>
@@ -289,69 +289,69 @@ export function buildCoverageSlide() {
       color: rgba(226, 232, 240, 0.8);
     }`,
     `
-      <div class="header">
-        <div>
-          <div class="kicker" data-editable="text">Coverage</div>
-          <h1 data-editable="text">What this fixture now covers beyond a minimal regression deck</h1>
-        </div>
-        <p data-editable="text">The goal is not just more slides. It is a more credible mix of structures that future editing features will need to survive.</p>
-      </div>
-      <div class="grid">
-        <article class="tile" data-editable="block">
-          <strong data-editable="text">Typography</strong>
-          <p data-editable="text">Large headlines, dense body copy, labels, metric cards, and table cells.</p>
+      <coverage-header class="header">
+        <coverage-heading>
+          <p class="kicker">Coverage</p>
+          <h1>What this fixture now covers beyond a minimal regression deck</h1>
+        </coverage-heading>
+        <p>The goal is not just more slides. It is a more credible mix of structures that future editing features will need to survive.</p>
+      </coverage-header>
+      <coverage-grid class="grid">
+        <article class="tile">
+          <strong>Typography</strong>
+          <p>Large headlines, dense body copy, labels, metric cards, and table cells.</p>
           <ul>
-            <li data-editable="text">Short and long text nodes</li>
-            <li data-editable="text">Mixed hierarchy levels</li>
-            <li data-editable="text">Repeated semantic patterns</li>
+            <li>Short and long text nodes</li>
+            <li>Mixed hierarchy levels</li>
+            <li>Repeated semantic patterns</li>
           </ul>
         </article>
-        <article class="tile" data-editable="block">
-          <strong data-editable="text">Structured layouts</strong>
-          <p data-editable="text">Grids, split panels, timelines, agenda lists, and flow diagrams.</p>
+        <article class="tile">
+          <strong>Structured layouts</strong>
+          <p>Grids, split panels, timelines, agenda lists, and flow diagrams.</p>
           <ul>
-            <li data-editable="text">Asymmetric columns</li>
-            <li data-editable="text">Nested cards</li>
-            <li data-editable="text">Overlay captions</li>
+            <li>Asymmetric columns</li>
+            <li>Nested cards</li>
+            <li>Overlay captions</li>
           </ul>
         </article>
-        <article class="tile" data-editable="block">
-          <strong data-editable="text">Media</strong>
-          <p data-editable="text">Image nodes and inline SVG charts both appear as realistic slide content.</p>
+        <article class="tile">
+          <strong>Media</strong>
+          <p>Image nodes and inline SVG charts both appear as realistic slide content.</p>
           <ul>
-            <li data-editable="text">Data URI images</li>
-            <li data-editable="text">Vector-heavy DOM</li>
-            <li data-editable="text">Mixed media with captions</li>
+            <li>Data URI images</li>
+            <li>Vector-heavy DOM</li>
+            <li>Mixed media with captions</li>
           </ul>
         </article>
-        <article class="tile" data-editable="block">
-          <strong data-editable="text">Selection behavior</strong>
-          <p data-editable="text">Non-text blocks can be clicked and inspected without accidentally entering text mode.</p>
+        <article class="tile" data-editor-id="block-4">
+          <strong data-editor-id="text-5">Selection behavior</strong>
+          <p data-editor-id="text-11">Non-text blocks can be clicked and inspected without accidentally entering text mode.</p>
           <ul>
-            <li data-editable="text">Block cards</li>
-            <li data-editable="text">Figure captions</li>
-            <li data-editable="text">Table wrapper selection</li>
+            <li>Block cards</li>
+            <li>Figure captions</li>
+            <li>Table wrapper selection</li>
           </ul>
         </article>
-        <article class="tile" data-editable="block">
-          <strong data-editable="text">Future editing targets</strong>
-          <p data-editable="text">The same fixture should remain useful when image replacement or block transforms land.</p>
+        <article class="tile" data-editor-id="block-10">
+          <strong>Future editing targets</strong>
+          <p>The same fixture should remain useful when image replacement or block transforms land.</p>
           <ul>
-            <li data-editable="text">Image markers already present</li>
-            <li data-editable="text">Block-level grouping is explicit</li>
-            <li data-editable="text">HTML remains canonical</li>
+            <li>Image markers already present</li>
+            <li>Block-level grouping is explicit</li>
+            <li>HTML remains canonical</li>
           </ul>
         </article>
-        <article class="tile" data-editable="block">
-          <strong data-editable="text">Project narrative</strong>
-          <p data-editable="text">It is no longer just a test deck. It can actually introduce the project to a new reader.</p>
+        <article class="tile">
+          <strong>Project narrative</strong>
+          <p>It is no longer just a test deck. It can actually introduce the project to a new reader.</p>
           <ul>
-            <li data-editable="text">Problem framing</li>
-            <li data-editable="text">Architecture explanation</li>
-            <li data-editable="text">Roadmap and comparison</li>
+            <li>Problem framing</li>
+            <li>Architecture explanation</li>
+            <li>Roadmap and comparison</li>
           </ul>
         </article>
-      </div>
+      </coverage-grid>
     `
   );
 }

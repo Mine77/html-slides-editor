@@ -1,8 +1,16 @@
 import { type RefObject, useEffect } from "react";
-import { SELECTOR_ATTR, type SlideModel, querySlideElement } from "../../core";
+import {
+  SELECTOR_ATTR,
+  isGroupEditableElement,
+  isTextEditableElement,
+  queryEditableElements,
+  querySlideElement,
+  type SlideModel,
+} from "../../core";
 import { ensureSelectionContainsTarget } from "./iframe-editing-session";
 import {
   applyGroupScopeFocus,
+  getClosestTextEditableSelectionTargetInScope,
   ensureEditingTextStyle,
   getDeepestEditableElementFromPoint,
   getEditableSelectionTargetInScope,
@@ -120,11 +128,19 @@ function useIframeTextDocumentEvents({
     };
 
     const onDocumentDoubleClick = (event: MouseEvent) => {
-      const scopedTextTarget = getEditableTextTargetFromPoint(
-        doc,
-        { x: event.clientX, y: event.clientY },
-        activeGroupScopeIdRef.current
-      );
+      const eventTarget = event.target instanceof Element ? event.target : null;
+      const scopedTextTarget =
+        (eventTarget
+          ? getClosestTextEditableSelectionTargetInScope(
+              eventTarget,
+              activeGroupScopeIdRef.current
+            )
+          : null) ??
+        getEditableTextTargetFromPoint(
+          doc,
+          { x: event.clientX, y: event.clientY },
+          activeGroupScopeIdRef.current
+        );
       const scopedTextId = scopedTextTarget?.getAttribute(SELECTOR_ATTR);
       if (!scopedTextId) {
         return;
@@ -141,9 +157,7 @@ function useIframeTextDocumentEvents({
     };
     doc.addEventListener("dblclick", onDocumentDoubleClick, true);
 
-    for (const node of Array.from(
-      doc.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
-    )) {
+    for (const node of queryEditableElements(doc)) {
       installEditableNodeHandlers({
         activeGroupScopeIdRef,
         activeSlide,
@@ -354,13 +368,22 @@ function installEditableNodeHandlers({
   };
 
   node.ondblclick = (event) => {
+    const eventTarget = event.target instanceof Element ? event.target : null;
     const scopedTextTarget =
+      (eventTarget
+        ? getClosestTextEditableSelectionTargetInScope(
+            eventTarget,
+            activeGroupScopeIdRef.current
+          )
+        : null) ??
       getEditableTextTargetFromPoint(
         node.ownerDocument,
         { x: event.clientX, y: event.clientY },
         activeGroupScopeIdRef.current
       ) ??
-      getEditableSelectionTargetInScope(event.target as Element, activeGroupScopeIdRef.current);
+      (eventTarget
+        ? getEditableSelectionTargetInScope(eventTarget, activeGroupScopeIdRef.current)
+        : null);
     const scopedTextId = scopedTextTarget?.getAttribute(SELECTOR_ATTR);
     if (scopedTextId && isElementLocked?.(scopedTextId)) {
       event.preventDefault();
@@ -368,7 +391,7 @@ function installEditableNodeHandlers({
       return;
     }
 
-    if (scopedTextTarget?.getAttribute("data-editable") === "text" && scopedTextId) {
+    if (scopedTextTarget && isTextEditableElement(scopedTextTarget) && scopedTextId) {
       event.preventDefault();
       event.stopPropagation();
       beginTextEditing(scopedTextId);
@@ -377,14 +400,14 @@ function installEditableNodeHandlers({
 
     const elementId = node.getAttribute(SELECTOR_ATTR);
     const activeEditing = textEditingRef.current;
-    if (elementId && node.getAttribute("data-group") === "true") {
+    if (elementId && isGroupEditableElement(node)) {
       event.preventDefault();
       event.stopPropagation();
       beginGroupEditingScope(elementId);
       return;
     }
 
-    if (node.getAttribute("data-editable") !== "text") {
+    if (!isTextEditableElement(node)) {
       return;
     }
 

@@ -1,6 +1,6 @@
 import type { SetStateAction } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SELECTOR_ATTR, querySlideElement } from "../../core";
+import { SELECTOR_ATTR, isTextEditableElement, querySlideElement } from "../../core";
 import { useActiveTextEditingSession } from "./iframe-active-text-session";
 import {
   clearSelectionForEscape,
@@ -120,14 +120,15 @@ function useIframeTextEditing({
 
       const doc = iframeRef.current?.contentDocument;
       const node = doc ? querySlideElement<HTMLElement>(doc, elementId) : null;
-      if (!node || node.getAttribute("data-editable") !== "text") {
+      if (!node || !isTextEditableElement(node)) {
         return;
       }
+      const textNode = node;
 
       const nextEditingState = {
         slideId: activeSlide.id,
         elementId,
-        initialText: node.textContent || "",
+        initialText: textNode.textContent || "",
       };
       setSelectedElementIds([elementId]);
       textEditingRef.current = nextEditingState;

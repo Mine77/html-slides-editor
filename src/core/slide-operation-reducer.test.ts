@@ -26,8 +26,8 @@ describe("slide operations", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Before</h1>
-      <p data-editable="text">Unchanged</p>
+      <h1>Before</h1>
+      <p>Unchanged</p>
     </div>
   </body>
 </html>`,
@@ -57,7 +57,7 @@ describe("slide operations", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">Before</h1>
+      <h1>Before</h1>
         </div>
   </body>
 </html>`,
@@ -84,8 +84,8 @@ describe("slide operations", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text" style="font-size: 48px;">Before</h1>
-      <div data-editable="block">Card</div>
+      <h1 style="font-size: 48px;">Before</h1>
+      <div>Card</div>
     </div>
   </body>
 </html>`,
@@ -177,8 +177,8 @@ describe("slide operations", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <h1 data-editable="text">One</h1>
-      <p data-editable="text">Two</p>
+      <h1>One</h1>
+      <p>Two</p>
     </div>
   </body>
 </html>`,
@@ -196,7 +196,7 @@ describe("slide operations", () => {
           parentElementId: "slide-root",
           previousSiblingElementId: null,
           nextSiblingElementId: "text-2",
-          html: '<h1 data-editable="text" data-editor-id="text-1">One</h1>',
+          html: '<h1 data-editor-id="text-1">One</h1>',
           timestamp: 4,
         },
         {
@@ -206,7 +206,7 @@ describe("slide operations", () => {
           parentElementId: "slide-root",
           previousSiblingElementId: "text-2",
           nextSiblingElementId: null,
-          html: '<p data-editable="text" data-editor-id="text-3">Three</p>',
+          html: '<p data-editor-id="text-3">Three</p>',
           timestamp: 4,
         },
       ],
@@ -225,8 +225,8 @@ describe("slide operations", () => {
 <html lang="en">
   <body>
     <div class="slide-container" data-slide-root="true">
-      <p data-editable="text" data-editor-id="text-1" style="left: 20px; top: 30px; width: 100px; height: 40px;">One</p>
-      <p data-editable="text" data-editor-id="text-2" style="left: 140px; top: 50px; width: 100px; height: 40px;">Two</p>
+      <p data-editor-id="text-1" style="left: 20px; top: 30px; width: 100px; height: 40px;">One</p>
+      <p data-editor-id="text-2" style="left: 140px; top: 50px; width: 100px; height: 40px;">Two</p>
     </div>
   </body>
 </html>`,

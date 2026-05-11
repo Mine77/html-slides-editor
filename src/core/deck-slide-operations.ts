@@ -15,7 +15,7 @@ const DEFAULT_NEW_SLIDE_HTML = `<!DOCTYPE html>
       data-editor-id="slide-root"
       style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #ffffff;"
     >
-      <h1 data-editable="text" data-editor-id="text-1" style="position: absolute; left: 160px; top: 160px; width: 1200px; margin: 0; font-size: 96px; line-height: 1.05;">
+      <h1 data-editor-id="text-1" style="position: absolute; left: 160px; top: 160px; width: 1200px; margin: 0; font-size: 96px; line-height: 1.05;">
         Untitled Slide
       </h1>
     </main>

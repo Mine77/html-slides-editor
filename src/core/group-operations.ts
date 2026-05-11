@@ -1,4 +1,5 @@
 import { composeTransform, parseTransformParts } from "./layout";
+import { isBlockEditableElement, isEditableElement, isTextEditableElement } from "./editable-dom";
 import {
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
@@ -74,7 +75,7 @@ function getAbsoluteNodeRect(
     y += rect.y;
 
     const parent: HTMLElement | null = current.parentElement;
-    if (!parent || !parent.hasAttribute("data-editable")) {
+    if (!parent || !isEditableElement(parent)) {
       break;
     }
 
@@ -89,7 +90,7 @@ function getEditableAncestorRect(
   elementRects: GroupElementRectMap = {}
 ): { x: number; y: number } {
   const parent = node.parentElement;
-  if (!parent || !parent.hasAttribute("data-editable")) {
+  if (!parent || !isEditableElement(parent)) {
     return { x: 0, y: 0 };
   }
 
@@ -168,7 +169,7 @@ function getDirectEditableOwner(node: HTMLElement): HTMLElement | null {
     return null;
   }
 
-  if (parent.hasAttribute(SLIDE_ROOT_ATTR) || parent.hasAttribute("data-editable")) {
+  if (parent.hasAttribute(SLIDE_ROOT_ATTR) || isEditableElement(parent)) {
     return parent;
   }
 
@@ -178,19 +179,24 @@ function getDirectEditableOwner(node: HTMLElement): HTMLElement | null {
 function childEditableElements(node: HTMLElement): HTMLElement[] {
   return Array.from(node.children).filter(
     (child): child is HTMLElement =>
-      child instanceof HTMLElement && child.hasAttribute("data-editable")
+      child instanceof HTMLElement && isEditableElement(child)
   );
 }
 
-function isListWrapperWithEditableItems(node: Element): node is HTMLElement {
+function isListWrapperWithEditableItems(node: Element): boolean {
   const tagName = node.tagName.toLowerCase();
   if (tagName !== "ul" && tagName !== "ol") {
     return false;
   }
 
   return Array.from(node.children).some(
-    (child) => child.tagName.toLowerCase() === "li" && child.hasAttribute("data-editable")
+    (child) => child.tagName.toLowerCase() === "li" && isTextEditableElement(child)
   );
+}
+
+function isListWrapperTag(node: Element): boolean {
+  const tagName = node.tagName.toLowerCase();
+  return tagName === "ul" || tagName === "ol";
 }
 
 function createUniqueElementIdInDocument(doc: Document, preferredId: string): string {
@@ -216,25 +222,33 @@ function createUniqueElementIdInDocument(doc: Document, preferredId: string): st
 }
 
 function flattenableBlockChildElements(node: HTMLElement, doc: Document): HTMLElement[] {
-  return Array.from(node.children).filter((child): child is HTMLElement => {
+  const result: HTMLElement[] = [];
+
+  for (const child of Array.from(node.children)) {
     if (!(child instanceof HTMLElement)) {
-      return false;
+      continue;
     }
 
-    if (child.hasAttribute("data-editable")) {
-      return true;
+    if (isEditableElement(child)) {
+      result.push(child);
+      continue;
+    }
+
+    if (!isListWrapperTag(child)) {
+      continue;
     }
 
     if (!isListWrapperWithEditableItems(child)) {
-      return false;
+      continue;
     }
 
-    child.setAttribute("data-editable", "block");
     if (!child.getAttribute(SELECTOR_ATTR)) {
       child.setAttribute(SELECTOR_ATTR, createUniqueElementIdInDocument(doc, "block-1"));
     }
-    return true;
-  });
+    result.push(child);
+  }
+
+  return result;
 }
 
 export function createGroupCreateOperation({
@@ -291,7 +305,6 @@ export function createGroupCreateOperation({
   const bottom = Math.max(...rects.map((rect) => rect.y + rect.height));
   const parentRect = getEditableAncestorRect(selectedNodes[0], elementRects);
   const groupNode = doc.createElement("div");
-  groupNode.setAttribute("data-editable", "block");
   groupNode.setAttribute("data-group", "true");
   groupNode.setAttribute(SELECTOR_ATTR, groupElementId);
   setNodeRect(groupNode, {
@@ -410,7 +423,7 @@ export function createGroupUngroupOperation({
         child.style.margin = "0px";
       }
       for (const descendant of Array.from(
-        child.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
+        child.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)
       )) {
         const descendantElementId = descendant.getAttribute(SELECTOR_ATTR) ?? "";
         applyPresentationStyleSnapshot(descendant, elementPresentationStyles[descendantElementId]);

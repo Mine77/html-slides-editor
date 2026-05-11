@@ -74,14 +74,15 @@ export function buildImageSlide() {
     }`,
     `
       <div class="header">
-        <div class="kicker" data-editable="text">Images</div>
-        <h1 data-editable="text">Image-heavy slides expose sizing, cropping, and selection behavior around data-editable image nodes</h1>
-        <p data-editable="text">The images here are inline data URIs, so the generated deck remains self-contained and portable. That keeps the fixture stable for tests and demo environments.</p>
+        <p class="kicker">Images</p>
+        <h1>Image-heavy slides expose sizing, cropping, and selection behavior around editable image nodes</h1>
+        <p>The images here are inline data URIs, so the generated deck remains self-contained and portable. That keeps the fixture stable for tests and demo environments.</p>
       </div>
       <div class="gallery">
-        <figure class="hero-image" data-editable="block">
+        <figure class="hero-image">
           <img
-            data-editable="image"
+            data-editor-id="image-5"
+           
             alt="Illustrated browser editing canvas"
             src="data:image/svg+xml;utf8,${encodeURIComponent(`
               <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 760'>
@@ -106,15 +107,15 @@ export function buildImageSlide() {
               </svg>
             `)}"
           />
-          <figcaption class="caption" data-editable="block">
-            <strong data-editable="text">Product mockup</strong>
-            <span data-editable="text">A synthetic image that represents the iframe editor, sidebar, and inspector working together.</span>
+          <figcaption class="caption">
+            <strong>Product mockup</strong>
+            <span>A synthetic image that represents the iframe editor, sidebar, and inspector working together.</span>
           </figcaption>
         </figure>
         <div class="stack">
-          <figure class="stack-card" data-editable="block">
+          <figure class="stack-card">
             <img
-              data-editable="image"
+             
               alt="Collaboration illustration"
               src="data:image/svg+xml;utf8,${encodeURIComponent(`
                 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 760 360'>
@@ -133,14 +134,14 @@ export function buildImageSlide() {
                 </svg>
               `)}"
             />
-            <figcaption class="caption" data-editable="block">
-              <strong data-editable="text">Workflow illustration</strong>
-              <span data-editable="text">Demonstrates another aspect ratio and image crop behavior.</span>
+            <figcaption class="caption">
+              <strong>Workflow illustration</strong>
+              <span>Demonstrates another aspect ratio and image crop behavior.</span>
             </figcaption>
           </figure>
-          <figure class="stack-card" data-editable="block">
+          <figure class="stack-card">
             <img
-              data-editable="image"
+             
               alt="Metrics dashboard illustration"
               src="data:image/svg+xml;utf8,${encodeURIComponent(`
                 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 760 360'>
@@ -154,9 +155,9 @@ export function buildImageSlide() {
                 </svg>
               `)}"
             />
-            <figcaption class="caption" data-editable="block">
-              <strong data-editable="text">Metric art</strong>
-              <span data-editable="text">Useful for testing images beside text-dense captions and different crop regions.</span>
+            <figcaption class="caption">
+              <strong>Metric art</strong>
+              <span>Useful for testing images beside text-dense captions and different crop regions.</span>
             </figcaption>
           </figure>
         </div>
@@ -185,7 +186,7 @@ export function buildCropImageSlide() {
     `
       <img
         class="crop-fixture-image"
-        data-editable="image"
+       
         data-editor-id="crop-image"
         alt="Crop fixture gradient"
         src="data:image/svg+xml;utf8,${encodeURIComponent(`

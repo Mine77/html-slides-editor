@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { JSDOM, VirtualConsole } from "jsdom";
+import {
+  isEditableElement,
+  isBlockEditableElement,
+} from "./editable-dom";
 import { parseDeckDocument } from "./slide-document";
 import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
 
@@ -149,7 +153,9 @@ function validateSlideHtml(_filePath: string, slideId: string, html: string): Ve
     }
   }
 
-  const editableNodes = Array.from(document.querySelectorAll<HTMLElement>("[data-editable]"));
+  const editableNodes = Array.from(
+    document.querySelectorAll<HTMLElement>(`[${SLIDE_ROOT_ATTR}] *`)
+  ).filter(isEditableElement);
   if (editableNodes.length === 0) {
     issues.push(
       issue("warning", "structure.empty-slide", "slide contains no editable nodes", {
@@ -158,14 +164,13 @@ function validateSlideHtml(_filePath: string, slideId: string, html: string): Ve
     );
   }
 
-  for (const node of editableNodes) {
-    const editableType = node.getAttribute("data-editable") ?? "";
-    if (!["text", "image", "block"].includes(editableType)) {
+  for (const node of Array.from(document.querySelectorAll<HTMLElement>("[data-editable]"))) {
+    if (node.hasAttribute("data-editable")) {
       issues.push(
         issue(
           "error",
-          "structure.invalid-editable",
-          `invalid data-editable value "${editableType}" on <${node.tagName.toLowerCase()}>`,
+          "structure.legacy-editable-attr",
+          "data-editable is not allowed in authored deck HTML",
           {
             slideId,
             selector: node.getAttribute(SELECTOR_ATTR) ?? undefined,
@@ -173,8 +178,11 @@ function validateSlideHtml(_filePath: string, slideId: string, html: string): Ve
         )
       );
     }
+  }
 
-    if (node.getAttribute("data-group") === "true" && editableType !== "block") {
+  for (const node of Array.from(document.querySelectorAll<HTMLElement>('[data-group="true"]'))) {
+    const isBlockEditable = isBlockEditableElement(node);
+    if (!isBlockEditable) {
       issues.push(
         issue(
           "error",
@@ -202,7 +210,9 @@ function validateStaticOverflow(_filePath: string, slideId: string, html: string
   const issues: VerifyIssue[] = [];
   const candidates = [
     document.querySelector<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`),
-    ...Array.from(document.querySelectorAll<HTMLElement>("[data-editable]")),
+    ...Array.from(document.querySelectorAll<HTMLElement>(`[${SLIDE_ROOT_ATTR}] *`)).filter(
+      isEditableElement
+    ),
   ].filter((node): node is HTMLElement => Boolean(node));
 
   for (const node of candidates) {

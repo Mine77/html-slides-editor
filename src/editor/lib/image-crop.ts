@@ -1,4 +1,4 @@
-import type { RectLike } from "../../core";
+import { type RectLike, isImageEditableElement } from "../../core";
 
 export interface CropInsets {
   top: number;
@@ -111,7 +111,7 @@ export function getImageCropRadii(node: HTMLElement): CropRadii {
 
 export function getVisibleImageRect(node: HTMLElement): RectLike {
   const rect = node.getBoundingClientRect();
-  if (node.getAttribute("data-editable") !== "image") {
+  if (!isImageEditableElement(node)) {
     return rect;
   }
 

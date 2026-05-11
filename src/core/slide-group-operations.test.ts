@@ -18,10 +18,10 @@ function createSlideHtml(content: string) {
 describe("group slide operations", () => {
   test("group create flattens selected groups and generates a new group container", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 10px; top: 20px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-1" style="left: 15px; top: 10px; width: 120px; height: 40px;">Alpha</p>
+      <div data-group="true" data-editor-id="group-1" style="left: 10px; top: 20px; width: 300px; height: 200px;">
+        <p data-editor-id="text-1" style="left: 15px; top: 10px; width: 120px; height: 40px;">Alpha</p>
       </div>
-      <div data-editable="block" data-editor-id="block-2" style="left: 400px; top: 60px; width: 160px; height: 120px;">Beta</div>
+      <div data-editor-id="block-2" style="left: 400px; top: 60px; width: 160px; height: 120px;">Beta</div>
     `);
 
     const operation = createGroupCreateOperation({
@@ -41,8 +41,8 @@ describe("group slide operations", () => {
 
   test("group create converts children to group-relative coordinates", () => {
     const html = createSlideHtml(`
-      <p data-editable="text" data-editor-id="text-1" style="left: 100px; top: 80px; width: 120px; height: 40px;">Alpha</p>
-      <div data-editable="block" data-editor-id="block-2" style="left: 260px; top: 140px; width: 160px; height: 90px;">Beta</div>
+      <p data-editor-id="text-1" style="left: 100px; top: 80px; width: 120px; height: 40px;">Alpha</p>
+      <div data-editor-id="block-2" style="left: 260px; top: 140px; width: 160px; height: 90px;">Beta</div>
     `);
 
     const operation = createGroupCreateOperation({
@@ -72,10 +72,10 @@ describe("group slide operations", () => {
 
   test("group create rejects cross-parent selections", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-editor-id="block-1" style="left: 40px; top: 40px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-2" style="left: 10px; top: 10px; width: 100px; height: 40px;">Nested</p>
+      <div data-editor-id="block-1" style="left: 40px; top: 40px; width: 300px; height: 200px;">
+        <p data-editor-id="text-2" style="left: 10px; top: 10px; width: 100px; height: 40px;">Nested</p>
       </div>
-      <p data-editable="text" data-editor-id="text-3" style="left: 420px; top: 80px; width: 100px; height: 40px;">Peer</p>
+      <p data-editor-id="text-3" style="left: 420px; top: 80px; width: 100px; height: 40px;">Peer</p>
     `);
 
     const operation = createGroupCreateOperation({
@@ -91,7 +91,7 @@ describe("group slide operations", () => {
 
   test("group ungroup ignores ordinary blocks without direct nested editables", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">Alpha</div>
+      <div data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">Alpha</div>
     `);
 
     const operation = createGroupUngroupOperation({
@@ -106,11 +106,11 @@ describe("group slide operations", () => {
 
   test("group ungroup flattens ordinary blocks with direct editable children", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
-        <p data-editable="text" data-editor-id="text-3" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
+      <div data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
+        <p data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
+        <p data-editor-id="text-3" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
       </div>
-      <div data-editable="block" data-editor-id="block-4" style="left: 520px; top: 80px; width: 160px; height: 120px;">Gamma</div>
+      <div data-editor-id="block-4" style="left: 520px; top: 80px; width: 160px; height: 120px;">Gamma</div>
     `);
 
     const operation = createGroupUngroupOperation({
@@ -139,11 +139,11 @@ describe("group slide operations", () => {
 
   test("group ungroup promotes direct list wrappers as block children without flattening li items", () => {
     const html = createSlideHtml(`
-      <article data-editable="block" data-editor-id="card-1" style="left: 100px; top: 80px; width: 300px; height: 240px;">
-        <strong data-editable="text" data-editor-id="text-2" style="left: 20px; top: 18px; width: 160px; height: 32px;">Alpha</strong>
-        <ul style="left: 24px; top: 110px; width: 220px; height: 96px;">
-          <li data-editable="text" data-editor-id="text-3">One</li>
-          <li data-editable="text" data-editor-id="text-4">Two</li>
+      <article data-editor-id="card-1" style="left: 100px; top: 80px; width: 300px; height: 240px;">
+        <strong data-editor-id="text-2" style="left: 20px; top: 18px; width: 160px; height: 32px;">Alpha</strong>
+        <ul data-editor-id="block-1" style="left: 24px; top: 110px; width: 220px; height: 96px;">
+          <li data-editor-id="text-3">One</li>
+          <li data-editor-id="text-4">Two</li>
         </ul>
       </article>
     `);
@@ -168,7 +168,7 @@ describe("group slide operations", () => {
 
     expect(operation?.childElementIds).toEqual(["card-1", "text-2", "block-1"]);
     expect(list?.parentElement?.getAttribute("data-editor-id")).toBe("slide-root");
-    expect(list?.getAttribute("data-editable")).toBe("block");
+    expect(list?.getAttribute("data-editor-id")).toBe("block-1");
     expect(firstItem?.parentElement).toBe(list);
     expect(secondItem?.parentElement).toBe(list);
     expect(list?.style.left).toBe("124px");
@@ -177,8 +177,8 @@ describe("group slide operations", () => {
 
   test("group ungroup preserves captured presentation styles for flattened block children", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
-        <strong data-editable="text" data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</strong>
+      <div data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
+        <strong data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</strong>
       </div>
     `);
 
@@ -207,9 +207,9 @@ describe("group slide operations", () => {
 
   test("group ungroup restores children to parent order and coordinate space", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-1" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
-        <p data-editable="text" data-editor-id="text-2" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
+      <div data-group="true" data-editor-id="group-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
+        <p data-editor-id="text-1" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
+        <p data-editor-id="text-2" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
       </div>
     `);
 
@@ -229,9 +229,9 @@ describe("group slide operations", () => {
 
   test("group ungroup preserves child dimensions when a rendered rect map is supplied", () => {
     const html = createSlideHtml(`
-      <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 240px; top: 470px; width: 600px; height: 180px;">
-        <article data-editable="block" data-editor-id="card-a" style="left: 0px; top: 0px; width: 260px; height: 180px;">A</article>
-        <article data-editable="block" data-editor-id="card-b" style="left: 340px; top: 0px; width: 260px; height: 180px;">B</article>
+      <div data-group="true" data-editor-id="group-1" style="left: 240px; top: 470px; width: 600px; height: 180px;">
+        <article data-editor-id="card-a" style="left: 0px; top: 0px; width: 260px; height: 180px;">A</article>
+        <article data-editor-id="card-b" style="left: 340px; top: 0px; width: 260px; height: 180px;">B</article>
       </div>
     `);
 
