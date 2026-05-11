@@ -1,95 +1,62 @@
+![starry kit banner](assets/readme-banner.png)
+
+> **The project is currently under development and has not made a release version yet. Please stay tuned for future progress.**
+
 # Starry Slides
 
-## Overview
+Starry Slides is an agentic editor for slides and presentations using HTML as the source file.
 
-Starry Slides is a local-first, agent-native slide workflow for HTML slide
-decks. Agents generate Contract-compatible deck packages, Starry Slides
-validates them, and the browser editor lets people revise the same HTML files
-without converting them into a proprietary slide model.
+The project mainly contains 3 parts:
 
-The project rule is simple: HTML stays the source of truth. A deck remains a
-set of files on disk rather than data trapped inside a separate editor model,
-which makes it easier for people and agents to collaborate in the same
-workflow. Validation helps generated decks stay compatible with the expected
-slide contract, while the local editor focuses on making direct, reversible
-changes to those same source files.
+| Part                   | Description                                                                                                                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `starry-slides` CLI    | Tools for agents to preview, verify, and open generated slide HTML files.                                                                                                        |
+| Starry Slide Editor    | A WYSIWYG editor for creating and editing slide HTML files.                                                                                                                      |
+| `/starry-slides` Skill | A skill that teaches your agent to generate HTML files that meet the requirements of [`STARRY-SLIDES-CONTRACT.md`](./skills/starry-slides/references/STARRY-SLIDES-CONTRACT.md). |
 
-In practice, Starry Slides sits between generation, validation, editing, and
-export. It is designed for teams who want slide decks to behave more like code:
-inspectable, versionable, scriptable, and safe to evolve incrementally.
 
-## Development
+## CLI Quick Start
 
-Install dependencies:
+Install the CLI globally:
 
 ```bash
-pnpm install
+npm install -g starry-slides
 ```
 
-Create or refresh the ignored local sample deck:
+Use it to verify, preview, and open decks:
 
 ```bash
-pnpm editor:e2e:generate-deck
+starry-slides verify <deck>
+starry-slides view <deck> --all
+starry-slides open <deck>
 ```
 
-Validate a deck:
+- `verify` checks whether a deck HTML file follows the contract and prints JSON results.
+- `view` renders preview images for one slide or the whole deck.
+- `open` runs verification first, then opens the deck in the editor when it passes.
+
+## Skill Quick Start
+
+Install the Starry Slides skill with the `skills` CLI:
 
 ```bash
-pnpm --silent starry-slides verify sample-slides
+npx skills add StarryKit/starry-slides --skill starry-slides
 ```
 
-Open the editor:
+Then start with a simple prompt like:
 
-```bash
-pnpm starry-slides open sample-slides
+```text
+Use /starry-slides to create a slide deck for my presentation.
 ```
-
-For day-to-day editor development with Vite hot reload:
-
-```bash
-pnpm dev
-```
-
-Useful CLI commands:
-
-```bash
-starry-slides [deck]
-starry-slides open [deck]
-starry-slides verify [deck]
-starry-slides verify [deck] --static
-starry-slides view [deck] --slide <manifest-file>
-starry-slides view [deck] --all
-starry-slides view [deck] --all --out-dir <directory>
-```
-
-`starry-slides [deck]` defaults to `starry-slides open [deck]`.
-
-## Roadmap
-
-| Feature                         | Status      | Notes                                                                                  |
-| ------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| HTML Contract validation        | Done        | Validates generated slide packages before editor import.                               |
-| Manifest-based deck loading     | Done        | Loads `manifest.json`, slide HTML, titles, hidden state, and source files.             |
-| Browser editor for local decks  | Done        | Opens generated decks locally and writes committed edits back to disk.                 |
-| Direct text editing             | Done        | Supports in-slide text edits with undo/redo and persistence.                           |
-| Element selection and styling   | Done        | Supports editable text, image, block, and group elements through toolbar controls.     |
-| Block move, resize, rotate      | Done        | Persists supported layout edits through shared operations.                             |
-| Slide sidebar operations        | Done        | Add, duplicate, delete, hide/show, reorder, and rename slides.                         |
-| Editing-only release gate       | In progress | Full `pnpm verify` release path and final release notes remain active work.            |
-| Deeper manipulation coverage    | Planned     | Broader resize/rotate regression coverage and UX polish.                               |
-| Agent-backed generation UI      | Planned     | Product UI for prompt-to-deck generation.                                              |
-| Agent-backed slide modification | Planned     | Proposed AI edits with preview, accept/reject, validation, undo/redo, and persistence. |
-| Productized deployment          | Planned     | Runtime, storage, security, and deployment model beyond the local workflow.            |
-
-Detailed planning lives in [docs/roadmap/README.md](./docs/roadmap/README.md).
 
 ## Documentation
 
+- [Roadmap](./docs/roadmap/README.md): roadmap of progress and future plans 
 - [Development guide](./docs/development.md): repo layout, local commands, tests,
   and implementation boundaries.
 - [Contributing guide](./docs/contributing.md): expectations for changes,
   verification, and review.
-- [Slide Contract guide](./docs/slides-contract.md): deck package shape and
+- [Slide Contract guide](./skills/starry-slides/references/STARRY-SLIDES-CONTRACT.md): deck package shape and
   required HTML attributes.
 - [Repository context](./CONTEXT.md): repo rules, boundaries, testing
   expectations, and shared terminology.
@@ -97,4 +64,4 @@ Detailed planning lives in [docs/roadmap/README.md](./docs/roadmap/README.md).
 
 ## License
 
-Starry Slides is licensed under [AGPL-3.0-only](./LICENSE).
+Starry Slides is licensed under [MIT License](./LICENSE).
