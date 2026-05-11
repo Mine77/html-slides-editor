@@ -39,26 +39,18 @@ export function resolveViewSelection(argv: string[], options: { slide?: string; 
   return options;
 }
 
-async function runStaticVerify(deckPath: string) {
-  return verifyDeck(deckPath, { mode: "static" });
-}
-
 export async function runView(
   deckPathArg: string | undefined,
-  options: { slide?: string; all?: boolean; outDir?: string; static?: boolean }
+  options: { slide?: string; all?: boolean; outDir?: string }
 ) {
-  if (options.static) {
-    throw new Error("view always runs Static Verify; do not pass --static");
-  }
-
   if (!options.slide && !options.all) {
     throw new Error("view requires either --slide <slide-id> or --all");
   }
 
   const deckPath = resolveDeckPath(deckPathArg);
-  const staticResult = await runStaticVerify(deckPath);
-  if (!staticResult.ok) {
-    writeJson(staticResult);
+  const sourceResult = verifyDeck(deckPath);
+  if (!sourceResult.ok) {
+    writeJson(sourceResult);
     process.exitCode = 1;
     return;
   }

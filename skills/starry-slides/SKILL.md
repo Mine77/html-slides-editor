@@ -39,19 +39,13 @@ starry-slides open <deck>
 starry-slides verify <deck>
 ```
 
-4. Use `--static` when you only need fast structural validation:
-
-```bash
-starry-slides verify <deck> --static
-```
-
-5. If verification passes, open the deck with:
+4. If verification passes, open the deck with:
 
 ```bash
 starry-slides open <deck>
 ```
 
-6. For previews, use:
+5. For previews, use:
 
 ```bash
 starry-slides view <deck> --all
@@ -61,7 +55,6 @@ starry-slides view <deck> --slide <slide-id>
 ## Rules
 
 - Do not invent a separate slide document format.
-- Do not add `data-editable` markers unless the existing deck pattern requires them.
 - Keep hidden slides explicit with `slide-hidden="true"` only when needed.
 - Treat `verify` JSON as the source of truth for pass/fail.
 - Do not open the deck until verification returns `ok: true`.

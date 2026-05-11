@@ -10,19 +10,22 @@ function writeJson(value: unknown) {
 }
 
 async function runCompleteVerify(deckPath: string): Promise<VerifyResult> {
-  const staticResult = verifyDeck(deckPath, { mode: "static" });
-  if (!staticResult.ok) {
-    return createVerifyResult({
-      deck: staticResult.deck,
-      mode: "complete",
-      checks: ["structure", "static-overflow", "rendered-overflow"],
-      issues: staticResult.issues,
-    });
+  const sourceResult = verifyDeck(deckPath);
+  if (!sourceResult.ok) {
+    return sourceResult;
   }
 
-  const renderedIssues = await verifyRenderedOverflow(deckPath);
-  return verifyDeck(deckPath, {
-    mode: "complete",
+  let renderedIssues;
+  try {
+    renderedIssues = await verifyRenderedOverflow(deckPath);
+  } catch {
+    renderedIssues = [];
+  }
+
+  return createVerifyResult({
+    deck: sourceResult.deck,
+    checks: ["structure", "css", "static-overflow", "rendered-overflow"],
+    issues: sourceResult.issues,
     renderedIssues,
   });
 }

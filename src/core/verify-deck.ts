@@ -8,7 +8,6 @@ import {
 import { parseDeckDocument } from "./slide-document";
 import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
 
-export type VerifyMode = "static" | "complete";
 export type VerifyCheck = "structure" | "css" | "static-overflow" | "rendered-overflow";
 
 export interface VerifyIssue {
@@ -28,7 +27,6 @@ export interface VerifySummary {
 export interface VerifyResult {
   ok: boolean;
   deck: string;
-  mode: VerifyMode;
   checks: VerifyCheck[];
   issues: VerifyIssue[];
   summary: VerifySummary;
@@ -258,22 +256,6 @@ function validateSlideHtml(_filePath: string, slideId: string, html: string): Ve
     );
   }
 
-  for (const node of Array.from(document.querySelectorAll<HTMLElement>("[data-editable]"))) {
-    if (node.hasAttribute("data-editable")) {
-      issues.push(
-        issue(
-          "error",
-          "structure.legacy-editable-attr",
-          "data-editable is not allowed in authored deck HTML",
-          {
-            slideId,
-            selector: node.getAttribute(SELECTOR_ATTR) ?? undefined,
-          }
-        )
-      );
-    }
-  }
-
   for (const node of Array.from(document.querySelectorAll<HTMLElement>('[data-group="true"]'))) {
     const isBlockEditable = isBlockEditableElement(node);
     if (!isBlockEditable) {
@@ -421,24 +403,24 @@ export function loadVerifyDeckSource(deckPath: string): VerifyDeckSourceResult {
 
 export function createVerifyResult({
   deck,
-  mode,
   checks,
   issues,
+  renderedIssues,
 }: {
   deck: string;
-  mode: VerifyMode;
   checks: VerifyCheck[];
   issues: VerifyIssue[];
+  renderedIssues?: VerifyIssue[];
 }): VerifyResult {
-  const errorCount = issues.filter((item) => item.severity === "error").length;
-  const warningCount = issues.filter((item) => item.severity === "warning").length;
+  const allIssues = [...issues, ...(renderedIssues ?? [])];
+  const errorCount = allIssues.filter((item) => item.severity === "error").length;
+  const warningCount = allIssues.filter((item) => item.severity === "warning").length;
 
   return {
     ok: errorCount === 0,
     deck,
-    mode,
     checks,
-    issues,
+    issues: allIssues,
     summary: {
       errorCount,
       warningCount,
@@ -448,19 +430,13 @@ export function createVerifyResult({
 
 export function verifyDeck(
   deckPath: string,
-  options: { mode?: VerifyMode; renderedIssues?: VerifyIssue[] } = {}
+  options: { renderedIssues?: VerifyIssue[] } = {}
 ): VerifyResult {
   const source = loadVerifyDeckSource(deckPath);
-  const mode = options.mode ?? "static";
-  const renderedIssues = mode === "complete" ? (options.renderedIssues ?? []) : [];
-  const issues = [...source.issues, ...renderedIssues];
   return createVerifyResult({
     deck: source.deck,
-    mode,
-    checks:
-      mode === "complete"
-        ? ["structure", "css", "static-overflow", "rendered-overflow"]
-        : ["structure", "css", "static-overflow"],
-    issues,
+    checks: ["structure", "css", "static-overflow", "rendered-overflow"],
+    issues: source.issues,
+    renderedIssues: options.renderedIssues,
   });
 }

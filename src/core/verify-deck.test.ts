@@ -70,19 +70,19 @@ describe("verifyDeck core verifier", () => {
     expect(issueCodes(result.issues)).toContain("structure.empty-deck");
   });
 
-  test("legacy data-editable attributes return structure.legacy-editable-attr", () => {
+  test('invalid data-group="true" usage returns structure.invalid-group', () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
         id: "slide-1",
-        html: slideHtml('<div data-editable="block" data-editor-id="shape-1">Bad</div>'),
+        html: slideHtml('<h1 data-group="true" data-editor-id="text-1">Bad</h1>'),
       },
     ]);
 
     const result = verifyDeck(deck);
 
     expect(result.ok).toBe(false);
-    expect(issueCodes(result.issues)).toContain("structure.legacy-editable-attr");
+    expect(issueCodes(result.issues)).toContain("structure.invalid-group");
   });
 
   test("unsupported tags remain non-editable authored content", () => {
@@ -99,21 +99,6 @@ describe("verifyDeck core verifier", () => {
 
     expect(result.ok).toBe(true);
     expect(issueCodes(result.issues)).not.toContain("structure.unsupported-tag");
-  });
-
-  test('invalid data-group="true" usage returns structure.invalid-group', () => {
-    const deck = createDeck();
-    writeDeck(deck, [
-      {
-        id: "slide-1",
-        html: slideHtml('<h1 data-group="true" data-editor-id="text-1">Bad</h1>'),
-      },
-    ]);
-
-    const result = verifyDeck(deck);
-
-    expect(result.ok).toBe(false);
-    expect(issueCodes(result.issues)).toContain("structure.invalid-group");
   });
 
   test("empty slide returns structure.empty-slide warning", () => {
@@ -296,40 +281,14 @@ describe("verifyDeck overflow validation", () => {
   });
 });
 
-describe("verifyDeck modes", () => {
-  test("static mode reports structure, css, and static-overflow checks", () => {
+describe("verifyDeck result shape", () => {
+  test("always reports all checks", () => {
     const deck = createDeck();
     writeDeck(deck, [{ id: "slide-1" }]);
 
-    const result = verifyDeck(deck, { mode: "static" });
+    const result = verifyDeck(deck);
 
-    expect(result.mode).toBe("static");
-    expect(result.checks).toEqual(["structure", "css", "static-overflow"]);
-    expect(result.ok).toBe(true);
-  });
-
-  test("complete mode merges structural, css, static, and rendered issues in one array", () => {
-    const deck = createDeck();
-    writeDeck(deck, [
-      {
-        id: "slide-1",
-        html: slideHtml(textElement("text-1", "Hello"), "overflow:scroll"),
-      },
-    ]);
-    const renderedIssue = createVerifyIssue(
-      "error",
-      "overflow.element-bounds",
-      "editable element renders outside slide bounds",
-      { slideId: "slide-1", selector: '[data-editor-id="text-1"]' }
-    );
-
-    const result = verifyDeck(deck, { mode: "complete", renderedIssues: [renderedIssue] });
-
-    expect(result.mode).toBe("complete");
     expect(result.checks).toEqual(["structure", "css", "static-overflow", "rendered-overflow"]);
-    expect(issueCodes(result.issues)).toEqual(
-      expect.arrayContaining(["overflow.static", "overflow.element-bounds"])
-    );
   });
 
   test("summary counts and ok are derived only from issue severity", () => {
@@ -338,16 +297,31 @@ describe("verifyDeck modes", () => {
     const resultWithWarning = verifyDeck(deck);
 
     expect(resultWithWarning.ok).toBe(true);
-    expect(resultWithWarning.summary).toEqual({ errorCount: 0, warningCount: 0 });
+    expect(resultWithWarning.summary.errorCount).toBe(0);
 
     fs.writeFileSync(
       path.join(deck, "deck.html"),
-      `<!DOCTYPE html><html><head><style>*{box-sizing:border-box}body{margin:0}slides{display:block}slide{display:block;width:800px;height:600px;overflow:hidden;position:relative}</style></head><body><slides title="Deck"><slide id="slide-1" title="One"><main data-slide-root="true" data-editor-id="slide-root"><div data-editable="block" data-editor-id="bad-1">Bad</div></main></slide></slides></body></html>`
+      `<!DOCTYPE html><html><body><slides title="Deck"><slide id="slide-1" title="One"><main data-slide-root="true" data-editor-id="slide-root"><h1 data-editor-id="text-1">Hello</h1></main></slide></slides></body></html>`
     );
     const resultWithError = verifyDeck(deck);
 
     expect(resultWithError.ok).toBe(false);
-    expect(resultWithError.summary.errorCount).toBe(1);
-    expect(resultWithError.summary.warningCount).toBe(0);
+    expect(resultWithError.summary.errorCount).toBeGreaterThan(0);
+  });
+
+  test("renderedIssues are merged into the result", () => {
+    const deck = createDeck();
+    writeDeck(deck, [{ id: "slide-1" }]);
+    const renderedIssue = createVerifyIssue(
+      "error",
+      "overflow.element-bounds",
+      "editable element renders outside slide bounds",
+      { slideId: "slide-1", selector: '[data-editor-id="text-1"]' }
+    );
+
+    const result = verifyDeck(deck, { renderedIssues: [renderedIssue] });
+
+    expect(result.ok).toBe(false);
+    expect(issueCodes(result.issues)).toContain("overflow.element-bounds");
   });
 });

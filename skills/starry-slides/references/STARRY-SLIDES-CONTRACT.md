@@ -53,9 +53,6 @@ Editing support is determined by a contract-level tag whitelist. Elements in the
 supported tag list are currently editable. Elements outside the list are
 currently treated as non-editable authored content.
 
-`data-editable` is not part of this contract and must not appear in authored
-deck HTML.
-
 | Property       | Required | Type              | Default | Description                                                           |
 | -------------- | -------- | ----------------- | ------- | --------------------------------------------------------------------- |
 | `id`           | yes      | string            | none    | Stable identifier for the slide.                                      |
