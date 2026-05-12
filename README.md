@@ -69,3 +69,4 @@ starry-slides open <deck>
 ## License
 
 Starry Slides is licensed under [MIT License](./LICENSE).
+
