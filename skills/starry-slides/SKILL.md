@@ -1,6 +1,6 @@
 ---
 name: starry-slides
-description: Generate contract-compatible HTML slide decks for Starry Slides. Use when the user wants to create or edit a deck source file, verify it with the `starry-slides` CLI, preview slides, or open a valid deck in the Starry Slides editor.
+description: Generate contract-compatible HTML slide decks for Starry Slides, but only after the `starry-slides` CLI has been installed and verified as available. Use when the user wants to create or edit a deck source file, verify it with the CLI, preview slides, or open a valid deck in the Starry Slides editor.
 ---
 
 # Starry Slides
@@ -19,7 +19,7 @@ examples, see [STARRY-SLIDES-CLI-USAGE.md](references/STARRY-SLIDES-CLI-USAGE.md
 
 ## Workflow
 
-1. Check whether the user already has the CLI available. If not, guide them to install it first by following [STARRY-SLIDES-CLI-USAGE.md](references/STARRY-SLIDES-CLI-USAGE.md).
+1. Before generating, editing, previewing, verifying, or opening any deck, install the `starry-slides` CLI if it is not already present by following [STARRY-SLIDES-CLI-USAGE.md](references/STARRY-SLIDES-CLI-USAGE.md).Treat a successful `starry-slides --help` run as the minimum check.
 2. Understand the user's slide context before generating anything. Use [REQUIREMENTS-DISCOVERY-INTERVIEW.md](references/REQUIREMENTS-DISCOVERY-INTERVIEW.md) to gather missing context, ask only the highest-signal questions, and consolidate the result into a brief before you generate.
 3. Generate or edit the deck package so it satisfies [STARRY-SLIDES-CONTRACT.md](references/STARRY-SLIDES-CONTRACT.md).
 4. Open the deck with:
