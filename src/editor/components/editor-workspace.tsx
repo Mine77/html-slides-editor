@@ -51,6 +51,7 @@ interface EditorWorkspaceProps {
   onDeckTitleChange?: (title: string) => void;
   onExportPdf?: (selection: PdfExportSelection) => void;
   onExportHtml?: () => void;
+  onExportSourceFiles?: () => void;
   onPresent: () => void;
   onExitPresenting: () => void;
   onSelectSlide: (slideId: string) => void;
@@ -126,6 +127,7 @@ function EditorWorkspace({
   onDeckTitleChange,
   onExportPdf,
   onExportHtml,
+  onExportSourceFiles,
   onPresent,
   onExitPresenting,
   onSelectSlide,
@@ -173,6 +175,7 @@ function EditorWorkspace({
             isSaving={isSaving}
             onPresent={onPresent}
             onExportHtml={onExportHtml}
+            onExportSourceFiles={onExportSourceFiles}
             pdfSlides={slides.map((slide) => ({
               id: slide.id,
               title: slide.title,

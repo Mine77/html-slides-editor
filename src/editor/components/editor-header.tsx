@@ -28,12 +28,13 @@ interface EditorHeaderProps {
   onPresent?: () => void;
   onExportPdf?: (selection: PdfExportSelection) => void;
   onExportHtml?: () => void;
+  onExportSourceFiles?: () => void;
   pdfSlides?: PdfExportSlideOption[];
   pdfThumbnails?: Record<string, string>;
   isSaving: boolean;
 }
 
-type ExportId = "html" | "pdf" | "pptx" | "gslides";
+type ExportId = "html" | "source-files" | "pdf" | "pptx" | "gslides";
 type ExportItem = {
   id: ExportId;
   label: string;
@@ -44,9 +45,15 @@ type ExportItem = {
 const EXPORTS: ExportItem[] = [
   {
     id: "html",
-    label: "Single HTML",
-    desc: "Package as one shareable offline page, with built-in presenter view",
+    label: "Presenter View HTML",
+    desc: "Package as one shareable offline page with built-in presenter controls",
     icon: FileCode2,
+  },
+  {
+    id: "source-files",
+    label: "HTML Source Files",
+    desc: "Download the deck source files as a ZIP archive",
+    icon: Layers3,
   },
   { id: "pdf", label: "PDF", desc: "Export as a printable PDF document", icon: FileText },
   {
@@ -65,6 +72,7 @@ export function EditorHeader({
   onPresent,
   onExportPdf,
   onExportHtml,
+  onExportSourceFiles,
   pdfSlides = [],
   pdfThumbnails = {},
   isSaving,
@@ -109,6 +117,11 @@ export function EditorHeader({
 
     if (e.id === "html") {
       onExportHtml?.();
+      return;
+    }
+
+    if (e.id === "source-files") {
+      onExportSourceFiles?.();
       return;
     }
 

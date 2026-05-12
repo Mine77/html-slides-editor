@@ -28,6 +28,7 @@ export interface SlidesEditorProps {
   onDeckTitleChange?: (title: string) => void;
   onExportPdf?: (selection: PdfExportSelection) => void;
   onExportHtml?: () => void;
+  onExportSourceFiles?: () => void;
 }
 
 const EMPTY_LOCKED_ELEMENT_IDS: string[] = [];
@@ -40,6 +41,7 @@ function SlidesEditor({
   onDeckTitleChange,
   onExportPdf,
   onExportHtml,
+  onExportSourceFiles,
 }: SlidesEditorProps) {
   const {
     slides,
@@ -371,6 +373,7 @@ function SlidesEditor({
       isToolbarSuppressed={isToolbarSuppressed}
       onDeckTitleChange={onDeckTitleChange}
       onExportHtml={onExportHtml}
+      onExportSourceFiles={onExportSourceFiles}
       onExportPdf={onExportPdf}
       onPresent={() => {
         clearSelection();

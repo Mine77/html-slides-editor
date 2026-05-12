@@ -120,12 +120,12 @@ test("editor Present mode supports navigation laser pen color and exit", async (
   await expect(page.getByTestId("slide-iframe")).toBeVisible();
 });
 
-test("single HTML export opens directly in Present mode", async ({ page, context }) => {
+test("presenter view HTML export opens directly in Present mode", async ({ page, context }) => {
   await gotoEditor(page);
 
   await page.getByRole("button", { name: "Export" }).click();
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Single HTML" }).click();
+  await page.getByRole("button", { name: "Presenter View HTML" }).click();
   const download = await downloadPromise;
   const downloadPath = path.join(test.info().outputDir, "exported-presenter.html");
   await download.saveAs(downloadPath);
