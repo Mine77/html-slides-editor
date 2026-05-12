@@ -16,14 +16,29 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_APP_CLIENT_ID: ${{ secrets.RELEASE_APP_CLIENT_ID || vars.RELEASE_APP_CLIENT_ID }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
     steps:
+      - name: Validate release app credentials
+        run: |
+          if [ -z "${RELEASE_APP_CLIENT_ID}" ]; then
+            echo "::error::Missing RELEASE_APP_CLIENT_ID. Add it as an Actions secret or repository variable."
+            exit 1
+          fi
+
+          if [ -z "${RELEASE_APP_PRIVATE_KEY}" ]; then
+            echo "::error::Missing RELEASE_APP_PRIVATE_KEY. Add the GitHub App private key as an Actions secret."
+            exit 1
+          fi
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          client-id: ${{ env.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ env.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
         uses: actions/checkout@v4
