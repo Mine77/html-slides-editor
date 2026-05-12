@@ -1,0 +1,119 @@
+name: PR E2E Gate
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changed files
+    runs-on: ubuntu-latest
+    outputs:
+      should_run_e2e: ${{ steps.filter.outputs.should_run_e2e }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether E2E is required
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > changed-files.txt
+
+          echo "Changed files:"
+          cat changed-files.txt
+
+          should_run_e2e=false
+
+          while IFS= read -r file; do
+            case "$file" in
+              docs/*|*.md)
+                ;;
+              *)
+                should_run_e2e=true
+                break
+                ;;
+            esac
+          done < changed-files.txt
+
+          echo "should_run_e2e=$should_run_e2e" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    name: Run full E2E suite
+    needs: changes
+    if: needs.changes.outputs.should_run_e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run full E2E suite
+        run: pnpm test:e2e
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
+  required:
+    name: Required PR E2E status
+    needs:
+      - changes
+      - e2e
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Enforce PR merge gate
+        env:
+          SHOULD_RUN_E2E: ${{ needs.changes.outputs.should_run_e2e }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          if [ "$SHOULD_RUN_E2E" = "true" ] && [ "$E2E_RESULT" != "success" ]; then
+            echo "::error::This PR changed code, so the full E2E suite must pass before merge."
+            exit 1
+          fi
+
+          if [ "$SHOULD_RUN_E2E" = "true" ]; then
+            echo "Full E2E suite passed."
+          else
+            echo "Docs-only PR detected. E2E was skipped."
+          fi
