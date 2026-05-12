@@ -88,6 +88,8 @@ jobs:
 
       - name: Commit release version
         if: steps.release.outputs.needs_commit == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
