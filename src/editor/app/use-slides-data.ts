@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  createSafeExportFilenameBase,
   type PdfExportSelection,
   type SlideDeckManifest,
   type SlideModel,
@@ -17,12 +18,14 @@ interface SlidesDataResult {
   saveDeckTitle: (title: string) => void;
   exportPdf: (selection: PdfExportSelection) => Promise<void>;
   exportHtml: () => Promise<void>;
+  exportSourceFiles: () => Promise<void>;
 }
 
 const GENERATED_MANIFEST_URL = "/deck/manifest.json";
 const GENERATED_SAVE_URL = "/__editor/save-generated-deck";
 const GENERATED_EXPORT_PDF_URL = "/__editor/export-pdf";
 const GENERATED_EXPORT_HTML_URL = "/__editor/export-html";
+const GENERATED_EXPORT_SOURCE_FILES_URL = "/__editor/export-source-files";
 const SAVE_DEBOUNCE_MS = 800;
 
 interface SavePayloadSlide {
@@ -257,16 +260,8 @@ export function useSlidesData(): SlidesDataResult {
       throw new Error(await response.text());
     }
 
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const safeTitle = deckTitle.trim().replace(/[^a-zA-Z0-9._-]+/g, "-") || "starry-slides";
-    link.href = url;
-    link.download = `${safeTitle}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const safeTitle = createSafeExportFilenameBase(deckTitle);
+    triggerDownload(await response.blob(), `${safeTitle}.pdf`);
   };
 
   const exportHtml = async () => {
@@ -285,16 +280,28 @@ export function useSlidesData(): SlidesDataResult {
       throw new Error(await response.text());
     }
 
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const safeTitle = deckTitle.trim().replace(/[^a-zA-Z0-9._-]+/g, "-") || "starry-slides";
-    link.href = url;
-    link.download = `${safeTitle}.html`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const safeTitle = createSafeExportFilenameBase(deckTitle);
+    triggerDownload(await response.blob(), `${safeTitle}.html`);
+  };
+
+  const exportSourceFiles = async () => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
+    await flushSave();
+
+    const response = await fetch(GENERATED_EXPORT_SOURCE_FILES_URL, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const safeTitle = createSafeExportFilenameBase(deckTitle);
+    triggerDownload(await response.blob(), `${safeTitle}-source-files.zip`);
   };
 
   return {
@@ -308,5 +315,17 @@ export function useSlidesData(): SlidesDataResult {
     saveDeckTitle,
     exportPdf,
     exportHtml,
+    exportSourceFiles,
   };
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

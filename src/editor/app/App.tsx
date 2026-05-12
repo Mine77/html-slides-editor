@@ -42,6 +42,7 @@ function App() {
     saveDeckTitle,
     exportPdf,
     exportHtml,
+    exportSourceFiles,
   } = useSlidesData();
 
   if (isLoading) {
@@ -80,13 +81,26 @@ function App() {
             });
         }}
         onExportHtml={() => {
-          const toastId = toast.loading("Exporting HTML...");
+          const toastId = toast.loading("Exporting presenter view HTML...");
           void exportHtml()
             .then(() => {
-              toast.success("HTML export is ready.", { id: toastId });
+              toast.success("Presenter view HTML is ready.", { id: toastId });
             })
             .catch((error) => {
-              toast.error("HTML export failed.", {
+              toast.error("Presenter view HTML export failed.", {
+                id: toastId,
+                description: error instanceof Error ? error.message : String(error),
+              });
+            });
+        }}
+        onExportSourceFiles={() => {
+          const toastId = toast.loading("Exporting HTML source files...");
+          void exportSourceFiles()
+            .then(() => {
+              toast.success("HTML source files are ready.", { id: toastId });
+            })
+            .catch((error) => {
+              toast.error("HTML source files export failed.", {
                 id: toastId,
                 description: error instanceof Error ? error.message : String(error),
               });

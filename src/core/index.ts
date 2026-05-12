@@ -10,3 +10,4 @@ export * from "./generated-deck";
 export * from "./pdf-export";
 export * from "./html-export";
 export * from "./presentation";
+export * from "./export-filenames";

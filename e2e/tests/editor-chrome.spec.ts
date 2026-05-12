@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   AGENDA_PARAGRAPH,
+  HERO_TITLE,
   REGRESSION_DECK_SLIDE_COUNT,
   coverFrame,
   getHeaderControls,
@@ -418,6 +419,33 @@ test("export PDF opens a scope dialog and exports selected or all slides", async
       mode: "all",
     },
   });
+});
+
+test("export menu distinguishes presenter HTML from HTML source files", async ({ page }) => {
+  await gotoEditor(page);
+
+  const sourceFileRequests: unknown[] = [];
+  await page.route("**/__editor/export-source-files", async (route) => {
+    sourceFileRequests.push(route.request().postData());
+    await route.fulfill({
+      status: 200,
+      contentType: "application/zip",
+      body: "PK\u0003\u0004e2e-zip",
+    });
+  });
+
+  await page.getByRole("button", { name: "Export" }).click();
+  await expect(page.getByRole("button", { name: "Presenter View HTML" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "HTML Source Files" })).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "HTML Source Files" }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toBe(`${HERO_TITLE}-source-files.zip`);
+  await expect(page.getByText("HTML source files are ready.")).toBeVisible();
+  await expect.poll(() => sourceFileRequests.length).toBe(1);
+  expect(sourceFileRequests.at(-1)).toBeNull();
 });
 
 test("double clicking a text child enters editing on the correct element", async ({ page }) => {

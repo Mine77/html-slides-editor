@@ -2,14 +2,16 @@ import fs from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import type { Plugin, PreviewServer, ViteDevServer } from "vite";
-import type { PdfExportSelection } from "../core";
+import { createSafeExportFilenameBase, type PdfExportSelection } from "../core";
 import { exportHtml } from "./html-export";
 import { exportPdf } from "./pdf-export";
+import { exportSourceFiles } from "./source-files-export";
 
 const SAVE_ROUTE = "/__editor/save-generated-deck";
 const RESET_ROUTE = "/__editor/reset-generated-deck";
 const EXPORT_PDF_ROUTE = "/__editor/export-pdf";
 const EXPORT_HTML_ROUTE = "/__editor/export-html";
+const EXPORT_SOURCE_FILES_ROUTE = "/__editor/export-source-files";
 const DECK_ROUTE_PREFIX = "/deck/";
 const NOT_FOUND_ERROR_CODE = "ENOENT";
 
@@ -212,6 +214,7 @@ export function createDeckRuntimeMiddleware({
     const body = await readRequestBody(request);
     const payload = body ? (JSON.parse(body) as ExportPdfPayload) : {};
     const outFile = path.join(runtimeDeckDir, ".starry-slides", "export", "deck.pdf");
+    const exportFilenameBase = await getExportFilenameBase(runtimeDeckDir);
     const result = await exportPdf({
       deckPath: runtimeDeckDir,
       outFile,
@@ -221,12 +224,16 @@ export function createDeckRuntimeMiddleware({
 
     response.statusCode = 200;
     response.setHeader("Content-Type", "application/pdf");
-    response.setHeader("Content-Disposition", 'attachment; filename="starry-slides.pdf"');
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${exportFilenameBase}.pdf"`
+    );
     response.end(contents);
   }
 
   async function handleExportHtmlRequest(response: ServerResponse) {
     const outFile = path.join(runtimeDeckDir, ".starry-slides", "export", "deck.html");
+    const exportFilenameBase = await getExportFilenameBase(runtimeDeckDir);
     const result = await exportHtml({
       deckPath: runtimeDeckDir,
       outFile,
@@ -235,7 +242,28 @@ export function createDeckRuntimeMiddleware({
 
     response.statusCode = 200;
     response.setHeader("Content-Type", "text/html; charset=utf-8");
-    response.setHeader("Content-Disposition", 'attachment; filename="starry-slides.html"');
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${exportFilenameBase}.html"`
+    );
+    response.end(contents);
+  }
+
+  async function handleExportSourceFilesRequest(response: ServerResponse) {
+    const outFile = path.join(runtimeDeckDir, ".starry-slides", "export", "deck-source-files.zip");
+    const exportFilenameBase = await getExportFilenameBase(runtimeDeckDir);
+    const result = await exportSourceFiles({
+      deckPath: runtimeDeckDir,
+      outFile,
+    });
+    const contents = await fs.readFile(result.path);
+
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "application/zip");
+    response.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${exportFilenameBase}-source-files.zip"`
+    );
     response.end(contents);
   }
 
@@ -339,6 +367,15 @@ export function createDeckRuntimeMiddleware({
       return;
     }
 
+    if (request.method === "POST" && request.url === EXPORT_SOURCE_FILES_ROUTE) {
+      await runQueuedResponse(
+        response,
+        () => handleExportSourceFilesRequest(response),
+        "Failed to export source files."
+      );
+      return;
+    }
+
     if (request.method !== "POST" || request.url !== SAVE_ROUTE) {
       next();
       return;
@@ -393,4 +430,19 @@ function writeJsonError(response: ServerResponse, error: unknown, fallbackMessag
   writeJsonResponse(response, 500, {
     error: error instanceof Error ? error.message : fallbackMessage,
   });
+}
+
+async function getExportFilenameBase(deckDir: string) {
+  const manifestPath = path.join(deckDir, "manifest.json");
+
+  try {
+    const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as {
+      deckTitle?: unknown;
+    };
+    return createSafeExportFilenameBase(
+      typeof manifest.deckTitle === "string" ? manifest.deckTitle : path.basename(deckDir)
+    );
+  } catch {
+    return createSafeExportFilenameBase(path.basename(deckDir));
+  }
 }
