@@ -39,3 +39,12 @@ starry-slides open <deck>
 - After generation, you can use `starry-slides verify <deck>` to check whether the deck satisfies the contract.
 - To preview generated slides, use `starry-slides view <deck> --all` or `starry-slides view <deck> --slide <manifest-file>`.
 
+## Sending Feedback
+
+Use the feedback flow for Starry Slides bugs, UX issues, documentation gaps, and feature requests that the agent cannot resolve directly in the current deck or local workflow. Ask the user for confirmation before sending anything.
+
+```bash
+starry-slides feedback --category <cat> --summary "..." --description "..." --surface skill --json
+```
+
+Valid categories are `bug`, `ux`, `feature`, and `docs`.

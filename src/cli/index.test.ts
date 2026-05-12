@@ -211,7 +211,9 @@ describe("source starry-slides cli", () => {
     expect(runCli(["view", deck]).stderr).toContain(
       "view requires either --slide <manifest-file> or --all"
     );
-    expect(runCli(["view", deck, "--static", "--all"]).stderr).toContain("unknown option '--static'");
+    expect(runCli(["view", deck, "--static", "--all"]).stderr).toContain(
+      "unknown option '--static'"
+    );
     expect(runCli(["view", deck, "--slide"]).stderr).toContain(
       "option '--slide <manifest-file>' argument missing"
     );
@@ -302,6 +304,57 @@ describe("source starry-slides cli", () => {
     expect(result.stderr).toContain(`Editor startup stub: STARRY_SLIDES_DECK_DIR=${deck}`);
   });
 
+  test("feedback dry run prints the payload without sending", () => {
+    const result = runCli([
+      "feedback",
+      "--category",
+      "bug",
+      "--summary",
+      "Export button failed",
+      "--description",
+      "The export menu did not open.",
+      "--surface",
+      "skill",
+      "--json",
+      "--dry-run",
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(parseJson(result.stdout)).toMatchObject({
+      ok: true,
+      dryRun: true,
+      payload: {
+        surface: "skill",
+        category: "bug",
+        summary: "Export button failed",
+        description: "The export menu did not open.",
+        appVersion: "0.1.5",
+        cliVersion: "0.1.5",
+      },
+    });
+  });
+
+  test("feedback rejects unsupported categories before sending", () => {
+    const result = runCli([
+      "feedback",
+      "--category",
+      "question",
+      "--summary",
+      "Need help",
+      "--description",
+      "This should fail.",
+      "--dry-run",
+    ]);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toBe("");
+    expect(parseJson(result.stdout)).toMatchObject({
+      ok: false,
+      error: "--category must be one of: bug, ux, feature, docs",
+    });
+  });
+
   test("extra positional arguments and unknown options fail non-zero", () => {
     const deck = writeValidDeck();
 
@@ -323,6 +376,7 @@ describe("source starry-slides cli", () => {
       expect(result.stdout).toContain("open [deck]");
       expect(result.stdout).toContain("verify [deck]");
       expect(result.stdout).toContain("view [options] [deck]");
+      expect(result.stdout).toContain("feedback [options]");
     }
   });
 });

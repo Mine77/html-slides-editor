@@ -7,15 +7,33 @@ import {
   FileCode2,
   FileText,
   Layers3,
+  MessageSquare,
   Play,
   Presentation,
   X,
 } from "lucide-react";
+import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { PdfExportSelection } from "../../core";
+import {
+  DEFAULT_FEEDBACK_ENDPOINT,
+  type FeedbackCategory,
+  type FeedbackPayload,
+} from "../../shared/feedback-types";
 import logoUrl from "../assets/logo-starry-slides.png";
 import { cn } from "../lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Textarea } from "./ui/textarea";
 
 export interface PdfExportSlideOption {
   id: string;
@@ -68,6 +86,8 @@ const EXPORTS: ExportItem[] = [
 ];
 
 const GITHUB_REPO_URL = "https://github.com/StarryKit/starry-slides";
+const FEEDBACK_ENDPOINT =
+  import.meta.env.VITE_STARRY_SLIDES_FEEDBACK_ENDPOINT || DEFAULT_FEEDBACK_ENDPOINT;
 
 export function EditorHeader({
   title,
@@ -82,6 +102,7 @@ export function EditorHeader({
 }: EditorHeaderProps) {
   const [open, setOpen] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [titleWidth, setTitleWidth] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const titleDisplay = title || "Untitled presentation";
@@ -142,11 +163,7 @@ export function EditorHeader({
           aria-label="Open the Starry Slides GitHub repository"
           className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20"
         >
-          <img
-            src={logoUrl}
-            alt="Starry Slides logo"
-            className="h-8 rounded-lg object-contain"
-          />
+          <img src={logoUrl} alt="Starry Slides logo" className="h-8 rounded-lg object-contain" />
         </a>
         <div className="w-px h-5 bg-foreground/10" />
         <div className="relative min-w-0 flex-1">
@@ -179,6 +196,16 @@ export function EditorHeader({
 
       {/* Right: Export + Present */}
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setFeedbackDialogOpen(true)}
+          className="h-8 rounded-md px-2.5 text-[13px] text-foreground/55 transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span>Send feedback</span>
+          </span>
+        </button>
         <div className="relative" ref={ref}>
           <button
             type="button"
@@ -253,7 +280,170 @@ export function EditorHeader({
           }}
         />
       ) : null}
+      <FeedbackDialog
+        open={feedbackDialogOpen}
+        slideCount={pdfSlides.length}
+        onOpenChange={setFeedbackDialogOpen}
+      />
     </header>
+  );
+}
+
+const FEEDBACK_CATEGORY_LABELS: Record<FeedbackCategory, string> = {
+  bug: "Bug",
+  ux: "UX friction",
+  feature: "Feature request",
+  docs: "Docs",
+};
+
+function FeedbackDialog({
+  open,
+  slideCount,
+  onOpenChange,
+}: {
+  open: boolean;
+  slideCount: number;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [category, setCategory] = useState<FeedbackCategory>("bug");
+  const [summary, setSummary] = useState("");
+  const [description, setDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const canSubmit = summary.trim().length > 0 && description.trim().length > 0 && !isSubmitting;
+
+  const resetForm = () => {
+    setCategory("bug");
+    setSummary("");
+    setDescription("");
+  };
+
+  const submitFeedback = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSubmit) {
+      return;
+    }
+
+    const payload: FeedbackPayload = {
+      surface: "editor",
+      category,
+      summary: summary.trim(),
+      description: description.trim(),
+      deckContext: { slideCount },
+      timestamp: new Date().toISOString(),
+    };
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(FEEDBACK_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Feedback request failed with ${response.status}`);
+      }
+
+      toast.success("Feedback sent.");
+      resetForm();
+      onOpenChange(false);
+    } catch (error) {
+      toast.error("Feedback could not be sent.", {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[min(460px,calc(100vw-32px))]">
+        <DialogHeader>
+          <DialogTitle>Send feedback</DialogTitle>
+          <DialogDescription>
+            Report bugs, UX friction, docs gaps, or feature requests.
+          </DialogDescription>
+        </DialogHeader>
+        <form className="grid gap-3" onSubmit={submitFeedback}>
+          <div className="grid gap-1.5">
+            <label
+              htmlFor="feedback-category"
+              className="text-[11px] font-medium text-foreground/55"
+            >
+              Category
+            </label>
+            <Select
+              value={category}
+              onValueChange={(value) => setCategory(value as FeedbackCategory)}
+            >
+              <SelectTrigger
+                id="feedback-category"
+                className="h-8 w-full rounded-md border-foreground/[0.08] bg-foreground/[0.03]"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="start">
+                {(Object.keys(FEEDBACK_CATEGORY_LABELS) as FeedbackCategory[]).map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {FEEDBACK_CATEGORY_LABELS[item]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <label
+              htmlFor="feedback-summary"
+              className="text-[11px] font-medium text-foreground/55"
+            >
+              Summary
+            </label>
+            <Input
+              id="feedback-summary"
+              value={summary}
+              onChange={(event) => setSummary(event.target.value)}
+              placeholder="Briefly describe what happened"
+              maxLength={140}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <label
+              htmlFor="feedback-description"
+              className="text-[11px] font-medium text-foreground/55"
+            >
+              Description
+            </label>
+            <Textarea
+              id="feedback-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Add details, steps, or context"
+              className="min-h-28 resize-none"
+            />
+          </div>
+          <DialogFooter className="pt-1">
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="h-8 rounded-md px-3 text-[12px] font-medium text-foreground/60 transition-colors hover:bg-foreground/[0.05] hover:text-foreground"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="h-8 rounded-md bg-foreground px-3.5 text-[12px] font-medium text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isSubmitting ? "Sending..." : "Submit"}
+            </button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import process from "node:process";
 import { Command, CommanderError, InvalidArgumentError } from "commander/esm.mjs";
+import { registerFeedbackCommand } from "./commands/feedback";
 import { registerDefaultOpen, registerOpenCommand } from "./commands/open";
 import { registerVerifyCommand } from "./commands/verify";
 import { registerViewCommand } from "./commands/view";
@@ -23,6 +25,7 @@ function createProgram() {
   registerOpenCommand(program);
   registerVerifyCommand(program);
   registerViewCommand(program);
+  registerFeedbackCommand(program);
 
   return program;
 }
