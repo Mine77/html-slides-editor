@@ -1,9 +1,9 @@
 import {
   type AttributeUpdateOperation,
-  SELECTOR_ATTR,
   type SlideModel,
   type StyleUpdateOperation,
   getSlideInlineStyleValue,
+  querySlideNode,
 } from "../core";
 
 export function getInlineStyleValue(slide: SlideModel, elementId: string, propertyName: string) {
@@ -16,7 +16,7 @@ export function getHtmlAttributeValue(slide: SlideModel, elementId: string, attr
   }
 
   const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
-  const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${elementId}"]`);
+  const node = querySlideNode<HTMLElement>(doc, elementId);
   return node?.getAttribute(attributeName)?.trim() ?? "";
 }
 
@@ -26,10 +26,10 @@ export function getLockedSlideElementId(slide: SlideModel, elementId: string) {
   }
 
   const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
-  const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${elementId}"]`);
+  const node = querySlideNode<HTMLElement>(doc, elementId);
   return node
-    ?.closest<HTMLElement>('[data-editor-locked="true"][data-editor-id]')
-    ?.getAttribute(SELECTOR_ATTR);
+    ?.closest<HTMLElement>("[data-editor-locked=\"true\"][data-editable-id]")
+    ?.getAttribute("data-editable-id");
 }
 
 export function isSlideElementLocked(slide: SlideModel, elementId: string) {

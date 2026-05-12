@@ -186,7 +186,7 @@ export function buildCropImageSlide() {
       <img
         class="crop-fixture-image"
         data-editable="image"
-        data-editor-id="crop-image"
+        data-editable-id="crop-image"
         alt="Crop fixture gradient"
         src="data:image/svg+xml;utf8,${encodeURIComponent(`
           <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'>

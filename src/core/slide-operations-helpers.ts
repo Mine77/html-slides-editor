@@ -4,8 +4,8 @@ import {
   composeTransform,
   parseTransformParts,
 } from "./layout";
-import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
-import { querySlideElement } from "./slide-document";
+import { SELECTOR_ATTR, getElementId, setElementId } from "./slide-contract";
+import { querySlideElement, querySlideNode, querySlideRoot } from "./slide-document";
 import { parseHtmlDocument, updateHtmlSource } from "./slide-html-document";
 import type { ElementInsertOperation } from "./slide-operation-types";
 
@@ -25,7 +25,7 @@ export function updateSlideStyle(
   value: string
 ): string {
   return updateHtmlSource(html, (doc) => {
-    const node = querySlideElement<HTMLElement>(doc, elementId);
+    const node = querySlideNode<HTMLElement>(doc, elementId);
     if (!node) {
       return;
     }
@@ -49,7 +49,7 @@ export function updateSlideAttribute(
   value: string
 ): string {
   return updateHtmlSource(html, (doc) => {
-    const node = querySlideElement<HTMLElement>(doc, elementId);
+    const node = querySlideNode<HTMLElement>(doc, elementId);
     if (!node) {
       return;
     }
@@ -78,7 +78,7 @@ export function duplicateSlideElement(
       return;
     }
 
-    clonedNode.setAttribute(SELECTOR_ATTR, nextElementId);
+    setElementId(clonedNode, nextElementId);
     clonedNode.removeAttribute("data-hse-editing");
     sourceNode.insertAdjacentElement("afterend", clonedNode);
   });
@@ -137,15 +137,18 @@ export function createElementPlacement(
 
   const previousSiblingElementId =
     node.previousElementSibling instanceof HTMLElement
-      ? node.previousElementSibling.getAttribute(SELECTOR_ATTR)
+      ? getElementId(node.previousElementSibling)
       : null;
   const nextSiblingElementId =
     node.nextElementSibling instanceof HTMLElement
-      ? node.nextElementSibling.getAttribute(SELECTOR_ATTR)
+      ? getElementId(node.nextElementSibling)
       : null;
+  const parentElement = node.parentElement;
+  const parentElementId =
+    parentElement && parentElement !== doc.body ? getElementId(parentElement) : null;
 
   return {
-    parentElementId: node.parentElement.getAttribute(SELECTOR_ATTR),
+    parentElementId,
     previousSiblingElementId,
     nextSiblingElementId,
   };
@@ -172,9 +175,9 @@ export function updateSlideElementHtmlIds(
 
   const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`))];
   for (const node of nodes) {
-    const currentId = node.getAttribute(SELECTOR_ATTR);
+    const currentId = getElementId(node);
     if (currentId && idMap[currentId]) {
-      node.setAttribute(SELECTOR_ATTR, idMap[currentId]);
+      setElementId(node, idMap[currentId]);
     }
   }
 
@@ -183,8 +186,8 @@ export function updateSlideElementHtmlIds(
 
 function createUniqueElementIdInDocument(doc: Document, preferredId: string): string {
   const existingIds = new Set(
-    Array.from(doc.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`))
-      .map((node) => node.getAttribute(SELECTOR_ATTR))
+    Array.from(doc.querySelectorAll<HTMLElement>("*"))
+      .map((node) => getElementId(node))
       .filter((value): value is string => Boolean(value))
   );
 
@@ -201,6 +204,16 @@ function createUniqueElementIdInDocument(doc: Document, preferredId: string): st
   }
 
   return `${base}-${index}`;
+}
+
+function resolveRootInsertionParent(doc: Document): HTMLElement {
+  const firstEditable = doc.querySelector<HTMLElement>("[data-editable]");
+  const topLevelContainer = firstEditable?.parentElement;
+  if (topLevelContainer && topLevelContainer !== doc.body && !topLevelContainer.hasAttribute("data-editable")) {
+    return topLevelContainer;
+  }
+
+  return doc.body;
 }
 
 export function createUniqueElementId(html: string, preferredId: string): string {
@@ -233,7 +246,8 @@ export function insertSlideElement(
       (operation.parentElementId
         ? querySlideElement<HTMLElement>(doc, operation.parentElementId)
         : null) ??
-      doc.querySelector<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`) ??
+      resolveRootInsertionParent(doc) ??
+      querySlideRoot<HTMLElement>(doc) ??
       doc.body;
     const nextSibling = operation.nextSiblingElementId
       ? querySlideElement<HTMLElement>(doc, operation.nextSiblingElementId)

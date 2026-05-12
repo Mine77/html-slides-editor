@@ -77,10 +77,10 @@ to apply and invert the existing operation type.
   the promoted child block.
 - Treat direct `ul`/`ol` children with editable `li` descendants as promoted
   block children. The promoted list wrapper receives `data-editable="block"`
-  and a stable `data-editor-id`; the `li` items remain nested and keep their
+  and a stable `data-editable-id`; the `li` items remain nested and keep their
   rendered list geometry and text styles.
 - Keep `src/core/slide-document.ts` parsing unchanged: normal blocks remain
-  type `block`, and only `data-group="true"` parses as type `group`.
+  type `block`, while persisted `group-*` wrappers parse as type `group`.
 
 ## Verification
 

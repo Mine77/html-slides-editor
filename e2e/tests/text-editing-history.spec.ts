@@ -14,8 +14,8 @@ test("cursor returns to default after leaving text editing mode", async ({ page 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstText = frame.locator('[data-editor-id="text-1"]');
-  const secondText = frame.locator('[data-editor-id="text-2"]');
+  const firstText = frame.locator('[data-editable-id="text-1"]');
+  const secondText = frame.locator('[data-editable-id="text-2"]');
 
   await expect(firstText).toHaveCSS("cursor", "default");
 
@@ -34,7 +34,7 @@ test("pressing Enter without content changes exits editing without creating undo
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const originalText = HERO_KICKER;
 
   await editableHeading.dblclick();
@@ -52,7 +52,7 @@ test("text editing supports keyboard undo/redo after commit", async ({ page }) =
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const nextText = "Edited by Playwright";
 
   await expect(page.locator("header input").first()).toHaveValue(HERO_TITLE);
@@ -79,7 +79,7 @@ test("keyboard shortcuts trigger undo and redo", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const nextText = "Keyboard history";
 
   await editableHeading.dblclick();
@@ -102,9 +102,9 @@ test("keyboard undo and redo do not record themselves as new history entries", a
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const heading = frame.locator('[data-editor-id="text-2"]');
-  const summary = frame.locator('[data-editor-id="text-3"]');
-  const headingText = "Deck topic updated";
+  const heading = frame.locator('[data-editable-id="text-2"]');
+  const summary = frame.locator('[data-editable-id="text-3"]');
+  const headingText = "Deck title updated";
   const summaryText = "Summary updated after heading";
   const originalSummary = HERO_SUMMARY;
 
@@ -137,9 +137,9 @@ test("multiple edits maintain correct undo and redo stack order", async ({ page 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const heading = frame.locator('[data-editor-id="text-2"]');
-  const summary = frame.locator('[data-editor-id="text-3"]');
-  const headingText = "Deck topic updated";
+  const heading = frame.locator('[data-editable-id="text-2"]');
+  const summary = frame.locator('[data-editable-id="text-3"]');
+  const headingText = "Deck title updated";
   const summaryText = "Summary updated after heading";
 
   await expect(heading).toHaveText(HERO_TITLE);
@@ -174,7 +174,7 @@ test("clicking blank space clears the current selection", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const stagePanel = page.getByTestId("stage-panel");
   const { selectionOverlay } = getHistoryControls(page);
 

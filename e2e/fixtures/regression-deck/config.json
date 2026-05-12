@@ -1,5 +1,6 @@
 {
-  "topic": "Starry Slides Project Overview",
+  "deckTitle": "Starry Slides Project Overview",
+  "description": "A generated project deck that doubles as a broad regression fixture for Starry Slides.",
   "summary": "A generated project deck that doubles as a broad regression fixture for Starry Slides.",
   "points": [
     "Problem framing",

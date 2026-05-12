@@ -1,6 +1,6 @@
 # ADR-0026: Adopt V1 deck contract and track CLI and editor refactors
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-05-11
 
 ## Context
@@ -85,72 +85,101 @@ new specification.
 
 ### CLI refactors
 
-- [ ] Update manifest loading and validation to require `deckTitle`
-- [ ] Update manifest loading and validation to require `description`
-- [ ] Update manifest loading and validation to require per-slide `title`
-- [ ] Update root discovery so verification starts from `body`
-- [ ] Update root sizing logic so it reads direct fixed numeric CSS width and
+- [x] Update manifest loading and validation to require `deckTitle`
+- [x] Update manifest loading and validation to require `description`
+- [x] Update manifest loading and validation to require per-slide `title`
+- [x] Update root discovery so verification starts from `body`
+- [x] Update root sizing logic so it reads direct fixed numeric CSS width and
   height from `body`
-- [ ] Apply the default root size `1920 x 1080` when direct size is omitted
-- [ ] Treat indirect root sizing methods as unspecified
-- [ ] Treat root overflow as a verification failure
-- [ ] Rename verification and preview support from `data-editor-id` to
+- [x] Apply the default root size `1920 x 1080` when direct size is omitted
+- [x] Treat indirect root sizing methods as unspecified
+- [x] Treat root overflow as a verification failure
+- [x] Rename verification and preview support from `data-editor-id` to
   `data-editable-id`
-- [ ] Update view rendering and preview generation to follow the V1 root model
-- [ ] Decide and implement the write-back flow for `generatedAt`
-- [ ] Rewrite CLI tests and verification tests to match the V1 contract
+- [x] Update view rendering and preview generation to follow the V1 root model
+- [x] Decide and implement the write-back flow for `generatedAt`
+- [x] Rewrite CLI tests and verification tests to match the V1 contract
 
 ### Editor refactors
 
-- [ ] Update slide parsing so the editor uses `body` as the slide root
-- [ ] Update editor document modeling to follow the V1 root size rules
-- [ ] Apply the default root size `1920 x 1080` when direct size is omitted
-- [ ] Rename editable identity handling from `data-editor-id` to
+- [x] Update slide parsing so the editor uses `body` as the slide root
+- [x] Update editor document modeling to follow the V1 root size rules
+- [x] Apply the default root size `1920 x 1080` when direct size is omitted
+- [x] Rename editable identity handling from `data-editor-id` to
   `data-editable-id`
-- [ ] Update selection logic to use the new editable identity name
-- [ ] Update write-back so edited decks preserve the V1 contract
-- [ ] Remove old group-marker assumptions from editor logic
-- [ ] Make group and ungroup behavior depend on structural block composition
-- [ ] Review resize, movement, and geometry logic against the V1 root and block
+- [x] Update selection logic to use the new editable identity name
+- [x] Update write-back so edited decks preserve the V1 contract
+- [x] Remove old group-marker assumptions from editor logic
+- [x] Make group and ungroup behavior depend on structural block composition
+- [x] Review resize, movement, and geometry logic against the V1 root and block
   rules
-- [ ] Rewrite editor tests to match the V1 contract
+- [x] Rewrite editor tests to match the V1 contract, including current
+  targeted editor E2E and core contract suites
 
 ### E2E refactors
 
-- [ ] Update the regression deck generator so it writes manifest fields that
+- [x] Update the regression deck generator so it writes manifest fields that
   match the V1 contract, including `deckTitle` and `description`
-- [ ] Update generated regression slide HTML so it uses the V1 root model with
+- [x] Update generated regression slide HTML so it uses the V1 root model with
   `body` as the slide root
-- [ ] Update generated regression slide HTML so editable identity uses
+- [x] Update generated regression slide HTML so editable identity uses
   `data-editable-id`
-- [ ] Remove old root-marker assumptions from E2E fixtures and fixture helpers
-- [ ] Update Playwright helpers that currently query the old slide root or old
+- [x] Remove old root-marker assumptions from E2E fixtures and fixture helpers
+- [x] Update Playwright helpers that currently query the old slide root or old
   editable-id naming
-- [ ] Update Playwright specs that currently target `data-editor-id`
-- [ ] Update presenter-mode E2E assertions so slide-root checks use the V1
+- [x] Update Playwright specs that currently target `data-editor-id`
+- [x] Update presenter-mode E2E assertions so slide-root checks use the V1
   `body` model
-- [ ] Update E2E regression content that still depends on old group-marker
+- [x] Update E2E regression content that still depends on old group-marker
   behavior
-- [ ] Update `docs/e2e.md` so the documented coverage matrix matches the new V1
+- [x] Update `docs/e2e.md` so the documented coverage matrix matches the new V1
   contract assumptions
-- [ ] Update local development docs and deck-generation guidance where they
+- [x] Update local development docs and deck-generation guidance where they
   still describe old sample-deck assumptions
-- [ ] Rebuild the sample and regression decks used by E2E so they become valid
+- [x] Rebuild the sample and regression decks used by E2E so they become valid
   V1 decks
-- [ ] Re-run and fix `pnpm test:e2e` against the V1 contract
+- [x] Re-run and fix `pnpm test:e2e` against the V1 contract
 
 ### Shared follow-up
 
-- [ ] Update any shared core parsing utilities that still assume old root or id
+- [x] Update any shared core parsing utilities that still assume old root or id
   conventions
-- [ ] Review preview/export paths for V1 contract alignment
-- [ ] Review existing ADRs that mention old grouping or old slide-root
+- [x] Review preview/export paths for V1 contract alignment
+- [x] Review existing ADRs that mention old grouping or old slide-root
   assumptions
+- [x] Restore editor root-style pickup so authored `body` CSS, including slide
+  background styles, is preserved and rendered after the `body` root migration
 
 ## Verification
 
-- [ ] CLI `verify` reports results according to the V1 contract
-- [ ] CLI `view` renders previews according to the V1 contract
-- [ ] CLI `open` only opens decks that satisfy the V1 contract
-- [ ] Editor can open, edit, and write back decks that follow the V1 contract
-- [ ] Contract examples, CLI behavior, and editor behavior all agree
+- [x] CLI `verify` reports results according to the V1 contract
+- [x] CLI `view` renders previews according to the V1 contract
+- [x] CLI `open` only opens decks that satisfy the V1 contract
+- [x] Editor can open, edit, and write back decks that follow the V1 contract
+- [x] Contract examples, CLI behavior, and editor behavior all agree
+
+## Implementation Audit
+
+The V1 contract alignment was verified against both targeted and full-suite
+checks.
+
+- Core verification and grouping behavior were rechecked with:
+  `pnpm test src/core/slide-document.test.ts src/core/slide-group-operations.test.ts src/core/slide-operation-reducer.test.ts`
+- Root-style and `body` background handling were rechecked with:
+  `pnpm test src/core/slide-document.test.ts src/core/slide-operations.test.ts src/core/slide-operation-reducer.test.ts`
+- Build output was rechecked with:
+  `pnpm build`
+- Targeted editor and interaction slices were rechecked with:
+  `pnpm exec playwright test e2e/tests/group-and-resize.spec.ts e2e/tests/selection.spec.ts --project=chromium`
+  `pnpm exec playwright test e2e/tests/context-menu.spec.ts --project=chromium`
+  `pnpm exec playwright test e2e/tests/floating-toolbar.spec.ts --project=chromium`
+  `pnpm exec playwright test e2e/tests/editor-chrome.spec.ts e2e/tests/keyboard-and-multiselect.spec.ts --project=chromium`
+  `pnpm exec playwright test e2e/tests/block-manipulation.spec.ts e2e/tests/text-editing.spec.ts e2e/tests/text-editing-history.spec.ts e2e/tests/presenter-mode.spec.ts --project=chromium`
+- The root-background regression was rechecked with:
+  `pnpm exec playwright test e2e/tests/editor-chrome.spec.ts -g "editor canvas preserves the slide body background instead of forcing white"`
+- Full browser coverage was rechecked with:
+  `pnpm test:e2e`
+
+The full Playwright suite now passes with `98 passed`, which covers the current
+editor, presenter, grouping, write-back, and regression-deck surfaces under the
+V1 contract.

@@ -28,10 +28,14 @@ function getArg(name, fallback = "") {
   return process.argv[index + 1] ?? fallback;
 }
 
-const topic = getArg("--topic", "Starry Slides");
+const deckTitle = getArg("--deck-title", "Starry Slides");
+const description = getArg(
+  "--description",
+  `A project overview deck for ${deckTitle} that also serves as a broad HTML fixture for editor testing.`
+);
 const summary = getArg(
   "--summary",
-  `A project overview deck for ${topic} that also serves as a broad HTML fixture for editor testing.`
+  description
 );
 const points = splitPoints(
   getArg(
@@ -39,19 +43,22 @@ const points = splitPoints(
     "Problem framing|Architecture|Feature matrix|Charts|Images|Roadmap|Comparison|Coverage"
   )
 );
-const outputRoot = path.resolve(process.cwd(), getArg("--out-dir", `generated/${slugify(topic)}`));
+const outputRoot = path.resolve(
+  process.cwd(),
+  getArg("--out-dir", `generated/${slugify(deckTitle)}`)
+);
 const appOutputRoot = path.resolve(process.cwd(), getArg("--app-out-dir", "sample-slides"));
 
 const slides = [
   {
     file: "01-hero.html",
-    title: topic,
-    html: buildHeroSlide(topic, summary),
+    title: deckTitle,
+    html: buildHeroSlide(deckTitle, summary),
   },
   {
     file: "02-agenda.html",
-    title: `${topic} Agenda`,
-    html: buildAgendaSlide(topic, points),
+    title: `${deckTitle} Agenda`,
+    html: buildAgendaSlide(deckTitle, points),
   },
   {
     file: "03-problem.html",
@@ -135,7 +142,8 @@ fs.writeFileSync(
   path.join(outputRoot, "manifest.json"),
   `${JSON.stringify(
     {
-      topic,
+      deckTitle,
+      description,
       generatedAt: new Date().toISOString(),
       slides: slides.map((slide) => ({
         file: slide.file,

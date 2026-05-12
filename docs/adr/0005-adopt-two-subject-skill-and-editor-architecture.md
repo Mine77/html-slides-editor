@@ -142,6 +142,12 @@ generation logic should become an editor E2E test tool.
 
 ## Skill Contract Specs
 
+> Historical note: the contract details in this section predate
+> [ADR-0026](./0026-adopt-v1-deck-contract-and-track-cli-editor-refactors.md).
+> They are retained as background only. The active deck contract now uses
+> `deckTitle` and `description`, `body` as the slide root, and
+> `data-editable-id` for editable identity.
+
 `starry-slides-skill` outputs a deck package, not a single HTML string.
 
 Recommended structure:

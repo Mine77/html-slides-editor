@@ -10,11 +10,11 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 10px; top: 20px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-1" style="left: 15px; top: 10px; width: 120px; height: 40px;">Alpha</p>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="group-1" style="left: 10px; top: 20px; width: 300px; height: 200px;">
+        <p data-editable="text" data-editable-id="text-1" style="left: 15px; top: 10px; width: 120px; height: 40px;">Alpha</p>
       </div>
-      <div data-editable="block" data-editor-id="block-2" style="left: 400px; top: 60px; width: 160px; height: 120px;">Beta</div>
+      <div data-editable="block" data-editable-id="block-2" style="left: 400px; top: 60px; width: 160px; height: 120px;">Beta</div>
     </div>
   </body>
 </html>`);
@@ -30,17 +30,16 @@ describe("group slide operations", () => {
     expect(operation?.type).toBe("group.create");
     expect(operation?.elementIds).toEqual(["text-1", "block-2"]);
     expect(operation?.previousHtmlSource).toBe(html);
-    expect(operation?.nextHtmlSource).toContain('data-editor-id="group-new"');
-    expect(operation?.nextHtmlSource).toContain('data-group="true"');
+    expect(operation?.nextHtmlSource).toContain('data-editable-id="group-new"');
   });
 
   test("group create converts children to group-relative coordinates", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <p data-editable="text" data-editor-id="text-1" style="left: 100px; top: 80px; width: 120px; height: 40px;">Alpha</p>
-      <div data-editable="block" data-editor-id="block-2" style="left: 260px; top: 140px; width: 160px; height: 90px;">Beta</div>
+    <div class="slide-container">
+      <p data-editable="text" data-editable-id="text-1" style="left: 100px; top: 80px; width: 120px; height: 40px;">Alpha</p>
+      <div data-editable="block" data-editable-id="block-2" style="left: 260px; top: 140px; width: 160px; height: 90px;">Beta</div>
     </div>
   </body>
 </html>`);
@@ -53,9 +52,9 @@ describe("group slide operations", () => {
       timestamp: 3,
     });
     const doc = new DOMParser().parseFromString(operation?.nextHtmlSource ?? "", "text/html");
-    const group = doc.querySelector<HTMLElement>('[data-editor-id="group-new"]');
-    const firstChild = doc.querySelector<HTMLElement>('[data-editor-id="text-1"]');
-    const secondChild = doc.querySelector<HTMLElement>('[data-editor-id="block-2"]');
+    const group = doc.querySelector<HTMLElement>('[data-editable-id="group-new"]');
+    const firstChild = doc.querySelector<HTMLElement>('[data-editable-id="text-1"]');
+    const secondChild = doc.querySelector<HTMLElement>('[data-editable-id="block-2"]');
 
     expect(operation?.type).toBe("group.create");
     expect(group?.style.left).toBe("100px");
@@ -74,11 +73,11 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-editor-id="block-1" style="left: 40px; top: 40px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-2" style="left: 10px; top: 10px; width: 100px; height: 40px;">Nested</p>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="block-1" style="left: 40px; top: 40px; width: 300px; height: 200px;">
+        <p data-editable="text" data-editable-id="text-2" style="left: 10px; top: 10px; width: 100px; height: 40px;">Nested</p>
       </div>
-      <p data-editable="text" data-editor-id="text-3" style="left: 420px; top: 80px; width: 100px; height: 40px;">Peer</p>
+      <p data-editable="text" data-editable-id="text-3" style="left: 420px; top: 80px; width: 100px; height: 40px;">Peer</p>
     </div>
   </body>
 </html>`);
@@ -98,8 +97,8 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">Alpha</div>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">Alpha</div>
     </div>
   </body>
 </html>`);
@@ -118,12 +117,12 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
-        <p data-editable="text" data-editor-id="text-3" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
+        <p data-editable="text" data-editable-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
+        <p data-editable="text" data-editable-id="text-3" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
       </div>
-      <div data-editable="block" data-editor-id="block-4" style="left: 520px; top: 80px; width: 160px; height: 120px;">Gamma</div>
+      <div data-editable="block" data-editable-id="block-4" style="left: 520px; top: 80px; width: 160px; height: 120px;">Gamma</div>
     </div>
   </body>
 </html>`);
@@ -135,18 +134,19 @@ describe("group slide operations", () => {
       timestamp: 7,
     });
     const doc = new DOMParser().parseFromString(operation?.nextHtmlSource ?? "", "text/html");
-    const block = doc.querySelector<HTMLElement>('[data-editor-id="block-1"]');
-    const firstChild = doc.querySelector<HTMLElement>('[data-editor-id="text-2"]');
-    const secondChild = doc.querySelector<HTMLElement>('[data-editor-id="text-3"]');
-    const sibling = doc.querySelector<HTMLElement>('[data-editor-id="block-4"]');
+    const block = doc.querySelector<HTMLElement>('[data-editable-id="block-1"]');
+    const firstChild = doc.querySelector<HTMLElement>('[data-editable-id="text-2"]');
+    const secondChild = doc.querySelector<HTMLElement>('[data-editable-id="text-3"]');
+    const sibling = doc.querySelector<HTMLElement>('[data-editable-id="block-4"]');
 
     expect(operation?.type).toBe("group.ungroup");
-    expect(operation?.childElementIds).toEqual(["block-1", "text-2", "text-3"]);
-    expect(block?.parentElement?.getAttribute("data-editor-id")).toBe("slide-root");
-    expect(firstChild?.parentElement?.getAttribute("data-editor-id")).toBe("slide-root");
-    expect(secondChild?.parentElement?.getAttribute("data-editor-id")).toBe("slide-root");
-    expect(block?.nextElementSibling).toBe(firstChild);
+    expect(operation?.childElementIds).toEqual(["text-2", "text-3"]);
+    expect(block).not.toBeNull();
+    expect(block?.children.length).toBe(0);
+    expect(firstChild?.parentElement?.className).toBe("slide-container");
+    expect(secondChild?.parentElement?.className).toBe("slide-container");
     expect(firstChild?.nextElementSibling).toBe(secondChild);
+    expect(block?.nextElementSibling).toBe(firstChild);
     expect(secondChild?.nextElementSibling).toBe(sibling);
     expect(firstChild?.style.left).toBe("110px");
     expect(secondChild?.style.top).toBe("130px");
@@ -156,12 +156,12 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <article data-editable="block" data-editor-id="card-1" style="left: 100px; top: 80px; width: 300px; height: 240px;">
-        <strong data-editable="text" data-editor-id="text-2" style="left: 20px; top: 18px; width: 160px; height: 32px;">Alpha</strong>
+    <div class="slide-container">
+      <article data-editable="block" data-editable-id="card-1" style="left: 100px; top: 80px; width: 300px; height: 240px;">
+        <strong data-editable="text" data-editable-id="text-2" style="left: 20px; top: 18px; width: 160px; height: 32px;">Alpha</strong>
         <ul style="left: 24px; top: 110px; width: 220px; height: 96px;">
-          <li data-editable="text" data-editor-id="text-3">One</li>
-          <li data-editable="text" data-editor-id="text-4">Two</li>
+          <li data-editable="text" data-editable-id="text-3">One</li>
+          <li data-editable="text" data-editable-id="text-4">Two</li>
         </ul>
       </article>
     </div>
@@ -182,12 +182,12 @@ describe("group slide operations", () => {
       timestamp: 9,
     });
     const doc = new DOMParser().parseFromString(operation?.nextHtmlSource ?? "", "text/html");
-    const list = doc.querySelector<HTMLElement>('ul[data-editor-id="block-1"]');
-    const firstItem = doc.querySelector<HTMLElement>('[data-editor-id="text-3"]');
-    const secondItem = doc.querySelector<HTMLElement>('[data-editor-id="text-4"]');
+    const list = doc.querySelector<HTMLElement>('ul[data-editable-id="block-1"]');
+    const firstItem = doc.querySelector<HTMLElement>('[data-editable-id="text-3"]');
+    const secondItem = doc.querySelector<HTMLElement>('[data-editable-id="text-4"]');
 
-    expect(operation?.childElementIds).toEqual(["card-1", "text-2", "block-1"]);
-    expect(list?.parentElement?.getAttribute("data-editor-id")).toBe("slide-root");
+    expect(operation?.childElementIds).toEqual(["text-2", "block-1"]);
+    expect(list?.parentElement?.className).toBe("slide-container");
     expect(list?.getAttribute("data-editable")).toBe("block");
     expect(firstItem?.parentElement).toBe(list);
     expect(secondItem?.parentElement).toBe(list);
@@ -199,9 +199,9 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-editor-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
-        <strong data-editable="text" data-editor-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</strong>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="block-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
+        <strong data-editable="text" data-editable-id="text-2" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</strong>
       </div>
     </div>
   </body>
@@ -222,7 +222,7 @@ describe("group slide operations", () => {
       timestamp: 8,
     });
     const doc = new DOMParser().parseFromString(operation?.nextHtmlSource ?? "", "text/html");
-    const child = doc.querySelector<HTMLElement>('[data-editor-id="text-2"]');
+    const child = doc.querySelector<HTMLElement>('[data-editable-id="text-2"]');
 
     expect(child?.style.color).toBe("rgb(124, 45, 18)");
     expect(child?.style.fontSize).toBe("28px");
@@ -234,10 +234,10 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
-        <p data-editable="text" data-editor-id="text-1" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
-        <p data-editable="text" data-editor-id="text-2" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="group-1" style="left: 100px; top: 80px; width: 300px; height: 200px;">
+        <p data-editable="text" data-editable-id="text-1" style="left: 10px; top: 12px; width: 120px; height: 40px;">Alpha</p>
+        <p data-editable="text" data-editable-id="text-2" style="left: 150px; top: 50px; width: 90px; height: 40px;">Beta</p>
       </div>
     </div>
   </body>
@@ -261,10 +261,10 @@ describe("group slide operations", () => {
     const html = ensureEditableSelectors(`<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <div data-editable="block" data-group="true" data-editor-id="group-1" style="left: 240px; top: 470px; width: 600px; height: 180px;">
-        <article data-editable="block" data-editor-id="card-a" style="left: 0px; top: 0px; width: 260px; height: 180px;">A</article>
-        <article data-editable="block" data-editor-id="card-b" style="left: 340px; top: 0px; width: 260px; height: 180px;">B</article>
+    <div class="slide-container">
+      <div data-editable="block" data-editable-id="group-1" style="left: 240px; top: 470px; width: 600px; height: 180px;">
+        <article data-editable="block" data-editable-id="card-a" style="left: 0px; top: 0px; width: 260px; height: 180px;">A</article>
+        <article data-editable="block" data-editable-id="card-b" style="left: 340px; top: 0px; width: 260px; height: 180px;">B</article>
       </div>
     </div>
   </body>
@@ -283,8 +283,8 @@ describe("group slide operations", () => {
     });
 
     const doc = new DOMParser().parseFromString(operation?.nextHtmlSource ?? "", "text/html");
-    const firstCard = doc.querySelector<HTMLElement>('[data-editor-id="card-a"]');
-    const secondCard = doc.querySelector<HTMLElement>('[data-editor-id="card-b"]');
+    const firstCard = doc.querySelector<HTMLElement>('[data-editable-id="card-a"]');
+    const secondCard = doc.querySelector<HTMLElement>('[data-editable-id="card-b"]');
 
     expect(firstCard?.style.width).toBe("155px");
     expect(firstCard?.style.height).toBe("107px");

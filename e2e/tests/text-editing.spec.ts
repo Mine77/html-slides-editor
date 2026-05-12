@@ -17,7 +17,7 @@ test("text editing persists after refresh because the generated html file is rew
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { savingBadge } = getHeaderControls(page);
   const nextText = "Persisted after refresh";
 
@@ -31,7 +31,7 @@ test("text editing persists after refresh because the generated html file is rew
   await page.reload();
   await expect(page.locator("header input").first()).toHaveValue(HERO_TITLE);
   const reloadedFrame = coverFrame(page);
-  await expect(reloadedFrame.locator('[data-editor-id="text-1"]')).toHaveText(nextText);
+  await expect(reloadedFrame.locator('[data-editable-id="text-1"]')).toHaveText(nextText);
 });
 
 test("header shows a saving badge while debounced disk persistence is in flight", async ({
@@ -40,7 +40,7 @@ test("header shows a saving badge while debounced disk persistence is in flight"
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { savingBadge } = getHeaderControls(page);
 
   await expect(savingBadge).toBeHidden();
@@ -59,8 +59,8 @@ test("text editing commits on blur and keeps undo/redo disabled while editing", 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
   const nextText = "Blur committed heading";
 
   await editableHeading.dblclick();
@@ -85,8 +85,8 @@ test("single clicking outside the active text element exits editing mode", async
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
 
   await editableHeading.dblclick();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
@@ -99,7 +99,7 @@ test("single clicking outside the active text element exits editing mode", async
 test("editing mode has no visible instruction prompt", async ({ page }) => {
   await gotoEditor(page);
 
-  const editableHeading = coverFrame(page).locator('[data-editor-id="text-1"]');
+  const editableHeading = coverFrame(page).locator('[data-editable-id="text-1"]');
 
   await editableHeading.dblclick();
 
@@ -115,7 +115,7 @@ test("clicking the same text element after leaving editing by stage background s
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const stagePanel = page.getByTestId("stage-panel");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -137,7 +137,7 @@ test("text editing preserves leading and trailing whitespace and keeps exact und
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const nextText = "  Starry Slides  ";
 
   await editableHeading.dblclick();
@@ -157,7 +157,7 @@ test("whitespace-only surrounding changes still create a committed edit", async 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const nextText = ` ${HERO_KICKER} `;
 
   await editableHeading.dblclick();
@@ -177,7 +177,7 @@ test("text editing allows deleting a partial keyboard selection before commit", 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.dblclick();
   await editableHeading.press("End");
@@ -201,7 +201,7 @@ test("text editing preserves a real dragged partial selection inside the active 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.dblclick();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
@@ -225,7 +225,7 @@ test("text editing deletes a real dragged partial selection with backspace", asy
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const originalText = await editableHeading.textContent();
 
   await editableHeading.dblclick();
@@ -286,7 +286,7 @@ test("double clicking a word during text editing keeps editing active and allows
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const originalText = await editableHeading.textContent();
 
   await editableHeading.dblclick();

@@ -8,6 +8,7 @@ import {
 
 interface SlidesDataResult {
   deckTitle: string;
+  deckDescription: string;
   slides: SlideModel[];
   errorMessage: string | null;
   isLoading: boolean;
@@ -33,6 +34,7 @@ interface SavePayloadSlide {
 
 export function useSlidesData(): SlidesDataResult {
   const [deckTitle, setDeckTitle] = useState("Generated deck");
+  const [deckDescription, setDeckDescription] = useState("Generated deck for Starry Slides.");
   const [slides, setSlides] = useState<SlideModel[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +61,7 @@ export function useSlidesData(): SlidesDataResult {
 
         if (!importedDeck) {
           setDeckTitle("Generated deck");
+          setDeckDescription("Generated deck for Starry Slides.");
           setSlides([]);
           setErrorMessage("No slides were found at /deck/manifest.json.");
           setIsLoading(false);
@@ -66,9 +69,12 @@ export function useSlidesData(): SlidesDataResult {
         }
 
         manifestRef.current = importedDeck.manifest;
-        const importedTitle = importedDeck.manifest.topic || "Generated deck";
+        const importedTitle = importedDeck.manifest.deckTitle || "Generated deck";
+        const importedDescription =
+          importedDeck.manifest.description || "Generated deck for Starry Slides.";
         latestDeckTitleRef.current = importedTitle;
         setDeckTitle(importedTitle);
+        setDeckDescription(importedDescription);
         setSlides(importedDeck.slides);
         loadedSlidesRef.current = importedDeck.slides;
         setErrorMessage(null);
@@ -80,6 +86,7 @@ export function useSlidesData(): SlidesDataResult {
         }
 
         setDeckTitle("Generated deck");
+        setDeckDescription("Generated deck for Starry Slides.");
         setSlides([]);
         setErrorMessage("The app could not load the generated deck.");
         setIsLoading(false);
@@ -141,7 +148,12 @@ export function useSlidesData(): SlidesDataResult {
         clientLoadedAt: clientLoadedAtRef.current,
         manifest: {
           ...manifest,
-          topic: nextDeckTitle,
+          deckTitle: nextDeckTitle,
+          description: manifest.description ?? deckDescription,
+          generatedAt:
+            typeof manifest.generatedAt === "string" && manifest.generatedAt.trim()
+              ? manifest.generatedAt
+              : new Date().toISOString(),
           slides: manifestSlides,
         },
         slides: nextSlides.map(
@@ -287,6 +299,7 @@ export function useSlidesData(): SlidesDataResult {
 
   return {
     deckTitle,
+    deckDescription,
     slides,
     errorMessage,
     isLoading,

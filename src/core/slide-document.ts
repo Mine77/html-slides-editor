@@ -4,53 +4,61 @@ import {
   type EditableElement,
   type EditableType,
   SELECTOR_ATTR,
-  SLIDE_ROOT_ATTR,
+  SLIDE_ROOT_ID,
+  SLIDE_ROOT_SELECTOR,
   type SlideModel,
   createElementId,
+  getElementId,
+  isPersistedGroupNode,
   getSlideElementSelector,
+  getSlideRootSelector,
   normalizeSlideId,
-  parseDimension,
+  parseFixedPixelDimension,
+  readBodyStyleValueFromHtmlSource,
+  setElementId,
 } from "./slide-contract";
+import { parseHtmlDocument as parseSharedHtmlDocument, serializeHtmlDocument } from "./slide-html-document";
 
 function parseHtmlDocument(html: string): Document | null {
-  if (typeof DOMParser === "undefined") {
-    return null;
-  }
-
-  const parser = new DOMParser();
-  return parser.parseFromString(html, "text/html");
+  return parseSharedHtmlDocument(html);
 }
 
 function ensureSlideRoot(doc: Document): HTMLElement | null {
-  const existingRoot = doc.querySelector<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`);
-  if (existingRoot) {
-    if (!existingRoot.getAttribute("data-slide-width")) {
-      existingRoot.setAttribute("data-slide-width", String(DEFAULT_SLIDE_WIDTH));
-    }
-    if (!existingRoot.getAttribute("data-slide-height")) {
-      existingRoot.setAttribute("data-slide-height", String(DEFAULT_SLIDE_HEIGHT));
-    }
-    return existingRoot;
-  }
-
-  const container = doc.querySelector<HTMLElement>(".slide-container");
-  if (container) {
-    container.setAttribute(SLIDE_ROOT_ATTR, "true");
-    if (!container.getAttribute("data-slide-width")) {
-      container.setAttribute("data-slide-width", String(DEFAULT_SLIDE_WIDTH));
-    }
-    if (!container.getAttribute("data-slide-height")) {
-      container.setAttribute("data-slide-height", String(DEFAULT_SLIDE_HEIGHT));
-    }
-    return container;
-  }
-
-  return null;
+  return doc.body;
 }
 
-function serializeHtmlDocument(doc: Document): string {
-  return `<!DOCTYPE html>
-${doc.documentElement.outerHTML}`;
+function ensureRootDefaults(doc: Document) {
+  const root = ensureSlideRoot(doc);
+  if (!root) {
+    return null;
+  }
+
+  root.style.margin = root.style.margin || "0px";
+  root.style.position = root.style.position || "relative";
+  const serializedHtml = serializeHtmlDocument(doc);
+  const authoredBackground =
+    root.style.background.trim() ||
+    root.style.backgroundColor.trim() ||
+    readBodyStyleValueFromHtmlSource(serializedHtml, "background") ||
+    readBodyStyleValueFromHtmlSource(serializedHtml, "background-color");
+  if (!authoredBackground) {
+    root.style.background = "#ffffff";
+  }
+  return root;
+}
+
+function readRootDimension(doc: Document, propertyName: "width" | "height"): number {
+  const styleValue = doc.body.style.getPropertyValue(propertyName).trim();
+  const directInlineValue = parseFixedPixelDimension(styleValue);
+  if (directInlineValue) {
+    return directInlineValue;
+  }
+
+  const serializedHtml = serializeHtmlDocument(doc);
+  const sourcedValue = parseFixedPixelDimension(
+    readBodyStyleValueFromHtmlSource(serializedHtml, propertyName)
+  );
+  return sourcedValue ?? (propertyName === "width" ? DEFAULT_SLIDE_WIDTH : DEFAULT_SLIDE_HEIGHT);
 }
 
 export function ensureEditableSelectors(html: string): string {
@@ -59,18 +67,18 @@ export function ensureEditableSelectors(html: string): string {
     return html;
   }
 
-  const root = ensureSlideRoot(doc);
+  ensureRootDefaults(doc);
   const editableNodes = Array.from(doc.querySelectorAll<HTMLElement>("[data-editable]"));
 
-  if (root && !root.getAttribute(SELECTOR_ATTR)) {
-    root.setAttribute(SELECTOR_ATTR, "slide-root");
-  }
-
   editableNodes.forEach((node, index) => {
-    if (!node.getAttribute(SELECTOR_ATTR)) {
+    const existingId = getElementId(node);
+    if (!existingId) {
       const type = (node.getAttribute("data-editable") || "block") as EditableType;
-      node.setAttribute(SELECTOR_ATTR, createElementId(index, type));
+      setElementId(node, createElementId(index, type));
+      return;
     }
+
+    setElementId(node, existingId);
   });
 
   return serializeHtmlDocument(doc);
@@ -83,7 +91,7 @@ export function parseSlide(html: string, slideId = "slide-1"): SlideModel {
       id: slideId,
       title: "Untitled Slide",
       htmlSource: html,
-      rootSelector: `[${SLIDE_ROOT_ATTR}]`,
+      rootSelector: SLIDE_ROOT_SELECTOR,
       width: DEFAULT_SLIDE_WIDTH,
       height: DEFAULT_SLIDE_HEIGHT,
       elements: [],
@@ -97,32 +105,29 @@ export function parseSlide(html: string, slideId = "slide-1"): SlideModel {
       id: slideId,
       title: "Untitled Slide",
       htmlSource: normalizedHtml,
-      rootSelector: `[${SLIDE_ROOT_ATTR}]`,
+      rootSelector: SLIDE_ROOT_SELECTOR,
       width: DEFAULT_SLIDE_WIDTH,
       height: DEFAULT_SLIDE_HEIGHT,
       elements: [],
     };
   }
 
-  const root = ensureSlideRoot(normalizedDoc);
+  ensureRootDefaults(normalizedDoc);
   const editableNodes = Array.from(normalizedDoc.querySelectorAll<HTMLElement>("[data-editable]"));
-  const rootSelector = root?.getAttribute(SELECTOR_ATTR)
-    ? `[${SELECTOR_ATTR}="${root.getAttribute(SELECTOR_ATTR)}"]`
-    : `[${SLIDE_ROOT_ATTR}]`;
-  const width = parseDimension(root?.getAttribute("data-slide-width") ?? null, DEFAULT_SLIDE_WIDTH);
-  const height = parseDimension(
-    root?.getAttribute("data-slide-height") ?? null,
-    DEFAULT_SLIDE_HEIGHT
-  );
+  const rootSelector = getSlideRootSelector(SLIDE_ROOT_ID);
+  const width = readRootDimension(normalizedDoc, "width");
+  const height = readRootDimension(normalizedDoc, "height");
 
   const elements = editableNodes.map<EditableElement>((node, index) => {
-    const type = (node.getAttribute("data-editable") || "block") as EditableType;
-    const selectorValue = node.getAttribute(SELECTOR_ATTR) || createElementId(index, type);
+    const rawType = (node.getAttribute("data-editable") || "block") as EditableType;
+    const type =
+      rawType === "block" && isPersistedGroupNode(node) ? ("group" as const) : rawType;
+    const selectorValue = getElementId(node) || createElementId(index, type);
 
     return {
       id: selectorValue,
       selector: getSlideElementSelector(selectorValue),
-      type: type === "block" && node.getAttribute("data-group") === "true" ? "group" : type,
+      type: type,
       content: node instanceof HTMLImageElement ? node.src : node.textContent || "",
       tagName: node.tagName.toLowerCase(),
     };
@@ -149,6 +154,23 @@ export function querySlideElement<T extends Element = HTMLElement>(
   return doc.querySelector<T>(getSlideElementSelector(elementId));
 }
 
+export function querySlideRoot<T extends HTMLElement = HTMLBodyElement>(
+  doc: ParentNode
+): T | null {
+  return doc.querySelector<T>(SLIDE_ROOT_SELECTOR);
+}
+
+export function querySlideNode<T extends HTMLElement = HTMLElement>(
+  doc: ParentNode,
+  elementId: string
+): T | null {
+  if (elementId === SLIDE_ROOT_ID) {
+    return querySlideRoot<T>(doc);
+  }
+
+  return querySlideElement<T>(doc, elementId);
+}
+
 export function getSlideInlineStyleValue(
   slide: SlideModel,
   elementId: string,
@@ -159,6 +181,6 @@ export function getSlideInlineStyleValue(
     return "";
   }
 
-  const node = querySlideElement<HTMLElement>(doc, elementId);
+  const node = querySlideNode<HTMLElement>(doc, elementId);
   return node?.style.getPropertyValue(propertyName).trim() || "";
 }

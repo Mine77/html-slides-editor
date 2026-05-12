@@ -37,6 +37,16 @@ interface MarqueeSession {
 
 const MARQUEE_DRAG_THRESHOLD = 4;
 
+function isStructuralGroupNode(node: HTMLElement | null): node is HTMLElement {
+  return Boolean(
+    node &&
+      node.getAttribute("data-editable") === "block" &&
+      Array.from(node.children).some(
+        (child) => child instanceof HTMLElement && child.hasAttribute("data-editable")
+      )
+  );
+}
+
 export function useMarqueeSelection({
   activeGroupScopeId,
   activeSlide,
@@ -354,17 +364,17 @@ function isElementInMarqueeScope(
   activeGroupScopeId: string | null
 ): boolean {
   if (!activeGroupScopeId) {
-    const groupTarget = candidate.closest<HTMLElement>(
-      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}]`
+    const groupCandidate = candidate.closest<HTMLElement>(
+      `[data-editable="block"][${SELECTOR_ATTR}]`
     );
+    const groupTarget = isStructuralGroupNode(groupCandidate) ? groupCandidate : null;
     return !groupTarget || groupTarget === candidate;
   }
 
-  return Boolean(
-    candidate.closest<HTMLElement>(
-      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
-    )
+  const activeGroupCandidate = candidate.closest<HTMLElement>(
+    `[data-editable="block"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
   );
+  return isStructuralGroupNode(activeGroupCandidate);
 }
 
 function getMarqueeSelectionTarget(
@@ -378,9 +388,7 @@ function getMarqueeSelectionTarget(
 
   if (!activeGroupScopeId) {
     const groupAncestor = editableAncestors.find(
-      (ancestor) =>
-        ancestor.getAttribute("data-editable") === "block" &&
-        ancestor.getAttribute("data-group") === "true"
+      (ancestor) => isStructuralGroupNode(ancestor)
     );
     return groupAncestor ?? editableAncestors[editableAncestors.length - 1] ?? null;
   }

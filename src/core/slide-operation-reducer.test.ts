@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  SLIDE_ROOT_ID,
   applySlideOperation,
   createElementPlacement,
   createGroupCreateOperation,
@@ -25,7 +26,7 @@ describe("slide operations", () => {
       `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
+    <div class="slide-container">
       <h1 data-editable="text">Before</h1>
       <p data-editable="text">Unchanged</p>
     </div>
@@ -56,7 +57,7 @@ describe("slide operations", () => {
         `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
+    <div class="slide-container">
       <h1 data-editable="text">Before</h1>
     </div>
   </body>
@@ -78,12 +79,48 @@ describe("slide operations", () => {
     expect(updatedSlide.sourceFile).toBe("slide-a.html");
   });
 
+  test("applySlideOperation updates body styles when the slide root is selected", () => {
+    const originalSlide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      body {
+        width: 1920px;
+        height: 1080px;
+        background: linear-gradient(135deg, #0f172a, #2563eb);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <h1 data-editable="text">Before</h1>
+    </div>
+  </body>
+</html>`,
+      "slide-a"
+    );
+
+    const updatedSlide = applySlideOperation(originalSlide, {
+      type: "style.update",
+      slideId: originalSlide.id,
+      elementId: SLIDE_ROOT_ID,
+      propertyName: "background-color",
+      previousValue: "",
+      nextValue: "rgb(254, 240, 138)",
+      timestamp: 1,
+    });
+    const updatedDoc = new DOMParser().parseFromString(updatedSlide.htmlSource, "text/html");
+
+    expect(updatedDoc.body.style.backgroundColor).toBe("rgb(254, 240, 138)");
+  });
+
   test("invertSlideOperation reverses text, style, and layout operations", () => {
     const originalSlide = parseSlide(
       `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
+    <div class="slide-container">
       <h1 data-editable="text" style="font-size: 48px;">Before</h1>
       <div data-editable="block">Card</div>
     </div>
@@ -176,7 +213,7 @@ describe("slide operations", () => {
       `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
+    <div class="slide-container">
       <h1 data-editable="text">One</h1>
       <p data-editable="text">Two</p>
     </div>
@@ -193,20 +230,20 @@ describe("slide operations", () => {
           type: "element.remove" as const,
           slideId: originalSlide.id,
           elementId: "text-1",
-          parentElementId: "slide-root",
+          parentElementId: null,
           previousSiblingElementId: null,
           nextSiblingElementId: "text-2",
-          html: '<h1 data-editable="text" data-editor-id="text-1">One</h1>',
+          html: '<h1 data-editable="text" data-editable-id="text-1">One</h1>',
           timestamp: 4,
         },
         {
           type: "element.insert" as const,
           slideId: originalSlide.id,
           elementId: "text-3",
-          parentElementId: "slide-root",
+          parentElementId: null,
           previousSiblingElementId: "text-2",
           nextSiblingElementId: null,
-          html: '<p data-editable="text" data-editor-id="text-3">Three</p>',
+          html: '<p data-editable="text" data-editable-id="text-3">Three</p>',
           timestamp: 4,
         },
       ],
@@ -224,9 +261,9 @@ describe("slide operations", () => {
       `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
-      <p data-editable="text" data-editor-id="text-1" style="left: 20px; top: 30px; width: 100px; height: 40px;">One</p>
-      <p data-editable="text" data-editor-id="text-2" style="left: 140px; top: 50px; width: 100px; height: 40px;">Two</p>
+    <div class="slide-container">
+      <p data-editable="text" data-editable-id="text-1" style="left: 20px; top: 30px; width: 100px; height: 40px;">One</p>
+      <p data-editable="text" data-editable-id="text-2" style="left: 140px; top: 50px; width: 100px; height: 40px;">Two</p>
     </div>
   </body>
 </html>`,
@@ -249,7 +286,7 @@ describe("slide operations", () => {
     const restoredSlide = applySlideOperation(groupedSlide, invertSlideOperation(operation));
 
     expect(groupedSlide.elements.map((element) => `${element.id}:${element.type}`)).toEqual([
-      "group-new:group",
+      "group-new:block",
       "text-1:text",
       "text-2:text",
     ]);

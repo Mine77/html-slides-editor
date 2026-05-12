@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
+  SLIDE_ROOT_ID,
   ensureEditableSelectors,
   getSlideInlineStyleValue,
   parseSlide,
@@ -9,7 +10,7 @@ import {
 } from "./index";
 
 describe("slide document contract", () => {
-  test("adds stable data-editor-id values to slide root and editable nodes", () => {
+  test("adds stable data-editable-id values to editable nodes without mutating body identity", () => {
     const html = `<!DOCTYPE html>
 <html lang="en">
   <body>
@@ -23,23 +24,21 @@ describe("slide document contract", () => {
 
     const normalizedHtml = ensureEditableSelectors(html);
     const doc = new DOMParser().parseFromString(normalizedHtml, "text/html");
-    const root = doc.querySelector('[data-slide-root="true"]');
     const ids = Array.from(doc.querySelectorAll("[data-editable]")).map((node) =>
-      node.getAttribute("data-editor-id")
+      node.getAttribute("data-editable-id")
     );
 
-    expect(root?.getAttribute("data-editor-id")).toBe("slide-root");
-    expect(root?.getAttribute("data-slide-width")).toBe(String(DEFAULT_SLIDE_WIDTH));
-    expect(root?.getAttribute("data-slide-height")).toBe(String(DEFAULT_SLIDE_HEIGHT));
+    expect(doc.body.getAttribute("data-editable-id")).toBeNull();
+    expect(doc.body.style.position).toBe("relative");
     expect(ids).toEqual(["text-1", "text-2", "block-3", "text-4"]);
   });
 
-  test("preserves existing data-editor-id values", () => {
+  test("preserves existing editable ids", () => {
     const html = `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true" data-editor-id="custom-root">
-      <h1 data-editable="text" data-editor-id="hero-title">Title</h1>
+    <div class="slide-container">
+      <h1 data-editable="text" data-editable-id="hero-title">Title</h1>
       <p data-editable="text">Body</p>
     </div>
   </body>
@@ -48,12 +47,9 @@ describe("slide document contract", () => {
     const normalizedHtml = ensureEditableSelectors(html);
     const doc = new DOMParser().parseFromString(normalizedHtml, "text/html");
     const ids = Array.from(doc.querySelectorAll("[data-editable]")).map((node) =>
-      node.getAttribute("data-editor-id")
+      node.getAttribute("data-editable-id")
     );
 
-    expect(doc.querySelector('[data-slide-root="true"]')?.getAttribute("data-editor-id")).toBe(
-      "custom-root"
-    );
     expect(ids).toEqual(["hero-title", "text-2"]);
   });
 
@@ -75,20 +71,20 @@ describe("slide document contract", () => {
     expect(slide.title).toBe("Hero");
     expect(slide.width).toBe(DEFAULT_SLIDE_WIDTH);
     expect(slide.height).toBe(DEFAULT_SLIDE_HEIGHT);
-    expect(slide.rootSelector).toBe('[data-editor-id="slide-root"]');
+    expect(slide.rootSelector).toBe("body");
     expect(slide.elements.map((element) => `${element.id}:${element.type}`)).toEqual([
       "text-1:text",
       "block-2:block",
     ]);
   });
 
-  test("parseSlide treats data-group block containers as distinct group elements", () => {
+  test("parseSlide treats nested block containers as block editables", () => {
     const slide = parseSlide(
       `<!DOCTYPE html>
 <html lang="en">
   <body>
     <div class="slide-container">
-      <div data-editable="block" data-group="true">
+      <div data-editable="block">
         <p data-editable="text">Grouped text</p>
       </div>
       <div data-editable="block">
@@ -101,7 +97,7 @@ describe("slide document contract", () => {
     );
 
     expect(slide.elements.map((element) => `${element.id}:${element.type}`)).toEqual([
-      "block-1:group",
+      "block-1:block",
       "text-2:text",
       "block-3:block",
       "text-4:text",
@@ -113,7 +109,7 @@ describe("slide document contract", () => {
       `<!DOCTYPE html>
 <html lang="en">
   <body>
-    <div class="slide-container" data-slide-root="true">
+    <div class="slide-container">
       <h1 data-editable="text" style="font-size: 48px;">Title</h1>
     </div>
   </body>
@@ -124,5 +120,32 @@ describe("slide document contract", () => {
 
     expect(querySlideElement(doc, "text-1")?.textContent).toBe("Title");
     expect(getSlideInlineStyleValue(slide, "text-1", "font-size")).toBe("48px");
+  });
+
+  test("parseSlide preserves authored body background and exposes root inline style access", () => {
+    const slide = parseSlide(
+      `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      body {
+        width: 1920px;
+        height: 1080px;
+        background: linear-gradient(135deg, rgb(15, 23, 42), rgb(37, 99, 235));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <h1 data-editable="text">Title</h1>
+    </div>
+  </body>
+</html>`,
+      "slide-1"
+    );
+    const doc = new DOMParser().parseFromString(slide.htmlSource, "text/html");
+
+    expect(doc.body.style.background).toBe("");
+    expect(getSlideInlineStyleValue(slide, SLIDE_ROOT_ID, "background")).toBe("");
   });
 });

@@ -54,4 +54,4 @@ Update this directory whenever a change affects:
 | [0023](./0023-delegate-skill-installation-to-skills-cli.md)                     | Delegate skill installation to the skills CLI                                   | proposed              |
 | [0024](./0024-adopt-marquee-selection-for-stage-elements.md)                    | Adopt marquee selection for stage elements                                      | accepted              |
 | [0025](./0025-adopt-docs-e2e-md-as-the-e2e-source-of-truth.md)                  | Adopt `docs/e2e.md` as the E2E source of truth                                  | accepted              |
-| [0026](./0026-adopt-v1-deck-contract-and-track-cli-editor-refactors.md)         | Adopt V1 deck contract and track CLI and editor refactors                       | proposed              |
+| [0026](./0026-adopt-v1-deck-contract-and-track-cli-editor-refactors.md)         | Adopt V1 deck contract and track CLI and editor refactors                       | accepted              |

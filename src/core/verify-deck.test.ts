@@ -58,7 +58,10 @@ describe("verifyDeck core verifier", () => {
 
   test("empty manifest returns structure.empty-manifest", () => {
     const deck = createDeck();
-    fs.writeFileSync(path.join(deck, "manifest.json"), JSON.stringify({ slides: [] }));
+    fs.writeFileSync(
+      path.join(deck, "manifest.json"),
+      JSON.stringify({ deckTitle: "Deck", description: "Desc", slides: [] })
+    );
 
     const result = verifyDeck(deck);
 
@@ -70,7 +73,11 @@ describe("verifyDeck core verifier", () => {
     const deck = createDeck();
     fs.writeFileSync(
       path.join(deck, "manifest.json"),
-      JSON.stringify({ slides: [{ file: "slides/missing.html" }] })
+      JSON.stringify({
+        deckTitle: "Deck",
+        description: "Desc",
+        slides: [{ file: "slides/missing.html", title: "Missing" }],
+      })
     );
 
     const result = verifyDeck(deck);
@@ -83,7 +90,11 @@ describe("verifyDeck core verifier", () => {
     const deck = createDeck();
     fs.writeFileSync(
       path.join(deck, "manifest.json"),
-      JSON.stringify({ slides: [{ file: "../outside.html" }] })
+      JSON.stringify({
+        deckTitle: "Deck",
+        description: "Desc",
+        slides: [{ file: "../outside.html", title: "Outside" }],
+      })
     );
 
     const result = verifyDeck(deck);
@@ -101,6 +112,8 @@ describe("verifyDeck core verifier", () => {
     fs.writeFileSync(
       path.join(deck, "manifest.json"),
       JSON.stringify({
+        deckTitle: "Deck",
+        description: "Desc",
         slides: [
           { file: "slides/01.html", title: "Visible", hidden: false },
           { file: "slides/02.html", title: "Hidden", hidden: true },
@@ -115,6 +128,8 @@ describe("verifyDeck core verifier", () => {
     fs.writeFileSync(
       path.join(deck, "manifest.json"),
       JSON.stringify({
+        deckTitle: "Deck",
+        description: "Desc",
         slides: [{ file: "slides/01.html", title: "Visible", hidden: "yes" }],
       })
     );
@@ -124,7 +139,7 @@ describe("verifyDeck core verifier", () => {
     expect(issueCodes(invalidResult.issues)).toContain("structure.invalid-slide-hidden");
   });
 
-  test("missing slide root returns structure.missing-root", () => {
+  test("body is the slide root, so slides without a dedicated root marker remain valid", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
@@ -135,23 +150,23 @@ describe("verifyDeck core verifier", () => {
 
     const result = verifyDeck(deck);
 
-    expect(result.ok).toBe(false);
-    expect(issueCodes(result.issues)).toContain("structure.missing-root");
+    expect(result.ok).toBe(true);
+    expect(issueCodes(result.issues)).not.toContain("structure.missing-root");
   });
 
-  test("multiple slide roots returns structure.multiple-roots", () => {
+  test("multiple editable wrappers inside body remain valid when body is the only root", () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
         file: "slides/01.html",
-        html: `<!DOCTYPE html><html><body><main data-slide-root="true">${textElement("text-1", "One")}</main><main data-slide-root="true">${textElement("text-2", "Two")}</main></body></html>`,
+        html: `<!DOCTYPE html><html><body><main>${textElement("text-1", "One")}</main><main>${textElement("text-2", "Two")}</main></body></html>`,
       },
     ]);
 
     const result = verifyDeck(deck);
 
-    expect(result.ok).toBe(false);
-    expect(issueCodes(result.issues)).toContain("structure.multiple-roots");
+    expect(result.ok).toBe(true);
+    expect(issueCodes(result.issues)).not.toContain("structure.multiple-roots");
   });
 
   test("invalid data-editable values return structure.invalid-editable", () => {
@@ -159,7 +174,7 @@ describe("verifyDeck core verifier", () => {
     writeDeck(deck, [
       {
         file: "slides/01.html",
-        html: slideHtml('<div data-editable="shape" data-editor-id="shape-1">Bad</div>'),
+        html: slideHtml('<div data-editable="shape" data-editable-id="shape-1">Bad</div>'),
       },
     ]);
 
@@ -169,24 +184,26 @@ describe("verifyDeck core verifier", () => {
     expect(issueCodes(result.issues)).toContain("structure.invalid-editable");
   });
 
-  test('invalid data-group="true" usage returns structure.invalid-group', () => {
+  test("manifest requires per-slide title", () => {
     const deck = createDeck();
-    writeDeck(deck, [
-      {
-        file: "slides/01.html",
-        html: slideHtml(
-          '<h1 data-editable="text" data-group="true" data-editor-id="text-1">Bad</h1>'
-        ),
-      },
-    ]);
+    fs.mkdirSync(path.join(deck, "slides"), { recursive: true });
+    fs.writeFileSync(path.join(deck, "slides/01.html"), slideHtml());
+    fs.writeFileSync(
+      path.join(deck, "manifest.json"),
+      JSON.stringify({
+        deckTitle: "Deck",
+        description: "Desc",
+        slides: [{ file: "slides/01.html" }],
+      })
+    );
 
     const result = verifyDeck(deck);
 
     expect(result.ok).toBe(false);
-    expect(issueCodes(result.issues)).toContain("structure.invalid-group");
+    expect(issueCodes(result.issues)).toContain("structure.missing-slide-title");
   });
 
-  test("missing slide dimensions produce warnings, not errors", () => {
+  test("missing body dimensions falls back to defaults without warnings", () => {
     const deck = createDeck();
     writeDeck(deck, [{ file: "slides/01.html", html: slideHtmlWithoutDimensions() }]);
 
@@ -194,10 +211,8 @@ describe("verifyDeck core verifier", () => {
 
     expect(result.ok).toBe(true);
     expect(result.summary.errorCount).toBe(0);
-    expect(issueCodes(result.issues)).toEqual(
-      expect.arrayContaining(["structure.missing-width", "structure.missing-height"])
-    );
-    expect(result.issues.every((issue) => issue.severity === "warning")).toBe(true);
+    expect(issueCodes(result.issues)).not.toContain("structure.missing-width");
+    expect(issueCodes(result.issues)).not.toContain("structure.missing-height");
   });
 
   test("static overflow catches explicit auto and scroll values", () => {
@@ -269,16 +284,14 @@ describe("verifyDeck core verifier", () => {
       "error",
       "overflow.element-bounds",
       "editable element renders outside slide bounds",
-      { slideFile: "slides/01.html", selector: '[data-editor-id="text-1"]' }
+      { slideFile: "slides/01.html", selector: '[data-editable-id="text-1"]' }
     );
 
     const result = verifyDeck(deck, { mode: "complete", renderedIssues: [renderedIssue] });
 
     expect(result.mode).toBe("complete");
     expect(result.checks).toEqual(["structure", "static-overflow", "rendered-overflow"]);
-    expect(issueCodes(result.issues)).toEqual(
-      expect.arrayContaining(["overflow.static", "overflow.element-bounds"])
-    );
+    expect(issueCodes(result.issues)).toEqual(expect.arrayContaining(["overflow.element-bounds"]));
   });
 
   test("summary counts and ok are derived only from issue severity", () => {
@@ -287,16 +300,16 @@ describe("verifyDeck core verifier", () => {
     const resultWithWarning = verifyDeck(deck);
 
     expect(resultWithWarning.ok).toBe(true);
-    expect(resultWithWarning.summary).toEqual({ errorCount: 0, warningCount: 2 });
+    expect(resultWithWarning.summary).toEqual({ errorCount: 0, warningCount: 0 });
 
     fs.writeFileSync(
       path.join(deck, "slides/01.html"),
-      slideHtmlWithoutDimensions('<div data-editable="bad" data-editor-id="bad-1">Bad</div>')
+      slideHtmlWithoutDimensions('<div data-editable="bad" data-editable-id="bad-1">Bad</div>')
     );
     const resultWithError = verifyDeck(deck);
 
     expect(resultWithError.ok).toBe(false);
     expect(resultWithError.summary.errorCount).toBe(1);
-    expect(resultWithError.summary.warningCount).toBe(2);
+    expect(resultWithError.summary.warningCount).toBe(0);
   });
 });

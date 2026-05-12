@@ -19,7 +19,7 @@ test("double clicking a non-text element does not enter text editing", async ({ 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
 
   await expect(blockCard).toBeVisible();
 
@@ -36,7 +36,7 @@ test("clicking a block element outside editing only selects and does not create 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await blockCard.click({ position: { x: 12, y: 12 } });
@@ -53,7 +53,7 @@ test("selected block can be moved by dragging the same selection overlay and kee
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await blockCard.click({ position: { x: 12, y: 12 } });
@@ -115,7 +115,7 @@ test("selected text element can be moved by dragging the same selection overlay"
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const textElement = frame.locator('[data-editor-id="text-1"]');
+  const textElement = frame.locator('[data-editable-id="text-1"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await expect(textElement).toBeVisible();
@@ -178,7 +178,7 @@ test("selected image can be moved by dragging the same selection overlay", async
 
   const frame = coverFrame(page);
   await page.getByLabel("Slide 7").click();
-  const imageElement = frame.locator('[data-editor-id="image-5"]');
+  const imageElement = frame.locator('[data-editable-id="image-5"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await expect(imageElement).toBeVisible();
@@ -232,8 +232,8 @@ test("dragging a selected block snaps its edge to a sibling edge guide", async (
 
   const frame = coverFrame(page);
   await page.getByLabel("Slide 12").click();
-  const siblingBlock = frame.locator('[data-editor-id="snap-card-b"]');
-  const movingBlock = frame.locator('[data-editor-id="snap-card-c"]');
+  const siblingBlock = frame.locator('[data-editable-id="snap-card-b"]');
+  const movingBlock = frame.locator('[data-editable-id="snap-card-c"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await movingBlock.locator(".snap-drag-surface").click();
@@ -290,9 +290,9 @@ test("dragging a selected block snaps to the nearest sibling anywhere on the sli
 
   const frame = coverFrame(page);
   await page.getByLabel("Slide 12").click();
-  const movingBlock = frame.locator('[data-editor-id="snap-card-d"]');
-  const nearerBlock = frame.locator('[data-editor-id="snap-card-c"]');
-  const fartherBlock = frame.locator('[data-editor-id="snap-card-b"]');
+  const movingBlock = frame.locator('[data-editable-id="snap-card-d"]');
+  const nearerBlock = frame.locator('[data-editable-id="snap-card-c"]');
+  const fartherBlock = frame.locator('[data-editable-id="snap-card-b"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await movingBlock.locator(".snap-drag-surface").click();
@@ -340,9 +340,9 @@ test("spacing guides render capped end markers in the guide color", async ({ pag
 
   const frame = coverFrame(page);
   await page.getByLabel("Slide 12").click();
-  const firstBlock = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondBlock = frame.locator('[data-editor-id="snap-card-b"]');
-  const movingBlock = frame.locator('[data-editor-id="snap-card-c"]');
+  const firstBlock = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondBlock = frame.locator('[data-editable-id="snap-card-b"]');
+  const movingBlock = frame.locator('[data-editable-id="snap-card-c"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await movingBlock.locator(".snap-drag-surface").click();
@@ -387,7 +387,7 @@ test("floating toolbar hides while dragging a selected element", async ({ page }
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
   const { selectionOverlay } = getHistoryControls(page);
   const { floatingToolbarAnchor } = getHeaderControls(page);
   const resizeHandle = page.getByTestId("block-resize-handle-bottom-right");
@@ -428,7 +428,7 @@ test("after dragging and clearing selection, clicking the same element selects i
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
   const stagePanel = page.getByTestId("stage-panel");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -464,8 +464,8 @@ test("dragging a different element immediately after a drag moves the pointer ta
 
   const frame = coverFrame(page);
   await page.getByLabel("Slide 12").click();
-  const firstBlock = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondBlock = frame.locator('[data-editor-id="snap-card-b"]');
+  const firstBlock = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondBlock = frame.locator('[data-editable-id="snap-card-b"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await firstBlock.locator(".snap-drag-surface").click();
@@ -524,7 +524,7 @@ test("all four resize handles are visible for a selected element", async ({ page
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const blockCard = frame.locator('[data-editor-id="block-4"]');
+  const blockCard = frame.locator('[data-editable-id="block-4"]');
 
   await blockCard.click({ position: { x: 12, y: 12 } });
 
@@ -538,8 +538,8 @@ test("resizing a flow-layout title keeps it in document layout", async ({ page }
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const title = frame.locator('[data-editor-id="text-2"]');
-  const summary = frame.locator('[data-editor-id="text-3"]');
+  const title = frame.locator('[data-editable-id="text-2"]');
+  const summary = frame.locator('[data-editable-id="text-3"]');
   const resizeHandle = page.getByTestId("block-resize-handle-bottom-right");
 
   await title.click({ position: { x: 16, y: 16 } });

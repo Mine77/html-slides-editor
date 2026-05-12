@@ -19,8 +19,8 @@ test("selecting another element after clearing selection keeps the app mounted",
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstElement = frame.locator('[data-editor-id="text-1"]');
-  const secondElement = frame.locator('[data-editor-id="text-2"]');
+  const firstElement = frame.locator('[data-editable-id="text-1"]');
+  const secondElement = frame.locator('[data-editable-id="text-2"]');
   const stagePanel = page.getByTestId("stage-panel");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -36,7 +36,30 @@ test("selecting another element after clearing selection keeps the app mounted",
   expect(pageErrors).toEqual([]);
 });
 
-test("header title input renames the deck topic and persists after refresh", async ({ page }) => {
+test("editor canvas preserves the slide body background instead of forcing white", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+
+  const stageFrame = page.getByTestId("stage-frame");
+  const iframeBody = coverFrame(page).locator("body");
+
+  await expect
+    .poll(async () => {
+      return stageFrame.evaluate((node) => window.getComputedStyle(node).backgroundColor);
+    })
+    .toBe("rgba(0, 0, 0, 0)");
+
+  await expect
+    .poll(async () => {
+      return iframeBody.evaluate(
+        (node) => node.ownerDocument.defaultView?.getComputedStyle(node).backgroundImage ?? ""
+      );
+    })
+    .not.toBe("none");
+});
+
+test("header title input renames the deck title and persists after refresh", async ({ page }) => {
   await gotoEditor(page);
 
   const nextTitle = "Quarterly Planning Narrative";
@@ -51,7 +74,7 @@ test("header title input renames the deck topic and persists after refresh", asy
     .poll(async () => {
       const manifestResponse = await page.request.get(`/deck/manifest.json?v=${Date.now()}`);
       expect(manifestResponse.ok()).toBeTruthy();
-      return (await manifestResponse.json()).topic;
+      return (await manifestResponse.json()).deckTitle;
     })
     .toBe(nextTitle);
 
@@ -174,14 +197,14 @@ test("sidebar context menu adds slides above and below the clicked slide", async
 
   await expect(page.getByText(`${REGRESSION_DECK_SLIDE_COUNT + 1} slides`)).toBeVisible();
   await expect(page.getByLabel("Slide 2")).toHaveAttribute("aria-current", "true");
-  await expect(coverFrame(page).locator('[data-editor-id="text-1"]')).toHaveText("Untitled Slide");
+  await expect(coverFrame(page).locator('[data-editable-id="text-1"]')).toHaveText("Untitled Slide");
 
   await page.getByTestId("slide-card").nth(3).click({ button: "right" });
   await page.getByRole("menu", { name: "Slide actions" }).getByText("Add Slide Below").click();
 
   await expect(page.getByText(`${REGRESSION_DECK_SLIDE_COUNT + 2} slides`)).toBeVisible();
   await expect(page.getByLabel("Slide 5")).toHaveAttribute("aria-current", "true");
-  await expect(coverFrame(page).locator('[data-editor-id="text-1"]')).toHaveText("Untitled Slide");
+  await expect(coverFrame(page).locator('[data-editable-id="text-1"]')).toHaveText("Untitled Slide");
 });
 
 test("sidebar context menu renames a slide and persists after refresh", async ({ page }) => {
@@ -237,7 +260,7 @@ test("sidebar slide actions add duplicate hide and delete slides", async ({ page
 
   await expect(page.getByText(`${REGRESSION_DECK_SLIDE_COUNT + 1} slides`)).toBeVisible();
   await expect(page.getByLabel("Slide 3")).toHaveAttribute("aria-current", "true");
-  await expect(coverFrame(page).locator('[data-editor-id="text-1"]')).toHaveText("Untitled Slide");
+  await expect(coverFrame(page).locator('[data-editable-id="text-1"]')).toHaveText("Untitled Slide");
 
   const newSlideCard = page.getByTestId("slide-card").nth(2);
   await newSlideCard.click({ button: "right" });
@@ -403,9 +426,9 @@ test("double clicking a text child enters editing on the correct element", async
   await page.getByLabel("Slide 2").click();
 
   const frame = coverFrame(page);
-  const card = frame.locator('[data-editor-id="block-4"]');
-  const title = frame.locator('[data-editor-id="text-6"]');
-  const paragraph = frame.locator('[data-editor-id="text-7"]');
+  const card = frame.locator('[data-editable-id="block-4"]');
+  const title = frame.locator('[data-editable-id="text-6"]');
+  const paragraph = frame.locator('[data-editable-id="text-7"]');
 
   await expect(card).toBeVisible();
   await expect(paragraph).toHaveText(AGENDA_PARAGRAPH);
@@ -421,7 +444,7 @@ test("text editing hides editor chrome and suppresses inline editing outline", a
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { floatingToolbarAnchor } = getHeaderControls(page);
   const { selectionOverlay } = getHistoryControls(page);
 

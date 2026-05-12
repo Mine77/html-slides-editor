@@ -26,8 +26,8 @@ test("context menu duplicates and deletes the selected element with undoable obj
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
-  const copiedHeading = frame.locator('[data-editor-id="text-1-copy"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
+  const copiedHeading = frame.locator('[data-editable-id="text-1-copy"]');
 
   await editableHeading.click();
   let menu = await openSelectionContextMenu(page);
@@ -55,7 +55,7 @@ test("context menu opens from a preselected element without prior selection", as
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
   const { preselectionOverlay, selectionOverlay } = getHistoryControls(page);
 
   await nestedText.hover();
@@ -84,7 +84,7 @@ test("context menu layer and align commands mutate rendered order and position",
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   let menu = await openSelectionContextMenu(page);
@@ -112,8 +112,8 @@ test("context menu groups, ungroups, and preserves snap card dimensions", async 
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
   await expect(firstCard).toBeVisible();
   await expect(secondCard).toBeVisible();
   await firstCard.evaluate((node) => node.ownerDocument.fonts?.ready ?? Promise.resolve());
@@ -126,7 +126,7 @@ test("context menu groups, ungroups, and preserves snap card dimensions", async 
   let menu = await openSelectionContextMenu(page);
   await menu.getByRole("menuitem", { name: "Group", exact: true }).click();
 
-  const group = frame.locator('[data-editor-id="group-1"]');
+  const group = frame.locator('[data-editable-id="group-1"]');
   await expect(group).toBeVisible();
 
   menu = await openSelectionContextMenu(page);
@@ -153,11 +153,11 @@ test("context menu ungroups a normal block by flattening direct editable childre
   await page.getByLabel("Slide 15").click();
 
   const frame = coverFrame(page);
-  const outerBlock = frame.locator('[data-editor-id="flatten-outer"]');
-  const middleBlock = frame.locator('[data-editor-id="flatten-middle"]');
-  const middleTitle = frame.locator('[data-editor-id="flatten-middle-title"]');
-  const innerBlock = frame.locator('[data-editor-id="flatten-inner"]');
-  const innerLabel = frame.locator('[data-editor-id="flatten-inner-label"]');
+  const outerBlock = frame.locator('[data-editable-id="flatten-outer"]');
+  const middleBlock = frame.locator('[data-editable-id="flatten-middle"]');
+  const middleTitle = frame.locator('[data-editable-id="flatten-middle-title"]');
+  const innerBlock = frame.locator('[data-editable-id="flatten-inner"]');
+  const innerLabel = frame.locator('[data-editable-id="flatten-inner-label"]');
   await expect(outerBlock).toBeVisible();
   await expect(middleBlock).toBeVisible();
   await expect(innerBlock).toBeVisible();
@@ -183,13 +183,13 @@ test("context menu ungroups a normal block by flattening direct editable childre
       middleBlock.evaluate(
         (node) =>
           node.parentElement ===
-          node.ownerDocument.querySelector('[data-editor-id="flatten-outer"]')?.parentElement
+          node.ownerDocument.querySelector('[data-editable-id="flatten-outer"]')?.parentElement
       )
     )
     .toBe(true);
   await expect
     .poll(async () =>
-      innerBlock.evaluate((node) => node.parentElement?.getAttribute("data-editor-id"))
+      innerBlock.evaluate((node) => node.parentElement?.getAttribute("data-editable-id"))
     )
     .toBe("flatten-middle");
   await expect.poll(async () => outerBlock.evaluate((node) => node.children.length)).toBe(0);
@@ -217,13 +217,13 @@ test("context menu ungroups a normal block by flattening direct editable childre
       innerBlock.evaluate(
         (node) =>
           node.parentElement ===
-          node.ownerDocument.querySelector('[data-editor-id="flatten-middle"]')?.parentElement
+          node.ownerDocument.querySelector('[data-editable-id="flatten-middle"]')?.parentElement
       )
     )
     .toBe(true);
   await expect
     .poll(async () =>
-      innerLabel.evaluate((node) => node.parentElement?.getAttribute("data-editor-id"))
+      innerLabel.evaluate((node) => node.parentElement?.getAttribute("data-editable-id"))
     )
     .toBe("flatten-inner");
 
@@ -238,13 +238,13 @@ test("context menu ungroups a normal block by flattening direct editable childre
   await page.keyboard.press(`${MODIFIER}+Z`);
   await expect
     .poll(async () =>
-      innerBlock.evaluate((node) => node.parentElement?.getAttribute("data-editor-id"))
+      innerBlock.evaluate((node) => node.parentElement?.getAttribute("data-editable-id"))
     )
     .toBe("flatten-middle");
   await page.keyboard.press(`${MODIFIER}+Z`);
   await expect
     .poll(async () =>
-      middleBlock.evaluate((node) => node.parentElement?.getAttribute("data-editor-id"))
+      middleBlock.evaluate((node) => node.parentElement?.getAttribute("data-editable-id"))
     )
     .toBe("flatten-outer");
 });
@@ -263,9 +263,9 @@ test("context menu ungroups a card with list bullets without moving the list", a
   const thirdItem = list.locator("li").nth(2);
   await expect(card).toBeVisible();
   await expect(list).toBeVisible();
-  const cardId = await card.getAttribute("data-editor-id");
-  const titleId = await title.getAttribute("data-editor-id");
-  const bodyId = await body.getAttribute("data-editor-id");
+  const cardId = await card.getAttribute("data-editable-id");
+  const titleId = await title.getAttribute("data-editable-id");
+  const bodyId = await body.getAttribute("data-editable-id");
   if (!cardId || !titleId || !bodyId) {
     throw new Error("Expected problem card and text children to have editor ids.");
   }
@@ -304,9 +304,9 @@ test("context menu ungroups a card with list bullets without moving the list", a
     .poll(async () => slideFirstItem.evaluate((node) => node.parentElement?.tagName))
     .toBe("UL");
 
-  const promotedCard = frame.locator(`[data-editor-id="${cardId}"]`);
-  const promotedTitle = frame.locator(`[data-editor-id="${titleId}"]`);
-  const promotedBody = frame.locator(`[data-editor-id="${bodyId}"]`);
+  const promotedCard = frame.locator(`[data-editable-id="${cardId}"]`);
+  const promotedTitle = frame.locator(`[data-editable-id="${titleId}"]`);
+  const promotedBody = frame.locator(`[data-editable-id="${bodyId}"]`);
   await expectSameRect(promotedCard, cardBefore);
   await expectSameRect(promotedTitle, titleBefore);
   await expectSameRect(promotedBody, bodyBefore);
@@ -327,9 +327,9 @@ test("context menu distributes three selected snap cards horizontally", async ({
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
-  const thirdCard = frame.locator('[data-editor-id="snap-card-c"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
+  const thirdCard = frame.locator('[data-editable-id="snap-card-c"]');
 
   await firstCard.locator(".snap-drag-surface").click();
   await secondCard.locator(".snap-drag-surface").click({ modifiers: ["Shift"] });

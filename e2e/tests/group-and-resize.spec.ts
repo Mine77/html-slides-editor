@@ -15,7 +15,7 @@ test("escape cancels text editing without creating undo history", async ({ page 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const originalText = HERO_KICKER;
   const draftText = "Draft text that should be discarded";
 
@@ -36,9 +36,9 @@ test("double clicking a group enters scope and Escape returns to the group", asy
   const group = await createGroupFromSnapCards(page);
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
-  const outsideCard = frame.locator('[data-editor-id="snap-card-c"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
+  const outsideCard = frame.locator('[data-editable-id="snap-card-c"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await selectionOverlay.dblclick();
@@ -54,8 +54,8 @@ test("double clicking a group enters scope and Escape returns to the group", asy
   const childRect = await getRequiredBoundingBox(firstCard, "first grouped child");
   expect(Math.abs(selectedChildOverlay.width - childRect.width)).toBeLessThanOrEqual(3);
 
-  await firstCard.locator('[data-editor-id="text-5"]').dblclick();
-  const groupedText = firstCard.locator('[data-editor-id="text-5"]');
+  await firstCard.locator('[data-editable-id="text-5"]').dblclick();
+  const groupedText = firstCard.locator('[data-editable-id="text-5"]');
   await expect(groupedText).toHaveAttribute("contenteditable", "plaintext-only");
   await page.keyboard.press("Escape");
   await expect(groupedText).not.toHaveAttribute("contenteditable", /.+/);
@@ -77,8 +77,8 @@ test("group resize scales child geometry without scaling visual styling", async 
   const group = await createGroupFromGeometryCards(page);
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="group-card-a"]');
-  const firstLabel = frame.locator('[data-editor-id="group-card-a-title"]');
+  const firstCard = frame.locator('[data-editable-id="group-card-a"]');
+  const firstLabel = frame.locator('[data-editable-id="group-card-a-title"]');
   const { selectionOverlay } = getHistoryControls(page);
   const resizeHandle = page.getByTestId("block-resize-handle-bottom-right");
 

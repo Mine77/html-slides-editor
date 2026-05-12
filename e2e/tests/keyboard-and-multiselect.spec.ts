@@ -16,7 +16,7 @@ test("keyboard delete removes selected element and undo restores it", async ({ p
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await editableHeading.click();
@@ -34,7 +34,7 @@ test("keyboard Delete removes selected element like Backspace", async ({ page })
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   await page.keyboard.press("Delete");
@@ -48,7 +48,7 @@ test("keyboard arrows move the selected element and preserve undo redo", async (
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   await page.keyboard.press("ArrowRight");
@@ -67,7 +67,7 @@ test("keyboard Alt arrows use the fine movement step", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   await page.keyboard.press("Alt+ArrowRight");
@@ -78,7 +78,7 @@ test("keyboard arrows switch slides when no element is selected", async ({ page 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const stagePanel = page.getByTestId("stage-panel");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -145,8 +145,8 @@ test("keyboard copy paste duplicates the selected element and selects the copy",
   });
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
-  const copiedHeading = frame.locator('[data-editor-id="text-1-copy"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
+  const copiedHeading = frame.locator('[data-editable-id="text-1-copy"]');
 
   await editableHeading.click();
   await page.keyboard.press(`${MODIFIER}+C`);
@@ -173,14 +173,14 @@ test("keyboard paste with an empty object clipboard is a no-op", async ({ page }
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   const beforeHtml = await editableHeading.evaluate((node) => node.ownerDocument.body.innerHTML);
   await page.keyboard.press(`${MODIFIER}+V`);
 
   await expect(editableHeading).toHaveText(HERO_KICKER);
-  await expect(frame.locator('[data-editor-id="text-1-copy"]')).toHaveCount(0);
+  await expect(frame.locator('[data-editable-id="text-1-copy"]')).toHaveCount(0);
   const afterHtml = await editableHeading.evaluate((node) => node.ownerDocument.body.innerHTML);
   expect(afterHtml).toBe(beforeHtml);
 });
@@ -189,7 +189,7 @@ test("keyboard paste keeps repeated copies inside the slide bounds", async ({ pa
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   await page.keyboard.press("Shift+ArrowRight");
@@ -211,7 +211,7 @@ test("keyboard paste keeps repeated copies inside the slide bounds", async ({ pa
 
   for (const copyId of ["text-1-copy", "text-1-copy-2", "text-1-copy-3", "text-1-copy-4"]) {
     await page.keyboard.press(`${MODIFIER}+V`);
-    const copyRect = await getSlideElementRect(frame.locator(`[data-editor-id="${copyId}"]`));
+    const copyRect = await getSlideElementRect(frame.locator(`[data-editable-id="${copyId}"]`));
 
     expect(copyRect.x).toBeGreaterThanOrEqual(-0.5);
     expect(copyRect.y).toBeGreaterThanOrEqual(-0.5);
@@ -224,8 +224,8 @@ test("keyboard cut paste moves an element through history", async ({ page }) => 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
-  const copiedHeading = frame.locator('[data-editor-id="text-1-copy"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
+  const copiedHeading = frame.locator('[data-editable-id="text-1-copy"]');
 
   await editableHeading.click();
   await page.keyboard.press(`${MODIFIER}+X`);
@@ -245,7 +245,7 @@ test("keyboard layer shortcuts update z-index", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
 
   await editableHeading.click();
   await page.keyboard.press(`${MODIFIER}+]`);
@@ -264,8 +264,8 @@ test("shift click multi-select moves and deletes elements as one history entry",
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstText = frame.locator('[data-editor-id="text-1"]');
-  const secondText = frame.locator('[data-editor-id="text-2"]');
+  const firstText = frame.locator('[data-editable-id="text-1"]');
+  const secondText = frame.locator('[data-editable-id="text-2"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await firstText.click();
@@ -299,10 +299,10 @@ test("keyboard select all selects every top-level editable element on the active
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstText = frame.locator('[data-editor-id="text-1"]');
-  const secondText = frame.locator('[data-editor-id="text-2"]');
-  const nestedBlock = frame.locator('[data-editor-id="block-4"]');
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const firstText = frame.locator('[data-editable-id="text-1"]');
+  const secondText = frame.locator('[data-editable-id="text-2"]');
+  const nestedBlock = frame.locator('[data-editable-id="block-4"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   const [firstBefore, secondBefore, blockBefore, nestedBefore] = await Promise.all([
@@ -343,7 +343,7 @@ test("keyboard select all keeps native text selection while text editing", async
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await editableHeading.dblclick();
@@ -361,10 +361,10 @@ test("multi-select copy paste duplicates the selected set", async ({ page }) => 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstText = frame.locator('[data-editor-id="text-1"]');
-  const secondText = frame.locator('[data-editor-id="text-2"]');
-  const firstCopy = frame.locator('[data-editor-id="text-1-copy"]');
-  const secondCopy = frame.locator('[data-editor-id="text-2-copy"]');
+  const firstText = frame.locator('[data-editable-id="text-1"]');
+  const secondText = frame.locator('[data-editable-id="text-2"]');
+  const firstCopy = frame.locator('[data-editable-id="text-1-copy"]');
+  const secondCopy = frame.locator('[data-editable-id="text-2-copy"]');
 
   await firstText.click();
   await secondText.click({ modifiers: ["Shift"] });
@@ -375,7 +375,7 @@ test("multi-select copy paste duplicates the selected set", async ({ page }) => 
 
   await expect(firstCopy).toHaveText(HERO_KICKER);
   await expect(secondCopy).toBeVisible();
-  await expect(firstCopy.locator('[data-editor-id="text-1-copy-text-1"]')).toHaveCount(0);
+  await expect(firstCopy.locator('[data-editable-id="text-1-copy-text-1"]')).toHaveCount(0);
   const firstCopyRect = await getSlideElementRect(firstCopy);
   const secondCopyRect = await getSlideElementRect(secondCopy);
   const firstDelta = firstCopyRect.x - firstRect.x;
@@ -402,8 +402,8 @@ test("multi-select keyboard arrows move sibling snap cards together", async ({ p
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await firstCard.locator(".snap-drag-surface").click();
@@ -433,8 +433,8 @@ test("multi-select overlay drag moves sibling snap cards together", async ({ pag
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await firstCard.locator(".snap-drag-surface").click();

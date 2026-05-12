@@ -1,5 +1,11 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
-import { type EditableElement, SELECTOR_ATTR } from "../../core";
+import {
+  type EditableElement,
+  SELECTOR_ATTR,
+  isPersistedGroupElementId,
+  isPersistedGroupNode,
+  querySlideElement,
+} from "../../core";
 import type { ResizeHandleCorner } from "../lib/block-snap-types";
 import { getScopedTextTargetAtPoint } from "../lib/editor-selection-structure";
 import type { PointerStartLike } from "./block-manipulation-types";
@@ -53,6 +59,26 @@ function useSelectionOverlayActions({
   onBeginGroupEditingScope,
   onClearSelection,
 }: UseSelectionOverlayActionsOptions) {
+  const isSelectedPersistedGroup = () => {
+    if (!selectedElementId) {
+      return false;
+    }
+
+    if (isPersistedGroupElementId(selectedElementId)) {
+      return true;
+    }
+
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) {
+      return false;
+    }
+
+    return isPersistedGroupNode(querySlideElement<HTMLElement>(doc, selectedElementId));
+  };
+  const selectedPersistedGroup = isSelectedPersistedGroup();
+  const shouldDeferSelectedGroupMove =
+    selectedPersistedGroup && !activeGroupScopeId && selectedElementIds.length === 1;
+
   return {
     onSelectionOverlayMouseDown: (event: ReactMouseEvent<HTMLDivElement>) => {
       if (event.button !== 0 || !selectedElementIds.length) {
@@ -96,6 +122,10 @@ function useSelectionOverlayActions({
         event.stopPropagation();
       }
 
+      if (shouldDeferSelectedGroupMove) {
+        return;
+      }
+
       onBeginMove(
         {
           clientX: event.clientX,
@@ -123,6 +153,24 @@ function useSelectionOverlayActions({
 
       const deltaX = event.clientX - pointerDown.clientX;
       const deltaY = event.clientY - pointerDown.clientY;
+      if (
+        shouldDeferSelectedGroupMove &&
+        Math.hypot(deltaX, deltaY) > 4 &&
+        selectedElementId
+      ) {
+        overlayPointerDownRef.current = null;
+        onBeginMove(
+          {
+            clientX: pointerDown.clientX,
+            clientY: pointerDown.clientY,
+            preventDefault: () => event.preventDefault(),
+            stopPropagation: () => event.stopPropagation(),
+          },
+          selectedElementId
+        );
+        return;
+      }
+
       if (Math.hypot(deltaX, deltaY) <= 4) {
         return;
       }
@@ -158,9 +206,30 @@ function useSelectionOverlayActions({
         return;
       }
 
+      if (
+        event.detail >= 2 &&
+        selectedPersistedGroup &&
+        !activeGroupScopeId &&
+        selectedElementIds.length === 1 &&
+        selectedElementId
+      ) {
+        onBeginGroupEditingScope(selectedElementId);
+        return;
+      }
+
       const deltaX = event.clientX - pointerDown.clientX;
       const deltaY = event.clientY - pointerDown.clientY;
       if (Math.hypot(deltaX, deltaY) > 4) {
+        return;
+      }
+
+      if (
+        selectedPersistedGroup &&
+        !activeGroupScopeId &&
+        selectedElementIds.length === 1 &&
+        pointerDown.targetElementId &&
+        pointerDown.targetElementId !== selectedElementId
+      ) {
         return;
       }
 
@@ -222,7 +291,7 @@ function useSelectionOverlayActions({
 
       if (
         selectedElementIds.length === 1 &&
-        selectedElement?.type === "group" &&
+        (selectedElement?.type === "group" || selectedPersistedGroup) &&
         selectedElementId
       ) {
         onBeginGroupEditingScope(selectedElementId);

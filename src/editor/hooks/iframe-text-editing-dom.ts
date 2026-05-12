@@ -1,4 +1,4 @@
-import { SELECTOR_ATTR } from "../../core";
+import { SELECTOR_ATTR, isPersistedGroupNode } from "../../core";
 
 const EDITING_TEXT_STYLE_ID = "hse-editing-text-style";
 const EDITING_TEXT_STYLE = `
@@ -39,6 +39,44 @@ body[data-hse-group-scope] [data-editable][data-hse-active-group-scope="true"] {
   outline-offset: 4px;
 }
 `;
+
+function isElementNode(node: Node | null | undefined): node is Element {
+  return Boolean(node && node.nodeType === 1);
+}
+
+function isStructuralGroupNode(node: HTMLElement | null): node is HTMLElement {
+  return Boolean(
+    node &&
+      node.getAttribute("data-editable") === "block" &&
+      Array.from(node.children).some((child) => {
+        if (!isElementNode(child) || !child.hasAttribute("data-editable")) {
+          return false;
+        }
+
+        const editableType = child.getAttribute("data-editable");
+        return (
+          editableType === "text" ||
+          editableType === "image" ||
+          (editableType === "block" &&
+            Array.from(child.children).some(
+              (grandchild) => isElementNode(grandchild) && grandchild.hasAttribute("data-editable")
+            ))
+        );
+      })
+  );
+}
+
+function getPersistedStructuralGroupAncestor(node: HTMLElement | null): HTMLElement | null {
+  let current: HTMLElement | null = node;
+  while (current) {
+    if (isPersistedGroupNode(current) && isStructuralGroupNode(current)) {
+      return current;
+    }
+    current = current.parentElement;
+  }
+
+  return null;
+}
 
 export function getEditableSelectionTarget(target: Element): HTMLElement | null {
   return target.closest<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`);
@@ -107,9 +145,10 @@ export function applyGroupScopeFocus(doc: Document, activeGroupScopeId: string |
   }
 
   doc.body.setAttribute("data-hse-group-scope", activeGroupScopeId);
-  const group = doc.querySelector<HTMLElement>(
-    `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
+  const groupCandidate = doc.querySelector<HTMLElement>(
+    `[data-editable="block"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
   );
+  const group = isStructuralGroupNode(groupCandidate) ? groupCandidate : null;
   if (!group) {
     doc.body.removeAttribute("data-hse-group-scope");
     return;
@@ -133,15 +172,19 @@ export function getEditableSelectionTargetInScope(
   }
 
   if (!activeGroupScopeId) {
-    const groupTarget = editableTarget.closest<HTMLElement>(
-      `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}]`
-    );
-    return groupTarget ?? editableTarget;
+    const structuralGroupTarget = getPersistedStructuralGroupAncestor(editableTarget);
+    return structuralGroupTarget ?? editableTarget;
   }
 
-  const activeGroup = editableTarget.closest<HTMLElement>(
-    `[data-editable="block"][data-group="true"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
+  const activeGroupCandidate = editableTarget.closest<HTMLElement>(
+    `[data-editable="block"][${SELECTOR_ATTR}="${activeGroupScopeId}"]`
   );
+  const activeGroup =
+    activeGroupCandidate &&
+    isPersistedGroupNode(activeGroupCandidate) &&
+    isStructuralGroupNode(activeGroupCandidate)
+      ? activeGroupCandidate
+      : null;
 
   return activeGroup ? editableTarget : null;
 }

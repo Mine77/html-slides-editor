@@ -137,17 +137,25 @@ function useIframeTextEditing({
   );
 
   const beginGroupEditingScope = useCallback((elementId: string) => {
+    const doc = iframeRef.current?.contentDocument;
     setActiveGroupScopeId(elementId);
     activeGroupScopeIdRef.current = elementId;
     setSelectedElementIds([elementId]);
-  }, []);
+    if (doc) {
+      applyGroupScopeFocus(doc, elementId);
+    }
+  }, [iframeRef]);
 
   const exitGroupEditingScope = useCallback(() => {
     const groupElementId = activeGroupScopeIdRef.current;
+    const doc = iframeRef.current?.contentDocument;
     activeGroupScopeIdRef.current = null;
     setActiveGroupScopeId(null);
     setSelectedElementIds(groupElementId ? [groupElementId] : []);
-  }, []);
+    if (doc) {
+      applyGroupScopeFocus(doc, null);
+    }
+  }, [iframeRef]);
 
   const clearSelection = useCallback(() => {
     if (textEditingRef.current) {

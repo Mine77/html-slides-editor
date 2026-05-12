@@ -63,7 +63,10 @@ export async function loadSlidesFromManifest({
   );
 
   return {
-    manifest,
+    manifest: {
+      ...manifest,
+      deckTitle: typeof manifest.deckTitle === "string" ? manifest.deckTitle : undefined,
+    },
     slides,
   };
 }

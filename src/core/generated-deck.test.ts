@@ -18,7 +18,7 @@ const regressionDeckConfig = JSON.parse(
     "utf8"
   )
 ) as {
-  topic: string;
+  deckTitle: string;
   summary: string;
   points: string[];
   heroKicker: string;
@@ -36,7 +36,8 @@ describe("generated deck import", () => {
       if (url.endsWith("/manifest.json") || url.includes("/manifest.json?")) {
         return new Response(
           JSON.stringify({
-            topic: "Contract Deck",
+            deckTitle: "Contract Deck",
+            description: "Contract fixture deck",
             slides: [{ file: "slide-1.html", title: "Slide A", hidden: true }],
           }),
           {
@@ -99,7 +100,8 @@ describe("generated deck import", () => {
       if (url.includes("/manifest.json")) {
         return new Response(
           JSON.stringify({
-            topic: "Contract Deck",
+            deckTitle: "Contract Deck",
+            description: "Contract fixture deck",
             slides: [{ file: "slide-1.html", title: "Slide A" }],
           }),
           {
@@ -157,7 +159,8 @@ describe("generated deck import", () => {
     const manifest = JSON.parse(
       fs.readFileSync(path.join(outputRoot, "manifest.json"), "utf8")
     ) as {
-      topic: string;
+      deckTitle: string;
+      description: string;
       slides: Array<{ file: string; title: string }>;
     };
     const firstSlideHtml = fs.readFileSync(path.join(outputRoot, manifest.slides[0].file), "utf8");
@@ -165,12 +168,12 @@ describe("generated deck import", () => {
     const secondSlideHtml = fs.readFileSync(path.join(outputRoot, manifest.slides[1].file), "utf8");
     const secondSlide = parseSlide(secondSlideHtml, "generated-slide-2");
 
-    expect(manifest.topic).toBe(regressionDeckConfig.topic);
+    expect(manifest.deckTitle).toBe(regressionDeckConfig.deckTitle);
     expect(manifest.slides).toHaveLength(16);
     expect(firstSlide.id).toBe("generated-slide-1");
     expect(firstSlide.width).toBe(DEFAULT_SLIDE_WIDTH);
     expect(firstSlide.height).toBe(DEFAULT_SLIDE_HEIGHT);
-    expect(firstSlide.rootSelector).toBe('[data-editor-id="slide-root"]');
+    expect(firstSlide.rootSelector).toBe("body");
     expect(
       firstSlide.elements.some((element) => element.content === regressionDeckConfig.heroKicker)
     ).toBe(true);

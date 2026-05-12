@@ -195,7 +195,7 @@ function StageCanvas({
       ) : null}
 
       <div
-        className="absolute origin-top-left overflow-hidden rounded-xl bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_12px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)] max-[1200px]:max-w-full"
+        className="absolute origin-top-left overflow-hidden rounded-xl shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_12px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)] max-[1200px]:max-w-full"
         data-testid="stage-frame"
         style={{
           width: `${slideWidth}px`,
@@ -208,7 +208,7 @@ function StageCanvas({
         <iframe
           ref={iframeRef}
           title="Slide canvas"
-          className="size-full border-0 bg-white"
+          className="size-full border-0"
           data-testid="slide-iframe"
         />
       </div>

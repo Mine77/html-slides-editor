@@ -11,6 +11,9 @@ Scope notes:
 
 - This matrix is derived from the current Playwright specs, not from ADR text
   or intended future coverage.
+- The current regression deck and helpers assume the V1 deck contract:
+  `manifest.json` uses `deckTitle` and `description`, each slide uses `body`
+  as the root, and editable selectors use `data-editable-id`.
 - A row only claims behavior that is explicitly asserted by the current tests.
 - `Persistence` means the current test actually reloads or reopens and asserts
   the result. If not, it is listed as `Not asserted`.
@@ -57,7 +60,7 @@ Scope notes:
 
 | Behavior currently covered | Surfaces | Fixture | What the current tests assert | History | Persistence | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- |
-| Deck title rename updates manifest topic and survives reload | Header input | Regression deck manifest | Title input updates; saving badge appears; `/deck/manifest.json` returns new `topic`; reload keeps new title | Undo/redo not asserted | Reload asserted | `editor-chrome.spec.ts` |
+| Deck title rename updates manifest deckTitle and survives reload | Header input | Regression deck manifest | Title input updates; saving badge appears; `/deck/manifest.json` returns new `deckTitle`; reload keeps new title | Undo/redo not asserted | Reload asserted | `editor-chrome.spec.ts` |
 | Sidebar chrome, counts, and slide action menu are rendered | Sidebar hover, right click | Regression deck | Sidebar width is stable; slide count is visible; slide actions menu exposes Add Above/Add Below/Duplicate/Rename/Hide/Delete | N/A | N/A | `editor-chrome.spec.ts` |
 | Sidebar context menu can add slides above and below a clicked slide | Sidebar context menu | Regression deck | Slide count increments; inserted slide becomes active; stage renders `Untitled Slide` | Undo/redo not asserted | Reload not asserted | `editor-chrome.spec.ts` |
 | Sidebar context menu can rename a slide and survive reload | Sidebar context menu, dialog | Regression deck | Cancel path does not apply title; save path updates sidebar label; manifest `slides[n].title` updates; reload keeps renamed title | Undo/redo not asserted | Reload asserted | `editor-chrome.spec.ts` |
@@ -162,7 +165,7 @@ Scope notes:
 
 | Behavior currently covered | Surfaces | Fixture | What the current tests assert | History | Persistence | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- |
-| Entering Present mode from the editor switches to presenter UI and hides editor chrome | Header Present button | Regression deck | Presenter view becomes visible; sidebar hides; slide frame fills most of the viewport; slide root stays 1920x1080 | N/A | N/A | `presenter-mode.spec.ts` |
+| Entering Present mode from the editor switches to presenter UI and hides editor chrome | Header Present button | Regression deck | Presenter view becomes visible; sidebar hides; slide frame fills most of the viewport; the slide `body` root stays 1920x1080 | N/A | N/A | `presenter-mode.spec.ts` |
 | Presenter toolbar visibility follows pointer activity and slide navigation works from toolbar and keyboard | Presenter toolbar, keyboard | Regression deck | Toolbar auto-hides and reappears with pointer movement; Next slide button and ArrowDown both advance page number and slide content | N/A | N/A | `presenter-mode.spec.ts` |
 | Presenter laser pointer and pen controls work, including pen color and Escape clearing ink | Presenter toolbar, pointer, keyboard Escape | Regression deck | Laser cursor tracks pointer; Pen mode changes cursor, exposes colors, draws ink path, and Escape clears the drawing and exits pen mode | N/A | N/A | `presenter-mode.spec.ts` |
 | Presenter fullscreen controls toggle against a stubbed fullscreen API | Presenter toolbar | Regression deck | Enter fullscreen and Exit fullscreen buttons swap correctly | N/A | N/A | `presenter-mode.spec.ts` |

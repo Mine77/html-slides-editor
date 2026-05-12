@@ -1,5 +1,5 @@
 import { type RefObject, useEffect } from "react";
-import { SELECTOR_ATTR, type SlideModel, querySlideElement } from "../../core";
+import { SELECTOR_ATTR, isPersistedGroupNode, type SlideModel, querySlideElement } from "../../core";
 import { ensureSelectionContainsTarget } from "./iframe-editing-session";
 import {
   applyGroupScopeFocus,
@@ -377,7 +377,7 @@ function installEditableNodeHandlers({
 
     const elementId = node.getAttribute(SELECTOR_ATTR);
     const activeEditing = textEditingRef.current;
-    if (elementId && node.getAttribute("data-group") === "true") {
+    if (elementId && isPersistedGroupNode(node)) {
       event.preventDefault();
       event.stopPropagation();
       beginGroupEditingScope(elementId);

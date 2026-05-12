@@ -16,7 +16,9 @@ const NOT_FOUND_ERROR_CODE = "ENOENT";
 interface SaveGeneratedDeckPayload {
   clientLoadedAt?: number;
   manifest?: {
-    topic?: string;
+    deckTitle?: string;
+    description?: string;
+    generatedAt?: string;
     slides?: Array<{
       file?: string;
       title?: string;

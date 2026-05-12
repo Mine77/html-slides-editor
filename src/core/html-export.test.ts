@@ -5,14 +5,14 @@ const slideA = {
   file: "slides/01.html",
   title: "One",
   htmlSource:
-    '<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600"><h1>One</h1></main></body></html>',
+    '<!DOCTYPE html><html><body style="margin:0;position:relative;width:800px;height:600px;overflow:hidden;"><h1>One</h1></body></html>',
 };
 const slideB = {
   file: "slides/02.html",
   title: "Two",
   hidden: true,
   htmlSource:
-    '<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600"><h1>Two</h1></main></body></html>',
+    '<!DOCTYPE html><html><body style="margin:0;position:relative;width:800px;height:600px;overflow:hidden;"><h1>Two</h1></body></html>',
 };
 
 describe("single HTML export", () => {
@@ -38,7 +38,7 @@ describe("single HTML export", () => {
         {
           ...slideA,
           htmlSource:
-            '<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600"><h1>One </script> safe</h1></main></body></html>',
+            '<!DOCTYPE html><html><body style="margin:0;position:relative;width:800px;height:600px;overflow:hidden;"><h1>One </script> safe</h1></body></html>',
         },
       ],
     });

@@ -183,11 +183,13 @@ describe("source starry-slides cli", () => {
     writeDeck(deck, [
       {
         file: "slides/01.html",
-        html: `<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root">${blockElement(
-          "block-1",
-          "Outside",
-          "position:absolute;left:760px;top:20px;width:100px;height:100px"
-        )}</main></body></html>`,
+        html: slideHtml(
+          blockElement(
+            "block-1",
+            "Outside",
+            "position:absolute;left:760px;top:20px;width:100px;height:100px"
+          )
+        ),
       },
     ]);
 
@@ -237,11 +239,13 @@ describe("source starry-slides cli", () => {
     writeDeck(deck, [
       {
         file: "slides/01.html",
-        html: `<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root">${blockElement(
-          "block-1",
-          "Outside",
-          "position:absolute;left:760px;top:20px;width:100px;height:100px"
-        )}</main></body></html>`,
+        html: slideHtml(
+          blockElement(
+            "block-1",
+            "Outside",
+            "position:absolute;left:760px;top:20px;width:100px;height:100px"
+          )
+        ),
       },
     ]);
 
@@ -260,11 +264,13 @@ describe("source starry-slides cli", () => {
     writeDeck(deck, [
       {
         file: "slides/01.html",
-        html: `<!DOCTYPE html><html><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root">${blockElement(
-          "block-1",
-          "Outside",
-          "position:absolute;left:760px;top:20px;width:100px;height:100px"
-        )}</main></body></html>`,
+        html: slideHtml(
+          blockElement(
+            "block-1",
+            "Outside",
+            "position:absolute;left:760px;top:20px;width:100px;height:100px"
+          )
+        ),
       },
     ]);
 

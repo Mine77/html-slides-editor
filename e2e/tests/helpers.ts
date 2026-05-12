@@ -4,13 +4,13 @@ import {
   REGRESSION_DECK_HERO_KICKER,
   REGRESSION_DECK_SLIDE_COUNT,
   REGRESSION_DECK_SUMMARY,
-  REGRESSION_DECK_TOPIC,
+  REGRESSION_DECK_TITLE,
 } from "./regression-deck";
 
 export const MODIFIER = process.platform === "darwin" ? "Meta" : "Control";
 export const RESET_URL = "/__editor/reset-generated-deck";
 export const HERO_KICKER = REGRESSION_DECK_HERO_KICKER;
-export const HERO_TITLE = REGRESSION_DECK_TOPIC;
+export const HERO_TITLE = REGRESSION_DECK_TITLE;
 export const HERO_SUMMARY = REGRESSION_DECK_SUMMARY;
 export const AGENDA_PARAGRAPH = REGRESSION_DECK_AGENDA_PARAGRAPH;
 export { REGRESSION_DECK_SLIDE_COUNT };
@@ -28,7 +28,7 @@ export async function gotoEditor(page: Page) {
   await page.goto(`/?e2e=${Date.now()}-${editorVisitCounter}`);
   await expect(page.locator("header input").first()).toHaveValue(HERO_TITLE);
   await expect(page.getByTestId("slide-iframe")).toBeVisible();
-  await expect(coverFrame(page).locator('[data-editor-id="text-1"]')).toHaveText(HERO_KICKER);
+  await expect(coverFrame(page).locator('[data-editable-id="text-1"]')).toHaveText(HERO_KICKER);
 }
 
 export function getHistoryControls(page: Page) {
@@ -180,7 +180,7 @@ export async function expectInlineStyleContains(
 export async function getSlideElementRect(locator: Locator) {
   return locator.evaluate((node) => {
     const rect = node.getBoundingClientRect();
-    const root = node.ownerDocument.querySelector("[data-slide-root]");
+    const root = node.ownerDocument.body;
     if (!(root instanceof HTMLElement)) {
       throw new Error("Expected slide root to exist.");
     }
@@ -270,17 +270,17 @@ export async function createGroupFromSnapCards(
   await page.getByLabel("Slide 12").click();
   const frame = coverFrame(page);
 
-  await frame.locator(`[data-editor-id="${elementIds[0]}"]`).locator(".snap-drag-surface").click();
+  await frame.locator(`[data-editable-id="${elementIds[0]}"]`).locator(".snap-drag-surface").click();
   for (const elementId of elementIds.slice(1)) {
     await frame
-      .locator(`[data-editor-id="${elementId}"]`)
+      .locator(`[data-editable-id="${elementId}"]`)
       .locator(".snap-drag-surface")
       .click({ modifiers: ["Shift"] });
   }
 
   await clickFloatingToolbarButton(page, "Group");
 
-  const group = frame.locator('[data-editor-id="group-1"]');
+  const group = frame.locator('[data-editable-id="group-1"]');
   await expect(group).toBeVisible();
   await expect(page.getByTestId("selection-overlay")).toBeVisible();
 
@@ -294,16 +294,16 @@ export async function createGroupFromGeometryCards(
   await page.getByLabel("Slide 13").click();
   const frame = coverFrame(page);
 
-  await frame.locator(`[data-editor-id="${elementIds[0]}"]`).click({ position: { x: 8, y: 8 } });
+  await frame.locator(`[data-editable-id="${elementIds[0]}"]`).click({ position: { x: 8, y: 8 } });
   for (const elementId of elementIds.slice(1)) {
     await frame
-      .locator(`[data-editor-id="${elementId}"]`)
+      .locator(`[data-editable-id="${elementId}"]`)
       .click({ modifiers: ["Shift"], position: { x: 8, y: 8 } });
   }
 
   await clickFloatingToolbarButton(page, "Group");
 
-  const group = frame.locator('[data-editor-id="group-1"]');
+  const group = frame.locator('[data-editable-id="group-1"]');
   await expect(group).toBeVisible();
   await expect(page.getByTestId("selection-overlay")).toBeVisible();
 

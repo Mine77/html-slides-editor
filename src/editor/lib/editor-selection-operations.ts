@@ -19,6 +19,7 @@ import {
   createGroupUngroupOperation,
   createUniqueElementId,
   getSlideElementHtml,
+  isPersistedGroupNode,
   normalizeElementLayoutStyleSnapshot,
   parseTransformParts,
   querySlideElement,
@@ -264,7 +265,7 @@ export function createElementPresentationStyleMap({
   }
 
   const selectedNode = querySlideElement<HTMLElement>(doc, elementId);
-  if (!selectedNode || selectedNode.getAttribute("data-group") === "true") {
+  if (!selectedNode || isPersistedGroupNode(selectedNode)) {
     return {};
   }
 

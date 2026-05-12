@@ -1,9 +1,7 @@
 import { planPresentationSlides } from "./presentation";
 import {
-  DEFAULT_SLIDE_HEIGHT,
-  DEFAULT_SLIDE_WIDTH,
   type SlideDeckManifestEntry,
-  parseDimension,
+  readBodyDimensionsFromHtmlSource,
 } from "./slide-contract";
 
 export interface HtmlExportSlide extends SlideDeckManifestEntry {
@@ -101,21 +99,7 @@ function getSlideSize(slide: HtmlExportSlide) {
     return { width: slide.width, height: slide.height };
   }
 
-  return {
-    width: parseDimension(
-      matchAttribute(slide.htmlSource, "data-slide-width"),
-      DEFAULT_SLIDE_WIDTH
-    ),
-    height: parseDimension(
-      matchAttribute(slide.htmlSource, "data-slide-height"),
-      DEFAULT_SLIDE_HEIGHT
-    ),
-  };
-}
-
-function matchAttribute(html: string, attributeName: string): string | null {
-  const pattern = new RegExp(`${attributeName}\\s*=\\s*["']([^"']+)["']`, "i");
-  return pattern.exec(html)?.[1] ?? null;
+  return readBodyDimensionsFromHtmlSource(slide.htmlSource);
 }
 
 function safeJson(value: unknown): string {

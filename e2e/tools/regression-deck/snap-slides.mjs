@@ -67,7 +67,7 @@ export function buildSnapCenterSlide() {
         <h1>One isolated block for slide center snapping</h1>
         <p>This page keeps the slide center test clean: one editable block, no sibling targets, and a predictable drag surface.</p>
       </section>
-      <article class="center-probe" data-editable="block" data-editor-id="snap-center-probe">
+      <article class="center-probe" data-editable="block" data-editable-id="snap-center-probe">
         <strong data-editable="text">Center probe</strong>
         <span data-editable="text">Use this block for slide center snaps.</span>
         <div class="snap-drag-surface"></div>
@@ -158,22 +158,22 @@ export function buildSnapSiblingSlide() {
         <h1 data-editable="text">Four isolated cards for sibling edge and equal spacing snaps</h1>
         <p data-editable="text">The cards are intentionally identical. Drag Card C to the sibling edge or empty equal-spacing slot after Card B.</p>
       </section>
-      <article class="snap-card snap-a" data-editable="block" data-editor-id="snap-card-a">
+      <article class="snap-card snap-a" data-editable="block" data-editable-id="snap-card-a">
         <strong data-editable="text">Card A</strong>
         <span data-editable="text">Fixed spacing source</span>
         <div class="snap-drag-surface"></div>
       </article>
-      <article class="snap-card snap-b" data-editable="block" data-editor-id="snap-card-b">
+      <article class="snap-card snap-b" data-editable="block" data-editable-id="snap-card-b">
         <strong data-editable="text">Card B</strong>
         <span data-editable="text">Fixed spacing source</span>
         <div class="snap-drag-surface"></div>
       </article>
-      <article class="snap-card snap-c" data-editable="block" data-editor-id="snap-card-c">
+      <article class="snap-card snap-c" data-editable="block" data-editable-id="snap-card-c">
         <strong data-editable="text">Card C</strong>
         <span data-editable="text">Drag this card</span>
         <div class="snap-drag-surface"></div>
       </article>
-      <article class="snap-card snap-d" data-editable="block" data-editor-id="snap-card-d">
+      <article class="snap-card snap-d" data-editable="block" data-editable-id="snap-card-d">
         <strong data-editable="text">Card D</strong>
         <span data-editable="text">Flatten target</span>
         <div class="snap-drag-surface"></div>
@@ -228,15 +228,15 @@ export function buildGroupGeometrySlide() {
         <div class="kicker" data-editable="text">Group geometry fixture</div>
         <h1 data-editable="text">Inline-positioned cards for group resize and scope tests</h1>
       </section>
-      <article class="group-card group-a" data-editable="block" data-editor-id="group-card-a" style="left: 260px; top: 470px; width: 260px; height: 180px;">
-        <strong data-editable="text" data-editor-id="group-card-a-title">Card A</strong>
-        <span data-editable="text" data-editor-id="group-card-a-copy">Fixed geometry source</span>
+      <article class="group-card group-a" data-editable="block" data-editable-id="group-card-a" style="left: 260px; top: 470px; width: 260px; height: 180px;">
+        <strong data-editable="text" data-editable-id="group-card-a-title">Card A</strong>
+        <span data-editable="text" data-editable-id="group-card-a-copy">Fixed geometry source</span>
       </article>
-      <article class="group-card group-b" data-editable="block" data-editor-id="group-card-b" style="left: 620px; top: 510px; width: 260px; height: 180px;">
-        <strong data-editable="text" data-editor-id="group-card-b-title">Card B</strong>
-        <span data-editable="text" data-editor-id="group-card-b-copy">Fixed geometry source</span>
+      <article class="group-card group-b" data-editable="block" data-editable-id="group-card-b" style="left: 620px; top: 510px; width: 260px; height: 180px;">
+        <strong data-editable="text" data-editable-id="group-card-b-title">Card B</strong>
+        <span data-editable="text" data-editable-id="group-card-b-copy">Fixed geometry source</span>
       </article>
-      <article class="group-card group-c" data-editable="block" data-editor-id="group-card-c" style="left: 1240px; top: 500px; width: 260px; height: 180px;">
+      <article class="group-card group-c" data-editable="block" data-editable-id="group-card-c" style="left: 1240px; top: 500px; width: 260px; height: 180px;">
         <strong data-editable="text">Card C</strong>
         <span data-editable="text">Outside group target</span>
       </article>
@@ -319,11 +319,11 @@ export function buildBlockFlattenSlide() {
         <div class="kicker" data-editable="text">Block flatten fixture</div>
         <h1 data-editable="text">Three nested editable layers for one-step flatten tests</h1>
       </section>
-      <article class="flatten-outer" data-editable="block" data-editor-id="flatten-outer">
-        <section class="flatten-middle" data-editable="block" data-editor-id="flatten-middle">
-          <strong data-editable="text" data-editor-id="flatten-middle-title">Middle layer title</strong>
-          <div class="flatten-inner" data-editable="block" data-editor-id="flatten-inner">
-            <span data-editable="text" data-editor-id="flatten-inner-label">Inner layer label</span>
+      <article class="flatten-outer" data-editable="block" data-editable-id="flatten-outer">
+        <section class="flatten-middle" data-editable="block" data-editable-id="flatten-middle">
+          <strong data-editable="text" data-editable-id="flatten-middle-title">Middle layer title</strong>
+          <div class="flatten-inner" data-editable="block" data-editable-id="flatten-inner">
+            <span data-editable="text" data-editable-id="flatten-inner-label">Inner layer label</span>
           </div>
         </section>
       </article>

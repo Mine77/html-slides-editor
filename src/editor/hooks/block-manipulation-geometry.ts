@@ -5,6 +5,7 @@ import {
   type StageGeometry,
   type StageRect,
   composeTransform,
+  isPersistedGroupNode,
   parseTransformParts,
   querySlideElement,
 } from "../../core";
@@ -163,7 +164,7 @@ export function getManipulationElementIds({
     }
 
     resizeElementIds.add(elementId);
-    if (node.getAttribute("data-group") === "true") {
+    if (isPersistedGroupNode(node)) {
       for (const child of node.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)) {
         const childElementId = child.getAttribute(SELECTOR_ATTR);
         if (childElementId) {

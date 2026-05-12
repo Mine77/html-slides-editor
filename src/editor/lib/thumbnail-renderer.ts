@@ -62,7 +62,6 @@ export async function renderSlideThumbnail(slide: SlideModel): Promise<string> {
       pixelRatio: THUMBNAIL_PIXEL_RATIO,
       canvasWidth: THUMBNAIL_DISPLAY_WIDTH,
       canvasHeight: Math.round((slide.height / slide.width) * THUMBNAIL_DISPLAY_WIDTH),
-      backgroundColor: "white",
       skipFonts: false,
     });
   } finally {

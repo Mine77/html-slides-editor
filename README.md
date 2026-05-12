@@ -8,11 +8,18 @@ Starry Slides is an agentic editor for slides and presentations using HTML as th
 
 The project mainly contains 3 parts:
 
-| Part                   | Description                                                                                                                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `starry-slides` CLI    | Tools for agents to preview, verify, and open generated slide HTML files.                                                                                                        |
-| Starry Slide Editor    | A WYSIWYG editor for creating and editing slide HTML files.                                                                                                                      |
-| `/starry-slides` Skill | A skill that teaches your agent to generate HTML files that meet the requirements of [`STARRY-SLIDES-CONTRACT.md`](./skills/starry-slides/references/STARRY-SLIDES-CONTRACT.md). |
+1. `starry-slides` CLI
+
+   Tools for agents to preview, verify, and open generated slide HTML files.
+
+2. Starry Slide Editor
+
+   A WYSIWYG editor for creating and editing slide HTML files.
+
+3. `/starry-slides` Skill
+
+   A skill that teaches your agent to generate HTML files that meet the requirements of [`STARRY-SLIDES-CONTRACT.md`](./skills/starry-slides/references/STARRY-SLIDES-CONTRACT.md).
+
 
 
 ## CLI Quick Start

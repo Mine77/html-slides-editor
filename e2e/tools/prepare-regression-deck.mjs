@@ -24,8 +24,10 @@ function main() {
     "node",
     [
       path.join(workspaceRoot, "e2e/tools/generate-regression-deck.mjs"),
-      "--topic",
-      regressionConfig.topic,
+      "--deck-title",
+      regressionConfig.deckTitle,
+      "--description",
+      regressionConfig.description ?? regressionConfig.summary,
       "--summary",
       regressionConfig.summary,
       "--points",

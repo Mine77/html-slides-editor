@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 import type { AtomicSlideOperation, SlideModel, SlideOperation, StageRect } from "../../core";
-import { querySlideElement } from "../../core";
+import { SLIDE_ROOT_ID, querySlideNode } from "../../core";
 import {
   createAttributeUpdateOperation,
   createStyleUpdateOperation,
@@ -46,7 +46,7 @@ function useEditorElementActions({
   onSelectElementIds,
   onLockedElementIdsBySlideIdChange,
 }: UseEditorElementActionsOptions) {
-  const selectedTargetElementId = selectedElementId ?? "slide-root";
+  const selectedTargetElementId = selectedElementId ?? SLIDE_ROOT_ID;
   const attributeValues = {
     locked: isSelectedElementLocked ? "true" : "",
     ariaLabel: activeSlide
@@ -94,7 +94,7 @@ function useEditorElementActions({
         return;
       }
 
-      const selectedNode = querySlideElement<HTMLElement>(doc, selectedTargetElementId);
+      const selectedNode = querySlideNode<HTMLElement>(doc, selectedTargetElementId);
       if (!selectedNode) {
         return;
       }

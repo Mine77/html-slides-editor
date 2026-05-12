@@ -119,7 +119,7 @@ The verify result shape should include the mode that ran:
       "severity": "error",
       "code": "overflow.element",
       "slideFile": "03-title.html",
-      "selector": "[data-editor-id=\"title-1\"]",
+      "selector": "[data-editable-id=\"title-1\"]",
       "message": "Element content overflows vertically",
       "details": {
         "axis": "y",

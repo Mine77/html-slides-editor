@@ -3,7 +3,9 @@ import {
   DEFAULT_SLIDE_HEIGHT,
   DEFAULT_SLIDE_WIDTH,
   SELECTOR_ATTR,
-  SLIDE_ROOT_ATTR,
+  getElementId,
+  isPersistedGroupNode,
+  setElementId,
 } from "./slide-contract";
 import { querySlideElement } from "./slide-document";
 import { parseHtmlDocument, serializeHtmlDocument } from "./slide-html-document";
@@ -62,13 +64,13 @@ function getAbsoluteNodeRect(
   let current: HTMLElement | null = node;
   let x = 0;
   let y = 0;
-  const ownElementId = node.getAttribute(SELECTOR_ATTR) ?? "";
+  const ownElementId = getElementId(node) ?? "";
   const ownRect = elementRects[ownElementId] ?? getNodeRect(node);
   const width = ownRect.width;
   const height = ownRect.height;
 
   while (current) {
-    const elementId = current.getAttribute(SELECTOR_ATTR) ?? "";
+    const elementId = getElementId(current) ?? "";
     const rect = elementRects[elementId] ?? getNodeRect(current);
     x += rect.x;
     y += rect.y;
@@ -88,13 +90,17 @@ function getEditableAncestorRect(
   node: HTMLElement,
   elementRects: GroupElementRectMap = {}
 ): { x: number; y: number } {
-  const parent = node.parentElement;
-  if (!parent || !parent.hasAttribute("data-editable")) {
-    return { x: 0, y: 0 };
+  let currentParent = node.parentElement;
+  while (currentParent && currentParent !== node.ownerDocument.body) {
+    if (currentParent.hasAttribute("data-editable")) {
+      const rect = getAbsoluteNodeRect(currentParent, elementRects);
+      return { x: rect.x, y: rect.y };
+    }
+
+    currentParent = currentParent.parentElement;
   }
 
-  const rect = getAbsoluteNodeRect(parent, elementRects);
-  return { x: rect.x, y: rect.y };
+  return { x: 0, y: 0 };
 }
 
 function setNodeRect(
@@ -163,13 +169,18 @@ function applyPresentationStyleSnapshot(
 }
 
 function getDirectEditableOwner(node: HTMLElement): HTMLElement | null {
-  const parent = node.parentElement;
-  if (!parent) {
-    return null;
-  }
+  let current: HTMLElement | null = node;
+  while (current?.parentElement) {
+    const parent: HTMLElement = current.parentElement;
+    if (parent.hasAttribute("data-editable") || parent === node.ownerDocument.body) {
+      return parent;
+    }
 
-  if (parent.hasAttribute(SLIDE_ROOT_ATTR) || parent.hasAttribute("data-editable")) {
-    return parent;
+    if (parent.parentElement === node.ownerDocument.body) {
+      return parent;
+    }
+
+    current = parent;
   }
 
   return null;
@@ -230,11 +241,36 @@ function flattenableBlockChildElements(node: HTMLElement, doc: Document): HTMLEl
     }
 
     child.setAttribute("data-editable", "block");
-    if (!child.getAttribute(SELECTOR_ATTR)) {
-      child.setAttribute(SELECTOR_ATTR, createUniqueElementIdInDocument(doc, "block-1"));
+    if (!getElementId(child)) {
+      setElementId(child, createUniqueElementIdInDocument(doc, "block-1"));
     }
     return true;
   });
+}
+
+function structuralGroupChildren(node: HTMLElement, doc: Document): HTMLElement[] {
+  if (node.getAttribute("data-editable") !== "block") {
+    return [];
+  }
+
+  const directEditableChildren = childEditableElements(node);
+  const promotedListWrappers = Array.from(node.children).filter((child): child is HTMLElement => {
+    if (!(child instanceof HTMLElement) || !isListWrapperWithEditableItems(child)) {
+      return false;
+    }
+
+    child.setAttribute("data-editable", "block");
+    if (!getElementId(child)) {
+      setElementId(child, createUniqueElementIdInDocument(doc, "block-1"));
+    }
+    return true;
+  });
+
+  return [...directEditableChildren, ...promotedListWrappers];
+}
+
+function isStructuralGroup(node: HTMLElement): boolean {
+  return structuralGroupChildren(node, node.ownerDocument).length > 0;
 }
 
 export function createGroupCreateOperation({
@@ -265,7 +301,7 @@ export function createGroupCreateOperation({
   }
 
   const flattenedNodes = selectedNodes.flatMap((node) =>
-    node.getAttribute("data-group") === "true" ? childEditableElements(node) : [node]
+    isPersistedGroupNode(node) && isStructuralGroup(node) ? structuralGroupChildren(node, doc) : [node]
   );
   const uniqueNodes = flattenedNodes.filter(
     (node, index, nodes) => nodes.findIndex((candidate) => candidate === node) === index
@@ -283,7 +319,9 @@ export function createGroupCreateOperation({
     return null;
   }
 
-  const selectedGroups = selectedNodes.filter((node) => node.getAttribute("data-group") === "true");
+  const selectedGroups = selectedNodes.filter(
+    (node) => isPersistedGroupNode(node) && isStructuralGroup(node)
+  );
   const rects = uniqueNodes.map((node) => getAbsoluteNodeRect(node, elementRects));
   const left = Math.min(...rects.map((rect) => rect.x));
   const top = Math.min(...rects.map((rect) => rect.y));
@@ -292,8 +330,7 @@ export function createGroupCreateOperation({
   const parentRect = getEditableAncestorRect(selectedNodes[0], elementRects);
   const groupNode = doc.createElement("div");
   groupNode.setAttribute("data-editable", "block");
-  groupNode.setAttribute("data-group", "true");
-  groupNode.setAttribute(SELECTOR_ATTR, groupElementId);
+  setElementId(groupNode, groupElementId);
   setNodeRect(groupNode, {
     x: left - parentRect.x,
     y: top - parentRect.y,
@@ -346,7 +383,7 @@ export function createGroupCreateOperation({
     slideId,
     groupElementId,
     elementIds: orderedNodes
-      .map((node) => node.getAttribute(SELECTOR_ATTR))
+      .map((node) => getElementId(node))
       .filter((elementId): elementId is string => Boolean(elementId)),
     previousHtmlSource: html,
     nextHtmlSource,
@@ -381,21 +418,21 @@ export function createGroupUngroupOperation({
 
   const parent = groupNode.parentElement;
   const parentRect = getEditableAncestorRect(groupNode, elementRects);
-  const isGroup = groupNode.getAttribute("data-group") === "true";
-  const children = isGroup
-    ? childEditableElements(groupNode)
+  const isGroup = isPersistedGroupNode(groupNode) && isStructuralGroup(groupNode);
+  const normalizedChildren = isGroup
+    ? structuralGroupChildren(groupNode, doc)
     : flattenableBlockChildElements(groupNode, doc);
-  if (!children.length) {
+  if (!normalizedChildren.length) {
     return null;
   }
-  const selectedElementId = groupNode.getAttribute(SELECTOR_ATTR);
+  const selectedElementId = getElementId(groupNode);
   const insertionAnchor = isGroup ? groupNode : groupNode.nextSibling;
 
-  const childElementIds = children
-    .map((child) => child.getAttribute(SELECTOR_ATTR))
-    .filter((elementId): elementId is string => Boolean(elementId));
+  const childElementIds = normalizedChildren
+    .map((child) => getElementId(child))
+    .filter((elementId, index, ids): elementId is string => Boolean(elementId) && ids.indexOf(elementId) === index);
 
-  for (const child of children) {
+  for (const child of normalizedChildren) {
     const rect = getAbsoluteNodeRect(child, elementRects);
     setNodeRect(child, {
       x: rect.x - parentRect.x,
@@ -403,18 +440,16 @@ export function createGroupUngroupOperation({
       width: rect.width,
       height: rect.height,
     });
-    if (!isGroup) {
-      const childElementId = child.getAttribute(SELECTOR_ATTR) ?? "";
-      applyPresentationStyleSnapshot(child, elementPresentationStyles[childElementId]);
-      if (isListWrapperWithEditableItems(child)) {
-        child.style.margin = "0px";
-      }
-      for (const descendant of Array.from(
-        child.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
-      )) {
-        const descendantElementId = descendant.getAttribute(SELECTOR_ATTR) ?? "";
-        applyPresentationStyleSnapshot(descendant, elementPresentationStyles[descendantElementId]);
-      }
+    const childElementId = getElementId(child) ?? "";
+    applyPresentationStyleSnapshot(child, elementPresentationStyles[childElementId]);
+    if (!isGroup && isListWrapperWithEditableItems(child)) {
+      child.style.margin = "0px";
+    }
+    for (const descendant of Array.from(
+      child.querySelectorAll<HTMLElement>(`[data-editable][${SELECTOR_ATTR}]`)
+    )) {
+      const descendantElementId = getElementId(descendant) ?? "";
+      applyPresentationStyleSnapshot(descendant, elementPresentationStyles[descendantElementId]);
     }
     parent.insertBefore(child, insertionAnchor);
   }
@@ -432,8 +467,7 @@ export function createGroupUngroupOperation({
     type: "group.ungroup",
     slideId,
     groupElementId,
-    childElementIds:
-      isGroup || !selectedElementId ? childElementIds : [selectedElementId, ...childElementIds],
+    childElementIds,
     previousHtmlSource: html,
     nextHtmlSource,
     timestamp,

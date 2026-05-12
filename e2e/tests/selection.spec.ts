@@ -11,7 +11,7 @@ test("plain click selects text only, and double click enters editing", async ({ 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { selectionOverlay } = getHistoryControls(page);
   const { floatingToolbarAnchor } = getHeaderControls(page);
 
@@ -31,7 +31,7 @@ test("selection overlay stays aligned to the selected element bounds", async ({ 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await editableHeading.click();
@@ -58,8 +58,8 @@ test("plain click selects nested text instead of its parent block", async ({ pag
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
-  const parentBlock = frame.locator('[data-editor-id="block-4"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
+  const parentBlock = frame.locator('[data-editable-id="block-4"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await nestedText.click();
@@ -92,7 +92,7 @@ test("hovering an editable element shows a passive preselection overlay for the 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
   const { preselectionOverlay, selectionOverlay } = getHistoryControls(page);
 
   await nestedText.hover();
@@ -119,7 +119,7 @@ test("dragging from a preselected editable element selects and moves it in one g
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
   const { preselectionOverlay, selectionOverlay } = getHistoryControls(page);
 
   await nestedText.hover();
@@ -159,8 +159,8 @@ test("clicking a nested text target through a selected outer block retargets sel
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
-  const parentBlock = frame.locator('[data-editor-id="block-4"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
+  const parentBlock = frame.locator('[data-editable-id="block-4"]');
   const { preselectionOverlay, selectionOverlay } = getHistoryControls(page);
 
   await parentBlock.click({ position: { x: 12, y: 12 } });
@@ -196,9 +196,9 @@ test("drag marquee selects every editable element it touches", async ({ page }) 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstText = frame.locator('[data-editor-id="text-1"]');
-  const secondText = frame.locator('[data-editor-id="text-2"]');
-  const untouchedText = frame.locator('[data-editor-id="text-3"]');
+  const firstText = frame.locator('[data-editable-id="text-1"]');
+  const secondText = frame.locator('[data-editable-id="text-2"]');
+  const untouchedText = frame.locator('[data-editable-id="text-3"]');
   const marqueeOverlay = page.getByTestId("marquee-selection-overlay");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -254,8 +254,8 @@ test("drag marquee selects the outer editable element when nested editables are 
   await page.getByLabel("Slide 10").click();
 
   const frame = coverFrame(page);
-  const parentBlock = frame.locator('[data-editor-id="block-4"]');
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const parentBlock = frame.locator('[data-editable-id="block-4"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
   const marqueeOverlay = page.getByTestId("marquee-selection-overlay");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -293,9 +293,9 @@ test("multi-selection overlay drag can start from a nested child inside a select
   await page.getByLabel("Slide 10").click();
 
   const frame = coverFrame(page);
-  const firstBlock = frame.locator('[data-editor-id="block-4"]');
-  const secondBlock = frame.locator('[data-editor-id="block-10"]');
-  const nestedText = frame.locator('[data-editor-id="text-5"]');
+  const firstBlock = frame.locator('[data-editable-id="block-4"]');
+  const secondBlock = frame.locator('[data-editable-id="block-10"]');
+  const nestedText = frame.locator('[data-editable-id="text-5"]');
   const { selectionOverlay } = getHistoryControls(page);
 
   await firstBlock.click({ position: { x: 8, y: 8 } });
@@ -331,8 +331,8 @@ test("drag marquee does not leave native browser text selected", async ({ page }
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const firstText = frame.locator('[data-editor-id="text-1"]');
-  const secondText = frame.locator('[data-editor-id="text-2"]');
+  const firstText = frame.locator('[data-editable-id="text-1"]');
+  const secondText = frame.locator('[data-editable-id="text-2"]');
   const [firstBox, secondBox] = await Promise.all([
     getRequiredBoundingBox(firstText, "first text"),
     getRequiredBoundingBox(secondText, "second text"),
@@ -361,7 +361,7 @@ test("floating toolbar is the only element tooling surface", async ({ page }) =>
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  await frame.locator('[data-editor-id="text-1"]').click();
+  await frame.locator('[data-editable-id="text-1"]').click();
 
   const { floatingToolbarAnchor } = getHeaderControls(page);
 

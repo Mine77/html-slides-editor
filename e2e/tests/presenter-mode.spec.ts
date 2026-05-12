@@ -27,7 +27,7 @@ test("editor Present mode supports navigation laser pen color and exit", async (
     .poll(async () =>
       page
         .frameLocator('[data-testid="presenter-slide-iframe"]')
-        .locator("[data-slide-root]")
+        .locator("body")
         .evaluate((node) => {
           const rect = node.getBoundingClientRect();
           return {

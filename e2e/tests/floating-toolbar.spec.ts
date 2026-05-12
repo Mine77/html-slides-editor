@@ -18,7 +18,7 @@ test("full floating editor applies typography and paragraph controls", async ({ 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await editableHeading.click();
@@ -81,7 +81,7 @@ test("line height slider reflects computed and committed line-height state", asy
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const title = frame.locator('[data-editor-id="text-2"]');
+  const title = frame.locator('[data-editable-id="text-2"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await title.click();
@@ -121,7 +121,7 @@ test("full floating editor applies color and border controls", async ({ page }) 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await editableHeading.evaluate((node) => {
@@ -263,7 +263,7 @@ test("floating border menu reflects selected element styles on first open", asyn
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await editableHeading.click();
@@ -312,7 +312,7 @@ test("image floating toolbar hides text and color tools and supports crop handle
   await page.getByLabel("Slide 16").click();
 
   const frame = coverFrame(page);
-  const editableImage = frame.locator('[data-editor-id="crop-image"]');
+  const editableImage = frame.locator('[data-editable-id="crop-image"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await editableImage.click();
@@ -391,7 +391,7 @@ test("image floating toolbar hides text and color tools and supports crop handle
       timeout: 500,
     })
     .toBeNull();
-  await frame.locator("[data-slide-root]").click({ position: { x: 24, y: 24 } });
+  await frame.locator("body").click({ position: { x: 24, y: 24 } });
   await expect(page.getByTestId("image-crop-overlay")).toBeHidden();
   await expect
     .poll(async () => parseInsetPercentages(await getInlineStyle(editableImage, "clip-path")), {
@@ -441,7 +441,7 @@ function parseInsetPercentages(value: string) {
 test("floating toolbar font family select changes the selected text font", async ({ page }) => {
   await gotoEditor(page);
 
-  const editableHeading = coverFrame(page).locator('[data-editor-id="text-1"]');
+  const editableHeading = coverFrame(page).locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
   const fontInput = toolbar.getByLabel("Font", { exact: true });
   const fontMenu = page.getByTestId("floating-font-menu");
@@ -496,7 +496,7 @@ test("full floating editor applies other attributes through dialogs", async ({ p
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await editableHeading.click();
@@ -517,7 +517,7 @@ test("full floating editor applies other attributes through dialogs", async ({ p
   await expect(savingBadge).toBeVisible();
   await expect(savingBadge).toBeHidden();
   await page.reload();
-  const reloadedHeading = coverFrame(page).locator('[data-editor-id="text-1"]');
+  const reloadedHeading = coverFrame(page).locator('[data-editable-id="text-1"]');
   await expect(reloadedHeading).toHaveAttribute("data-link-url", "https://example.com/deck");
   await expect(reloadedHeading).toHaveAttribute("aria-label", "Hero kicker label");
 });
@@ -526,7 +526,7 @@ test("locked element only exposes unlock and blocks direct manipulation", async 
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -569,7 +569,7 @@ test("full floating editor is the only primary element tooling surface", async (
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const stagePanel = page.getByTestId("stage-panel");
   const { floatingToolbarAnchor } = getHeaderControls(page);
 
@@ -599,8 +599,8 @@ test("multi selection exposes align, layer, distribute, and group controls", asy
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
   const { selectionOverlay } = getHistoryControls(page);
 
@@ -619,7 +619,7 @@ test("multi selection exposes align, layer, distribute, and group controls", asy
   await page.getByRole("button", { name: "Align left", exact: true }).click();
 
   await toolbar.getByRole("button", { name: "Group", exact: true }).click();
-  await expect(frame.locator('[data-editor-id="group-1"]')).toBeVisible();
+  await expect(frame.locator('[data-editable-id="group-1"]')).toBeVisible();
   await expect(toolbar.getByRole("button", { name: "Ungroup", exact: true })).toBeVisible();
   await expectToolbarButtonOrder(toolbar, ["Lock", "Ungroup", "Other"]);
 });
@@ -631,8 +631,8 @@ test("floating toolbar ungroup promotes snap cards without changing their dimens
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const firstCard = frame.locator('[data-editor-id="snap-card-a"]');
-  const secondCard = frame.locator('[data-editor-id="snap-card-b"]');
+  const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
+  const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
   await expect(firstCard).toBeVisible();
   await expect(secondCard).toBeVisible();
@@ -646,7 +646,7 @@ test("floating toolbar ungroup promotes snap cards without changing their dimens
   await toolbar.getByRole("button", { name: "Group", exact: true }).click();
   await toolbar.getByRole("button", { name: "Ungroup", exact: true }).click();
 
-  await expect(frame.locator('[data-editor-id="group-1"]')).toBeHidden();
+  await expect(frame.locator('[data-editable-id="group-1"]')).toBeHidden();
   const firstAfter = await getSlideElementRect(firstCard);
   const secondAfter = await getSlideElementRect(secondCard);
   expect(firstAfter.width).toBeCloseTo(firstBefore.width, 0);
@@ -662,10 +662,10 @@ test("floating toolbar flattens selected groups into a new group without resizin
   await page.getByLabel("Slide 12").click();
 
   const frame = coverFrame(page);
-  const cardA = frame.locator('[data-editor-id="snap-card-a"]');
-  const cardB = frame.locator('[data-editor-id="snap-card-b"]');
-  const cardC = frame.locator('[data-editor-id="snap-card-c"]');
-  const cardD = frame.locator('[data-editor-id="snap-card-d"]');
+  const cardA = frame.locator('[data-editable-id="snap-card-a"]');
+  const cardB = frame.locator('[data-editable-id="snap-card-b"]');
+  const cardC = frame.locator('[data-editable-id="snap-card-c"]');
+  const cardD = frame.locator('[data-editable-id="snap-card-d"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
   const before = await Promise.all([cardA, cardB, cardC, cardD].map((card) => card.boundingBox()));
   for (const box of before) {
@@ -673,15 +673,15 @@ test("floating toolbar flattens selected groups into a new group without resizin
   }
 
   await createGroupFromSnapCards(page, ["snap-card-a", "snap-card-b"]);
-  const firstGroup = frame.locator('[data-editor-id="group-1"]');
+  const firstGroup = frame.locator('[data-editable-id="group-1"]');
   await createGroupFromSnapCards(page, ["snap-card-c", "snap-card-d"]);
-  const secondGroup = frame.locator('[data-editor-id="group-2"]');
+  const secondGroup = frame.locator('[data-editable-id="group-2"]');
 
   await firstGroup.click({ position: { x: 8, y: 8 } });
   await secondGroup.click({ modifiers: ["Shift"], position: { x: 8, y: 8 } });
   await toolbar.getByRole("button", { name: "Group", exact: true }).click();
 
-  await expect(frame.locator('[data-editor-id="group-3"]')).toBeVisible();
+  await expect(frame.locator('[data-editable-id="group-3"]')).toBeVisible();
   const after = await Promise.all([cardA, cardB, cardC, cardD].map((card) => card.boundingBox()));
   for (const [index, box] of after.entries()) {
     expect(box).not.toBeNull();
@@ -694,7 +694,7 @@ test("floating toolbar font size buttons do not remount the toolbar", async ({ p
   await gotoEditor(page);
 
   const frame = coverFrame(page);
-  const editableHeading = frame.locator('[data-editor-id="text-1"]');
+  const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
 
   await editableHeading.click();
@@ -713,7 +713,7 @@ test("floating toolbar font size input clamps manual values and keeps step butto
 }) => {
   await gotoEditor(page);
 
-  const editableHeading = coverFrame(page).locator('[data-editor-id="text-1"]');
+  const editableHeading = coverFrame(page).locator('[data-editable-id="text-1"]');
   const toolbar = page.getByTestId("floating-toolbar-anchor");
   const fontSizeInput = toolbar.getByLabel("Font size", { exact: true });
 

@@ -1,4 +1,4 @@
-import { SELECTOR_ATTR, querySlideElement } from "../../core";
+import { SELECTOR_ATTR, isPersistedGroupNode, querySlideElement } from "../../core";
 
 export function hasDirectEditableChildren(html: string, elementId: string): boolean {
   if (typeof DOMParser === "undefined") {
@@ -28,7 +28,7 @@ export function createStructuralListIdMap(
   }
 
   const flattenRoot = querySlideElement<HTMLElement>(doc, flattenRootElementId);
-  if (!flattenRoot || flattenRoot.getAttribute("data-group") === "true") {
+  if (!flattenRoot || isPersistedGroupNode(flattenRoot)) {
     return result;
   }
 

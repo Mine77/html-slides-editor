@@ -35,6 +35,8 @@ describe("view renderer", () => {
       path.join(deck, "manifest.json"),
       JSON.stringify(
         {
+          deckTitle: "Test Deck",
+          description: "Fixture deck",
           slides: [
             { file: "slides/02.html", title: "Second" },
             { file: "slides/missing.html", title: "Missing" },
@@ -124,7 +126,7 @@ describe("view renderer", () => {
     writeDeck(deck, [
       {
         file: "slides/slide-overflow.html",
-        html: `<!DOCTYPE html><html><body style="margin:0"><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root" style="position:relative;width:800px;height:600px;overflow:visible">${blockElement(
+        html: `<!DOCTYPE html><html><body style="margin:0;position:relative;width:800px;height:600px;overflow:visible"><main>${blockElement(
           "block-1",
           "Outside",
           "left:780px;top:20px;width:100px;height:100px;position:absolute"
@@ -154,12 +156,12 @@ describe("view renderer", () => {
     expect(issues.every((issue) => issue.slideFile && issue.selector)).toBe(true);
   });
 
-  test("data-allow-overflow exempts rendered overflow issues", async () => {
+  test("data-allow-overflow exempts element overflow issues but not root overflow", async () => {
     const deck = createDeck();
     writeDeck(deck, [
       {
         file: "slides/01.html",
-        html: `<!DOCTYPE html><html><body style="margin:0"><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root" data-allow-overflow="true" style="position:relative;width:800px;height:600px;overflow:visible">${blockElement(
+        html: `<!DOCTYPE html><html><body style="margin:0;position:relative;width:800px;height:600px;overflow:visible" data-allow-overflow="true"><main>${blockElement(
           "block-1",
           "Allowed",
           "left:780px;top:20px;width:100px;height:100px;position:absolute"
@@ -169,7 +171,7 @@ describe("view renderer", () => {
 
     const issues = await verifyRenderedOverflow(deck);
 
-    expect(issues).toEqual([]);
+    expect(issues.map((issue) => issue.code)).toEqual(["overflow.slide", "overflow.slide"]);
   });
 
   test("decorative shadows and blur are not treated as rendered overflow", async () => {

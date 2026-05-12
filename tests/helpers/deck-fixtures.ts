@@ -24,9 +24,11 @@ export function writeDeck(
     path.join(deck, "manifest.json"),
     JSON.stringify(
       {
+        deckTitle: "Test Deck",
+        description: "Fixture deck for Starry Slides tests.",
         slides: slides.map((slide) => ({
           file: slide.file,
-          ...(slide.title ? { title: slide.title } : {}),
+          title: slide.title ?? "Untitled Slide",
         })),
       },
       null,
@@ -43,20 +45,20 @@ export function writeDeck(
 
 export function slideHtml(content = textElement("text-1", "Hello"), rootStyle = "") {
   return `<!DOCTYPE html><html><head><style>
-html,body{margin:0;width:800px;height:600px;overflow:hidden}
-[data-slide-root]{position:relative;width:800px;height:600px;overflow:hidden;background:#fff}
+html{margin:0}
+body{margin:0;position:relative;width:800px;height:600px;overflow:hidden;background:#fff;${rootStyle}}
 [data-editable]{position:absolute;box-sizing:border-box;left:20px;top:20px;width:240px;height:80px;margin:0}
-</style></head><body><main data-slide-root="true" data-slide-width="800" data-slide-height="600" data-editor-id="slide-root" style="${rootStyle}">${content}</main></body></html>`;
+</style></head><body><main>${content}</main></body></html>`;
 }
 
 export function slideHtmlWithoutDimensions(content = textElement("text-1", "Hello")) {
-  return `<!DOCTYPE html><html><body><main data-slide-root="true" data-editor-id="slide-root">${content}</main></body></html>`;
+  return `<!DOCTYPE html><html><body><main>${content}</main></body></html>`;
 }
 
 export function textElement(id: string, text: string, style = "") {
-  return `<h1 data-editable="text" data-editor-id="${id}" style="${style}">${text}</h1>`;
+  return `<h1 data-editable="text" data-editable-id="${id}" style="${style}">${text}</h1>`;
 }
 
 export function blockElement(id: string, text: string, style = "") {
-  return `<div data-editable="block" data-editor-id="${id}" style="${style}">${text}</div>`;
+  return `<div data-editable="block" data-editable-id="${id}" style="${style}">${text}</div>`;
 }

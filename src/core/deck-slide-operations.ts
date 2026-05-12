@@ -7,15 +7,11 @@ const DEFAULT_NEW_SLIDE_HTML = `<!DOCTYPE html>
     <meta charset="utf-8" />
     <title>Untitled Slide</title>
   </head>
-  <body>
-    <main
-      data-slide-root="true"
-      data-slide-width="1920"
-      data-slide-height="1080"
-      data-editor-id="slide-root"
-      style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #ffffff;"
-    >
-      <h1 data-editable="text" data-editor-id="text-1" style="position: absolute; left: 160px; top: 160px; width: 1200px; margin: 0; font-size: 96px; line-height: 1.05;">
+  <body
+    style="margin: 0; position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #ffffff;"
+  >
+    <main>
+      <h1 data-editable="text" data-editable-id="text-1" style="position: absolute; left: 160px; top: 160px; width: 1200px; margin: 0; font-size: 96px; line-height: 1.05;">
         Untitled Slide
       </h1>
     </main>

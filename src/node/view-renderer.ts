@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { type VerifyIssue, createVerifyIssue, loadVerifyDeckSource } from "../core/verify-deck";
+import { readBodyDimensionsFromHtmlSource } from "../core/slide-contract";
 
 type PlaywrightPage = import("@playwright/test").Page;
 type ChromiumLauncher = typeof import("@playwright/test").chromium;
@@ -162,14 +163,7 @@ async function loadSlide(
   filePath: string
 ): Promise<{ width: number; height: number }> {
   await page.goto(pathToFileURL(filePath).href, { waitUntil: "load" });
-  const root = page.locator('[data-slide-root="true"]');
-  if ((await root.count()) === 0) {
-    return { width: 1920, height: 1080 };
-  }
-  const size = {
-    width: Number((await root.getAttribute("data-slide-width")) || 1920),
-    height: Number((await root.getAttribute("data-slide-height")) || 1080),
-  };
+  const size = readBodyDimensionsFromHtmlSource(fs.readFileSync(filePath, "utf8"));
   await page.setViewportSize(size);
   await page.evaluate("document.fonts ? document.fonts.ready : Promise.resolve()");
   return size;
@@ -177,7 +171,7 @@ async function loadSlide(
 
 async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasurement[]> {
   return page.evaluate<OverflowMeasurement[]>(`(() => {
-    const root = document.querySelector('[data-slide-root="true"]');
+    const root = document.body;
     if (!root) {
       return [];
     }
@@ -191,8 +185,8 @@ async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasuremen
       height: Math.round(rect.height * 100) / 100,
     });
     const selectorFor = (node) =>
-      node.getAttribute("data-editor-id")
-        ? '[data-editor-id="' + node.getAttribute("data-editor-id") + '"]'
+      node.getAttribute("data-editable-id")
+        ? '[data-editable-id="' + node.getAttribute("data-editable-id") + '"]'
         : node.getAttribute("data-editable")
           ? node.tagName.toLowerCase() + '[data-editable="' + node.getAttribute("data-editable") + '"]'
           : node.tagName.toLowerCase();
@@ -202,7 +196,7 @@ async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasuremen
     const measurements = [];
     const tolerance = 1;
 
-    if (!hasAllowedOverflow(root)) {
+    if (true) {
       const rootOverflowX = root.scrollWidth - root.clientWidth;
       const rootOverflowY = root.scrollHeight - root.clientHeight;
       if (rootOverflowX > tolerance || rootOverflowY > tolerance) {
@@ -221,7 +215,7 @@ async function measureOverflow(page: PlaywrightPage): Promise<OverflowMeasuremen
     }
 
     const body = document.body;
-    if (body && !hasAllowedOverflow(body) && !hasAllowedOverflow(root)) {
+    if (body) {
       const viewportWidth = document.documentElement.clientWidth;
       const viewportHeight = document.documentElement.clientHeight;
       const bodyOverflowX = Math.max(

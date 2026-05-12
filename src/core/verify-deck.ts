@@ -1,7 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { JSDOM, VirtualConsole } from "jsdom";
-import { SELECTOR_ATTR, SLIDE_ROOT_ATTR } from "./slide-contract";
+import {
+  DEFAULT_SLIDE_HEIGHT,
+  DEFAULT_SLIDE_WIDTH,
+  SELECTOR_ATTR,
+  getElementId,
+  parseFixedPixelDimension,
+  readBodyStyleValueFromHtmlSource,
+} from "./slide-contract";
 
 export type VerifyMode = "static" | "complete";
 export type VerifyCheck = "structure" | "static-overflow" | "rendered-overflow";
@@ -33,7 +40,9 @@ export interface VerifyDeckSourceResult {
   deck: string;
   manifestPath: string;
   manifest: {
-    topic?: string;
+    deckTitle?: unknown;
+    description?: unknown;
+    generatedAt?: unknown;
     slides?: Array<{ file?: unknown; title?: unknown; hidden?: unknown }>;
   } | null;
   slideFiles: string[];
@@ -89,12 +98,16 @@ function collectHtmlFiles(targetPath: string): string[] {
 }
 
 function parseManifest(manifestPath: string): {
-  topic?: string;
+  deckTitle?: unknown;
+  description?: unknown;
+  generatedAt?: unknown;
   slides?: Array<{ file?: unknown; title?: unknown; hidden?: unknown }>;
 } | null {
   try {
     return JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
-      topic?: string;
+      deckTitle?: unknown;
+      description?: unknown;
+      generatedAt?: unknown;
       slides?: Array<{ file?: unknown; title?: unknown; hidden?: unknown }>;
     };
   } catch (error) {
@@ -109,46 +122,19 @@ function validateSlideHtml(_filePath: string, slideFile: string, html: string): 
   const { document } = dom.window;
   const issues: VerifyIssue[] = [];
 
-  const roots = Array.from(document.querySelectorAll<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`));
-  if (roots.length === 0) {
-    issues.push(
-      issue("error", "structure.missing-root", "missing required slide root", {
-        slideFile,
-      })
-    );
-  }
-  if (roots.length > 1) {
-    issues.push(
-      issue("error", "structure.multiple-roots", "found multiple slide roots", {
-        slideFile,
-      })
-    );
-  }
+  const bodyWidthValue = readBodyStyleValueFromHtmlSource(html, "width");
+  const bodyHeightValue = readBodyStyleValueFromHtmlSource(html, "height");
+  const rootSize = {
+    width: parseFixedPixelDimension(bodyWidthValue) ?? DEFAULT_SLIDE_WIDTH,
+    height: parseFixedPixelDimension(bodyHeightValue) ?? DEFAULT_SLIDE_HEIGHT,
+  };
 
-  const root = roots[0] ?? null;
-  if (root) {
-    if (!root.getAttribute("data-slide-width")) {
-      issues.push(
-        issue(
-          "warning",
-          "structure.missing-width",
-          "missing data-slide-width, default 1920 will be assumed",
-          {
-            slideFile,
-          }
-        )
-      );
-    }
-    if (!root.getAttribute("data-slide-height")) {
-      issues.push(
-        issue(
-          "warning",
-          "structure.missing-height",
-          "missing data-slide-height, default 1080 will be assumed",
-          { slideFile }
-        )
-      );
-    }
+  if (rootSize.width <= 0 || rootSize.height <= 0) {
+    issues.push(
+      issue("error", "structure.invalid-root-size", "slide body must resolve to a positive size", {
+        slideFile,
+      })
+    );
   }
 
   const editableNodes = Array.from(document.querySelectorAll<HTMLElement>("[data-editable]"));
@@ -165,30 +151,16 @@ function validateSlideHtml(_filePath: string, slideFile: string, html: string): 
     if (!["text", "image", "block"].includes(editableType)) {
       issues.push(
         issue(
-          "error",
-          "structure.invalid-editable",
-          `invalid data-editable value "${editableType}" on <${node.tagName.toLowerCase()}>`,
-          {
-            slideFile,
-            selector: node.getAttribute(SELECTOR_ATTR) ?? undefined,
-          }
-        )
-      );
-    }
-
-    if (node.getAttribute("data-group") === "true" && editableType !== "block") {
-      issues.push(
-        issue(
-          "error",
-          "structure.invalid-group",
-          'data-group="true" is only allowed on block editables',
-          {
-            slideFile,
-            selector: node.getAttribute(SELECTOR_ATTR) ?? undefined,
-          }
-        )
-      );
-    }
+            "error",
+            "structure.invalid-editable",
+            `invalid data-editable value "${editableType}" on <${node.tagName.toLowerCase()}>`,
+            {
+              slideFile,
+              selector: getElementId(node) ?? undefined,
+            }
+          )
+        );
+      }
   }
 
   return issues;
@@ -202,32 +174,36 @@ function validateStaticOverflow(_filePath: string, slideFile: string, html: stri
   const dom = new JSDOM(html, { virtualConsole: new VirtualConsole() });
   const { document } = dom.window;
   const issues: VerifyIssue[] = [];
-  const candidates = [
-    document.querySelector<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`),
-    ...Array.from(document.querySelectorAll<HTMLElement>("[data-editable]")),
-  ].filter((node): node is HTMLElement => Boolean(node));
+  const root = document.body;
+  const candidates = [root, ...Array.from(document.querySelectorAll<HTMLElement>("[data-editable]"))];
 
   for (const node of candidates) {
-    if (allowsOverflow(node)) {
+    const isRoot = node === root;
+    if (!isRoot && allowsOverflow(node)) {
       continue;
     }
 
     const overflow = node.style.overflow.trim().toLowerCase();
     const overflowX = node.style.overflowX.trim().toLowerCase();
     const overflowY = node.style.overflowY.trim().toLowerCase();
-    const hasExplicitOverflow =
-      ["auto", "scroll"].includes(overflow) ||
-      ["auto", "scroll"].includes(overflowX) ||
-      ["auto", "scroll"].includes(overflowY);
+    const hasExplicitOverflow = isRoot
+      ? ["visible", "auto", "scroll"].includes(overflow) ||
+        ["visible", "auto", "scroll"].includes(overflowX) ||
+        ["visible", "auto", "scroll"].includes(overflowY)
+      : ["auto", "scroll"].includes(overflow) ||
+        ["auto", "scroll"].includes(overflowX) ||
+        ["auto", "scroll"].includes(overflowY);
 
     if (!hasExplicitOverflow) {
       continue;
     }
 
     issues.push(
-      issue("error", "overflow.static", "explicit scrolling overflow is not allowed", {
+      issue("error", isRoot ? "overflow.root-static" : "overflow.static", isRoot
+        ? "slide root must not allow visible or scrolling overflow"
+        : "explicit scrolling overflow is not allowed", {
         slideFile,
-        selector: node.getAttribute(SELECTOR_ATTR) ?? undefined,
+        selector: isRoot ? "body" : (getElementId(node) ?? undefined),
       })
     );
   }
@@ -283,6 +259,16 @@ export function loadVerifyDeckSource(deckPath: string): VerifyDeckSourceResult {
 
   const slideFiles: string[] = [];
   const manifestSlidePaths = new Set<string>();
+  if (typeof manifest?.deckTitle !== "string" || !manifest.deckTitle.trim()) {
+    issues.push(
+      issue("error", "structure.missing-deck-title", "manifest.json must include deckTitle")
+    );
+  }
+  if (typeof manifest?.description !== "string" || !manifest.description.trim()) {
+    issues.push(
+      issue("error", "structure.missing-description", "manifest.json must include description")
+    );
+  }
   if (!Array.isArray(manifest?.slides) || !manifest?.slides?.length) {
     issues.push(
       issue("error", "structure.empty-manifest", "manifest.json must include at least one slide")
@@ -295,6 +281,20 @@ export function loadVerifyDeckSource(deckPath: string): VerifyDeckSourceResult {
             "error",
             "structure.invalid-slide-hidden",
             `manifest slide ${index + 1} hidden must be a boolean when present`,
+            {
+              slideIndex: index,
+              ...(typeof slide.file === "string" ? { slideFile: slide.file } : {}),
+            }
+          )
+        );
+      }
+
+      if (typeof slide.title !== "string" || !slide.title.trim()) {
+        issues.push(
+          issue(
+            "error",
+            "structure.missing-slide-title",
+            `manifest slide ${index + 1} is missing title`,
             {
               slideIndex: index,
               ...(typeof slide.file === "string" ? { slideFile: slide.file } : {}),

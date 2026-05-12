@@ -85,7 +85,7 @@ export function wrapHtml(styles, bodyContent) {
     <style>${styles}</style>
   </head>
   <body>
-    <div class="slide-container" data-slide-root="true" data-slide-width="1920" data-slide-height="1080">
+    <div class="slide-container">
       ${bodyContent}
     </div>
   </body>

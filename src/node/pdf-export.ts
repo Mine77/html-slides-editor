@@ -5,12 +5,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { JSDOM, VirtualConsole } from "jsdom";
 import {
-  DEFAULT_SLIDE_HEIGHT,
-  DEFAULT_SLIDE_WIDTH,
   type PdfExportSelection,
-  SLIDE_ROOT_ATTR,
-  parseDimension,
   planPdfExport,
+  readBodyDimensionsFromHtmlSource,
 } from "../core";
 import { type RenderedSlide, getManifestSlides } from "./view-renderer";
 
@@ -131,15 +128,11 @@ function resolveSelectedSlides(slides: RenderedSlide[], selectedFiles: string[])
 }
 
 function readSlideSize(filePath: string): { width: number; height: number } {
-  const dom = new JSDOM(fs.readFileSync(filePath, "utf8"), {
+  const html = fs.readFileSync(filePath, "utf8");
+  const _dom = new JSDOM(html, {
     virtualConsole: new VirtualConsole(),
   });
-  const root = dom.window.document.querySelector<HTMLElement>(`[${SLIDE_ROOT_ATTR}]`);
-
-  return {
-    width: parseDimension(root?.getAttribute("data-slide-width") ?? null, DEFAULT_SLIDE_WIDTH),
-    height: parseDimension(root?.getAttribute("data-slide-height") ?? null, DEFAULT_SLIDE_HEIGHT),
-  };
+  return readBodyDimensionsFromHtmlSource(html);
 }
 
 function createPrintDocument({

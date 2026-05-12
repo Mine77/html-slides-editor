@@ -70,8 +70,8 @@ export function createIdMapForCopiedElement(
     return idMap;
   }
 
-  for (const node of root.querySelectorAll<HTMLElement>("[data-editor-id]")) {
-    const currentId = node.getAttribute("data-editor-id");
+  for (const node of root.querySelectorAll<HTMLElement>(`[${SELECTOR_ATTR}]`)) {
+    const currentId = node.getAttribute(SELECTOR_ATTR);
     if (currentId) {
       idMap[currentId] = `${nextElementId}-${currentId}`;
     }

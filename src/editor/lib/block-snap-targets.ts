@@ -1,5 +1,5 @@
 import type { SlideModel, StageGeometry, StageRect } from "../../core";
-import { elementRectToStageRect } from "../../core";
+import { SELECTOR_ATTR, elementRectToStageRect } from "../../core";
 import {
   MAX_SPACING_TARGET_GAP_PX,
   MIN_SPACING_TARGET_GAP_PX,
@@ -44,14 +44,14 @@ export function collectSnapTargets({
     slideTarget(slideStageRect.y + slideStageRect.height, "end"),
   ];
 
-  const selectedNode = doc.querySelector<HTMLElement>(`[data-editor-id="${selectedElementId}"]`);
+  const selectedNode = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${selectedElementId}"]`);
   const spacingSourceRects: Array<{ elementId: string; rect: StageRect }> = [];
   for (const element of activeSlide.elements) {
     if (element.id === selectedElementId) {
       continue;
     }
 
-    const node = doc.querySelector<HTMLElement>(`[data-editor-id="${element.id}"]`);
+    const node = doc.querySelector<HTMLElement>(`[${SELECTOR_ATTR}="${element.id}"]`);
     if (!node) {
       continue;
     }
