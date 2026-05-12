@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/npm/v/starry-slides" alt="NPM version" />
   </a>
   <a href="https://github.com/StarryKit/starry-slides/actions/workflows/pr-e2e.yml">
-    <img src="https://github.com/StarryKit/starry-slides/actions/workflows/pr-e2e.yml/badge.svg" alt="PR E2E Gate" />
+    <img src="https://github.com/StarryKit/starry-slides/actions/workflows/pr-e2e.yml/badge.svg" alt="E2E Tests" />
   </a>
 </p>
 
