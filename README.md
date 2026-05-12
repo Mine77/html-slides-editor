@@ -18,7 +18,6 @@ The project mainly contains 3 parts:
 
    A skill that teaches your agent to generate HTML files that meet the requirements of [`STARRY-SLIDES-CONTRACT.md`](./skills/starry-slides/references/STARRY-SLIDES-CONTRACT.md).
 
-
 ## Skill Quick Start
 
 Install the Starry Slides skill with the `skills` CLI:
