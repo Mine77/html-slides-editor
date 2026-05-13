@@ -256,7 +256,7 @@ export function buildDeckLocalImageSlide() {
         <section class="asset-copy" data-editable="block">
           <div class="kicker" data-editable="text">Deck asset</div>
           <h1 data-editable="text">Relative image paths resolve from the slide file directory</h1>
-          <p data-editable="text">This slide intentionally loads an SVG from ../assets/hero.svg so iframe base URL handling is covered by the regression deck.</p>
+          <p data-editable="text">This slide intentionally loads an SVG from ../assets/test-image.svg so iframe base URL handling is covered by the regression deck.</p>
         </section>
         <figure class="asset-card" data-editable="block">
           <img
@@ -264,7 +264,7 @@ export function buildDeckLocalImageSlide() {
             data-editable="image"
             data-editable-id="deck-local-image"
             alt="Deck-local regression asset"
-            src="../assets/hero.svg"
+            src="../assets/test-image.svg"
           />
         </figure>
       </div>
