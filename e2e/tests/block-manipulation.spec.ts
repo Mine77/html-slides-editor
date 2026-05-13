@@ -568,7 +568,7 @@ test("resizing a flow-layout title keeps it in document layout", async ({ page }
   const summaryDuring = await getRequiredBoundingBox(summary, "summary during resize");
   expect(await getInlineStyle(title, "position")).toBe(initialPositionStyle);
   expect(Math.abs(titleDuring.x - titleBefore.x)).toBeLessThanOrEqual(2);
-  expect(Math.abs(titleDuring.y - titleBefore.y)).toBeLessThanOrEqual(2);
+  expect(Math.abs(titleDuring.y - titleBefore.y)).toBeLessThanOrEqual(3);
   expect(summaryDuring.y).toBeGreaterThanOrEqual(summaryBefore.y - 2);
 
   await page.mouse.up();

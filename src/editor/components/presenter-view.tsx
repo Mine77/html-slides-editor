@@ -44,7 +44,8 @@ function PresenterView({ slides, startSlideId, onExit }: PresenterViewProps) {
   useEffect(() => {
     const nextIndex = presentationSlides.findIndex((slide) => slide.id === startSlideId);
     setActiveIndex(nextIndex >= 0 ? nextIndex : 0);
-  }, [presentationSlides, startSlideId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presentationSlides]);
 
   useEffect(() => {
     const nextIndex = presentationSlides.findIndex((slide) => slide.id === activeSlide?.id);
