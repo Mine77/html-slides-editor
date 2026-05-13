@@ -25,9 +25,9 @@ render-based verification or preview commands.
 
 Use these remote documents as the source of truth:
 
-- [Starry Slides contract](https://github.com/StarryKit/starry-slides/blob/main/docs/skills-references/STARRY-SLIDES-CONTRACT.md)
-- [Starry Slides CLI usage](https://github.com/StarryKit/starry-slides/blob/main/docs/skills-references/STARRY-SLIDES-CLI-USAGE.md)
-- [Slides discovery interview](https://github.com/StarryKit/starry-slides/blob/main/docs/skills-references/REQUIREMENTS-DISCOVERY-INTERVIEW.md)
+- [Starry Slides contract](https://raw.githubusercontent.com/StarryKit/starry-slides/main/docs/skills-references/STARRY-SLIDES-CONTRACT.md)
+- [Starry Slides CLI usage](https://raw.githubusercontent.com/StarryKit/starry-slides/main/docs/skills-references/STARRY-SLIDES-CLI-USAGE.md)
+- [Slides discovery interview](https://raw.githubusercontent.com/StarryKit/starry-slides/main/docs/skills-references/REQUIREMENTS-DISCOVERY-INTERVIEW.md)
 
 The local skill shell stays intentionally thin. High-change workflow guidance,
 contract details, and CLI usage notes live in those repository documents.
@@ -37,8 +37,8 @@ contract details, and CLI usage notes live in those repository documents.
 1. Make sure the `starry-slides` CLI is installed.
 2. Load the remote contract, CLI usage, and discovery references above before
    generating or editing deck files.
-3. Understand the user's slide context before generating anything. Use [REQUIREMENTS-DISCOVERY-INTERVIEW.md](references/REQUIREMENTS-DISCOVERY-INTERVIEW.md) to gather missing context, ask only the highest-signal questions, and consolidate the result into a brief before you generate.
-4. Generate or edit the deck package so it satisfies [STARRY-SLIDES-CONTRACT.md](references/STARRY-SLIDES-CONTRACT.md).
+3. Understand the user's slide context before generating anything. Use the [discovery interview](https://raw.githubusercontent.com/StarryKit/starry-slides/main/docs/skills-references/REQUIREMENTS-DISCOVERY-INTERVIEW.md) to gather missing context, ask only the highest-signal questions, and consolidate the result into a brief before you generate.
+4. Generate or edit the deck package so it satisfies the [Starry Slides contract](https://raw.githubusercontent.com/StarryKit/starry-slides/main/docs/skills-references/STARRY-SLIDES-CONTRACT.md).
 5. Verify the deck with `starry-slides verify <deck>`. If it fails, fix the issues and retry until it passes.
 6. **MUST DO:** After verification passes, run `starry-slides open <deck>`. This is **not optional** — the user expects to see their deck opened automatically.
 

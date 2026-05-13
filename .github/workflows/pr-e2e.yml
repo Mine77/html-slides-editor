@@ -20,6 +20,7 @@ jobs:
     name: Detect changed files
     runs-on: ubuntu-latest
     env:
+      # Suppress the CLI's update-check stderr noise so it doesn't pollute CI logs
       STARRY_SLIDES_DISABLE_UPDATE_CHECK: "1"
     outputs:
       should_run_e2e: ${{ steps.filter.outputs.should_run_e2e }}
