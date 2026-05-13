@@ -22,7 +22,11 @@ test("plain click selects text only, and double click enters editing", async ({ 
 
   await editableHeading.dblclick();
 
-  await expect(floatingToolbarAnchor.getByText("Select element to edit")).toBeVisible();
+  // During text editing the toolbar anchor stays visible (layout stability)
+  // but shows an empty spacer — "Select element to edit" only appears when
+  // nothing is selected (toolbarKey === null), not during suppressed states.
+  await expect(floatingToolbarAnchor).toBeVisible();
+  await expect(floatingToolbarAnchor.getByText("Select element to edit")).toBeHidden();
   await expect(selectionOverlay).toBeHidden();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 });
