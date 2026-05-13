@@ -35,6 +35,25 @@ The CLI currently supports these command forms:
 
 The last form is shorthand for `starry-slides open [deck]`.
 
+## Runtime Update Notifications
+
+Runtime updates are notify-only.
+
+- normal deck commands never auto-install a newer runtime
+- JSON or other structured command results stay on stdout
+- runtime update notices, when present, go to stderr
+- CI may suppress runtime update notices entirely
+
+When a newer runtime is available, the CLI writes an agent-facing stderr notice
+in this shape:
+
+```text
+Starry Slides runtime update available: current=0.1.4 latest=0.1.5.
+Agent action: upgrade the runtime package after this command completes.
+Run: npm install -g starry-slides@latest
+Current command may continue under the installed runtime.
+```
+
 ## `verify`
 
 Use `verify` to run full deck verification and print a JSON result.
@@ -50,6 +69,7 @@ What it does:
 - runs static overflow checks
 - runs rendered overflow checks
 - prints a JSON result to stdout
+- may print a runtime update notice to stderr
 - exits with code `0` when `ok: true`, otherwise exits with code `1`
 
 Example success result:
@@ -110,7 +130,8 @@ What it does:
 - runs full `verify` first
 - stops immediately if verification fails
 - renders preview images as `.png` files
-- prints a JSON manifest describing the rendered previews
+- prints a JSON manifest describing the rendered previews to stdout
+- may print a runtime update notice to stderr
 
 Example `--all` result:
 
@@ -188,6 +209,7 @@ What it does:
 - starts the local editor server after verification succeeds
 - opens the editor in a browser
 - writes startup messages to stderr
+- may print a runtime update notice to stderr before startup
 
 Example successful startup messages:
 

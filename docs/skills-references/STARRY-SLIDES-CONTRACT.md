@@ -101,8 +101,6 @@ Each slide HTML file uses its `body` element as the slide root.
 - Root overflow is forbidden. The `body` must not allow visible or scrolling
   overflow and must not produce scroll overflow during normal rendering.
 
-
-
 ### 2. Editable Element Attributes
 
 Every user-editable node must declare one supported editable type:
@@ -112,12 +110,12 @@ layers should stay unmarked.
 
 Editable attributes and values:
 
-| Attribute        | Description                                                                                                                                                                                        |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data-editable`  | Marks a node as user-editable. If `data-editable` is omitted, the node is treated as non-editable. The validity table below defines which values are currently supported and which values are not. |
-| `data-editable-id` | Optional stable identity for an editable node. Runtime normalization may derive deterministic ids when omitted.                                                                                |
-| `data-allow-overflow` | Bare optional marker that allows intentional overflow on a non-root element. This does not apply to the slide root, because root overflow is forbidden.                                     |
-| `data-role`      | Provides an optional semantic hint such as `title`, `subtitle`, `body`, `caption`, `metric`, or `callout`. No semantic role is assumed when omitted.                                               |
+| Attribute             | Description                                                                                                                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-editable`       | Marks a node as user-editable. If `data-editable` is omitted, the node is treated as non-editable. The validity table below defines which values are currently supported and which values are not. |
+| `data-editable-id`    | Optional stable identity for an editable node. Runtime normalization may derive deterministic ids when omitted.                                                                                  |
+| `data-allow-overflow` | Bare optional marker that allows intentional overflow on a non-root element. This does not apply to the slide root, because root overflow is forbidden.                                         |
+| `data-role`           | Provides an optional semantic hint such as `title`, `subtitle`, `body`, `caption`, `metric`, or `callout`. No semantic role is assumed when omitted.                                            |
 
 Editable type validity:
 

@@ -6,6 +6,9 @@
   <a href="https://www.npmjs.com/package/starry-slides">
     <img src="https://img.shields.io/npm/v/starry-slides" alt="NPM version" />
   </a>
+  <a href="https://github.com/StarryKit/starry-slides/actions/workflows/pr-e2e.yml">
+    <img src="https://github.com/StarryKit/starry-slides/actions/workflows/pr-e2e.yml/badge.svg" alt="E2E Tests" />
+  </a>
 </p>
 
 <p align="center">
@@ -52,6 +55,7 @@ Starry Slides is a slide/presentation editor that gives your agent ability to ge
 ```bash
 npx skills add StarryKit/starry-slides --skill starry-slides
 ```
+Or just copy the [SKILL.md](skills/starry-slides/SKILL.md)
 
 ## Skill Usage
 
@@ -60,7 +64,7 @@ npx skills add StarryKit/starry-slides --skill starry-slides
 The `/starry-slides` skill has built-in interview workflow to collect your requirements.
 
 ```text
-/starry-slides to create a slide deck for my presentation.
+/starry-slides create a slide deck for my presentation.
 ```
 
 ### Create a more specific deck
@@ -74,10 +78,13 @@ Requirements:
 3. Scenario: I need to present it at a conference for a live audience
 ```
 
-### Create with a specific template/style you like:
+### Use templates you like:
 
 ```text
-/starry-slides Use the visual style of the "Split Pastel" deck from this frontend-slides repository as reference and create an 8-slide deck explaining how large language models work: https://github.com/zarazhangrui/frontend-slides
+/starry-slides create an 8-slide deck explaining how large language models work.
+
+Use the visual style of the "Split Pastel" deck from this repository as reference
+https://github.com/zarazhangrui/frontend-slides
 ```
 
 ### Revise an existing deck

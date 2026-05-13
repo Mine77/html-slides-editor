@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
+import packageJson from "../../package.json";
 import {
   blockElement,
   createTempDeck,
@@ -28,7 +30,11 @@ function runCli(args: string[], options: { env?: NodeJS.ProcessEnv } = {}) {
   return spawnSync("pnpm", ["exec", "tsx", "src/cli/index.ts", ...args], {
     cwd: repo,
     encoding: "utf8",
-    env: { ...process.env, ...options.env },
+    env: {
+      ...process.env,
+      STARRY_SLIDES_DISABLE_UPDATE_CHECK: "1",
+      ...options.env,
+    },
   });
 }
 
@@ -36,11 +42,22 @@ function runPackageScript(args: string[]) {
   return spawnSync("pnpm", ["--silent", "starry-slides", ...args], {
     cwd: repo,
     encoding: "utf8",
+    env: {
+      ...process.env,
+      STARRY_SLIDES_DISABLE_UPDATE_CHECK: "1",
+    },
   });
 }
 
 function parseJson(stdout: string) {
   return JSON.parse(stdout) as Record<string, unknown>;
+}
+
+function holdPort(port: number): Promise<net.Server> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.listen(port, "127.0.0.1", () => resolve(server));
+  });
 }
 
 afterEach(() => {
@@ -211,7 +228,9 @@ describe("source starry-slides cli", () => {
     expect(runCli(["view", deck]).stderr).toContain(
       "view requires either --slide <manifest-file> or --all"
     );
-    expect(runCli(["view", deck, "--static", "--all"]).stderr).toContain("unknown option '--static'");
+    expect(runCli(["view", deck, "--static", "--all"]).stderr).toContain(
+      "unknown option '--static'"
+    );
     expect(runCli(["view", deck, "--slide"]).stderr).toContain(
       "option '--slide <manifest-file>' argument missing"
     );
@@ -320,9 +339,70 @@ describe("source starry-slides cli", () => {
       expect(result.status).toBe(0);
       expect(result.stderr).toBe("");
       expect(result.stdout).toContain("Usage: starry-slides [options] [command] [deck]");
-      expect(result.stdout).toContain("open [deck]");
+      expect(result.stdout).toContain("open [options] [deck]");
       expect(result.stdout).toContain("verify [deck]");
       expect(result.stdout).toContain("view [options] [deck]");
     }
+  });
+
+  test("verify keeps stdout JSON-only while writing runtime update notices to stderr", () => {
+    const deck = writeValidDeck();
+    const latestVersion = "9.9.9";
+
+    const result = runCli(["verify", deck], {
+      env: {
+        STARRY_SLIDES_DISABLE_UPDATE_CHECK: "0",
+        STARRY_SLIDES_TEST_LATEST_VERSION: latestVersion,
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(parseJson(result.stdout)).toMatchObject({ ok: true, mode: "complete" });
+    expect(result.stderr).toContain(
+      `Starry Slides runtime update available: current=${packageJson.version} latest=${latestVersion}.`
+    );
+    expect(result.stderr).toContain(
+      "Agent action: upgrade the runtime package after this command completes."
+    );
+    expect(result.stderr).toContain("Run: npm install -g starry-slides@latest");
+    expect(result.stderr).toContain("Current command may continue under the installed runtime.");
+  });
+
+  test("open --port uses the specified port when available", () => {
+    const deck = writeValidDeck();
+
+    const result = runCli(["open", deck, "--port", "5280"], {
+      env: { STARRY_SLIDES_TEST_STUB_OPEN: "1" },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("http://127.0.0.1:5280/");
+  });
+
+  test("open --port auto-falls-back when the requested port is occupied", async () => {
+    const deck = writeValidDeck();
+    const blocker = await holdPort(5290);
+
+    try {
+      const result = runCli(["open", deck, "--port", "5290"], {
+        env: { STARRY_SLIDES_TEST_STUB_OPEN: "1" },
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toContain("Opening Starry Slides at http://127.0.0.1:5291/");
+    } finally {
+      await new Promise<void>((resolve) => blocker.close(() => resolve()));
+    }
+  });
+
+  test("open defaults to port 5173 when no --port is specified", () => {
+    const deck = writeValidDeck();
+
+    const result = runCli(["open", deck], {
+      env: { STARRY_SLIDES_TEST_STUB_OPEN: "1", PORT: "5173" },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain("http://127.0.0.1:5173/");
   });
 });
