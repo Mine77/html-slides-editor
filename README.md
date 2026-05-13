@@ -1,3 +1,29 @@
+<<<<<<< codex/0028-adr
+![starry kit banner](assets/readme-banner.png)
+
+# Starry Slides
+
+Starry Slides is an agentic editor for slides and presentations using HTML as the source file.
+
+The project mainly contains 3 parts:
+
+1. `starry-slides` CLI
+
+   Tools for agents to preview, verify, and open generated slide HTML files.
+
+2. Starry Slide Editor
+
+   A WYSIWYG editor for creating and editing slide HTML files.
+
+3. `/starry-slides` Skill
+
+   A thin local skill shell that points agents to the authoritative Starry
+   Slides references under [`docs/skills-references/`](./docs/skills-references/).
+
+## Skill Quick Start
+
+Install the Starry Slides skill with the `skills` CLI:
+=======
 <p align="center">
   <img src="./src/editor/assets/logo-starry-slides.png" alt="Starry Slides" width="420" />
 </p>
@@ -51,6 +77,7 @@ Starry Slides is a slide/presentation editor that gives your agent ability to ge
 </table>
 
 ## Install Skill to your Agent
+>>>>>>> main
 
 ```bash
 npx skills add StarryKit/starry-slides --skill starry-slides
@@ -85,6 +112,26 @@ Requirements:
 
 ### Revise an existing deck
 
+<<<<<<< codex/0028-adr
+Runtime upgrades are notify-only. CLI commands never auto-install a newer
+version; update notices, when present, are written to `stderr` so structured
+`stdout` stays parseable.
+
+
+## Documentation
+
+- [Roadmap](./docs/roadmap/README.md): roadmap of progress and future plans 
+- [Development guide](./docs/development.md): repo layout, local commands, tests,
+  and implementation boundaries.
+- [Contributing guide](./docs/contributing.md): expectations for changes,
+  verification, and review.
+- [Skill references](./docs/skills-references/): authoritative contract, CLI usage, and
+  discovery documents used by the installed skill.
+- [Slide Contract guide](./docs/skills-references/STARRY-SLIDES-CONTRACT.md): deck package shape and
+  required HTML attributes.
+- [Repository context](./CONTEXT.md): repo rules, boundaries, testing
+  expectations, and shared terminology.
+=======
 ```text
 /starry-slides to update this deck so it feels more premium and modern, shorten dense slides, and preserve all content accuracy.
 ```
@@ -97,8 +144,13 @@ Requirements:
 - [Contributing guide](./docs/contributing.md): expectations for changes, verification, and review.
 - [Slide Contract guide](./skills/starry-slides/references/STARRY-SLIDES-CONTRACT.md): deck package shape and required HTML attributes.
 - [Repository context](./CONTEXT.md): repo rules, boundaries, testing expectations, and shared terminology.
+>>>>>>> main
 - [Architecture decisions](./docs/adr/): accepted ADRs and ADR template.
 
 ## License
 
+<<<<<<< codex/0028-adr
+Starry Slides is licensed under [MIT License](./LICENSE).
+=======
 Starry Slides is licensed under the [MIT License](./LICENSE).
+>>>>>>> main

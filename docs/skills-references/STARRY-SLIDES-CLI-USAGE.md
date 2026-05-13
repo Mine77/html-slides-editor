@@ -30,10 +30,29 @@ The CLI currently supports these command forms:
 - `starry-slides verify [deck]`
 - `starry-slides view [deck] --all`
 - `starry-slides view [deck] --slide <manifest-file>`
-- `starry-slides open [deck] [--port <number>]`
-- `starry-slides [deck] [--port <number>]`
+- `starry-slides open [deck]`
+- `starry-slides [deck]`
 
 The last form is shorthand for `starry-slides open [deck]`.
+
+## Runtime Update Notifications
+
+Runtime updates are notify-only.
+
+- normal deck commands never auto-install a newer runtime
+- JSON or other structured command results stay on stdout
+- runtime update notices, when present, go to stderr
+- CI may suppress runtime update notices entirely
+
+When a newer runtime is available, the CLI writes an agent-facing stderr notice
+in this shape:
+
+```text
+Starry Slides runtime update available: current=0.1.4 latest=0.1.5.
+Agent action: upgrade the runtime package after this command completes.
+Run: npm install -g starry-slides@latest
+Current command may continue under the installed runtime.
+```
 
 ## `verify`
 
@@ -50,6 +69,7 @@ What it does:
 - runs static overflow checks
 - runs rendered overflow checks
 - prints a JSON result to stdout
+- may print a runtime update notice to stderr
 - exits with code `0` when `ok: true`, otherwise exits with code `1`
 
 Example success result:
@@ -110,7 +130,8 @@ What it does:
 - runs full `verify` first
 - stops immediately if verification fails
 - renders preview images as `.png` files
-- prints a JSON manifest describing the rendered previews
+- prints a JSON manifest describing the rendered previews to stdout
+- may print a runtime update notice to stderr
 
 Example `--all` result:
 
@@ -188,32 +209,12 @@ What it does:
 - starts the local editor server after verification succeeds
 - opens the editor in a browser
 - writes startup messages to stderr
-
-### `--port` option
-
-By default the editor starts on port 5173. Use `--port` to specify a different
-port:
-
-```bash
-starry-slides open <deck> --port 5180
-```
-
-If the requested port is already in use, the CLI automatically tries the next
-available port (up to 100 attempts). This lets you run multiple editors
-side-by-side without port conflicts:
-
-```bash
-# Terminal 1
-starry-slides open my-deck --port 5180
-
-# Terminal 2 — auto-falls-back to 5181 if 5180 is taken
-starry-slides open another-deck --port 5180
-```
+- may print a runtime update notice to stderr before startup
 
 Example successful startup messages:
 
 ```text
-Opening Starry Slides at http://127.0.0.1:5180/
+Opening Starry Slides at http://127.0.0.1:5173/
 Press Ctrl+C to stop the editor server.
 ```
 
@@ -246,10 +247,4 @@ This behaves the same as:
 
 ```bash
 starry-slides open <deck>
-```
-
-The `--port` option works in this shorthand form as well:
-
-```bash
-starry-slides <deck> --port 5180
 ```
