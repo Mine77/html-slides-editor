@@ -84,6 +84,7 @@ interface StageCanvasProps {
   onSelectionOverlayDoubleClick: (event: ReactMouseEvent<HTMLDivElement>) => void;
   onBackgroundClick: () => void;
   onStyleChange: (propertyName: string, nextValue: string) => void;
+  onStyleChanges: (changes: Array<{ propertyName: string; nextValue: string }>) => void;
   onStylePreview: (propertyName: string, nextValue: string | null) => void;
   onAttributeChange: (attributeName: string, nextValue: string) => void;
   onAlignToSlide: (action: string) => void;
@@ -133,6 +134,7 @@ function StageCanvas({
   onSelectionOverlayDoubleClick,
   onBackgroundClick,
   onStyleChange,
+  onStyleChanges,
   onStylePreview,
   onAttributeChange,
   onAlignToSlide,
@@ -189,6 +191,7 @@ function StageCanvas({
             isSelectedElementLocked={isSelectedElementLocked}
             attributeValues={attributeValues}
             onStyleChange={onStyleChange}
+            onStyleChanges={onStyleChanges}
             onStylePreview={onStylePreview}
             onAttributeChange={onAttributeChange}
             onAlignToSlide={onAlignToSlide}

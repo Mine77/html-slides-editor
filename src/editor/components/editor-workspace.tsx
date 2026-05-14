@@ -57,6 +57,7 @@ interface EditorWorkspaceProps {
   onPresent: () => void;
   onExitPresenting: () => void;
   onSelectSlide: (slideId: string) => void;
+  onSidebarSlideFocusChange: (isFocused: boolean) => void;
   onAddSlide: () => void;
   onAddSlideAbove: (slideId: string) => void;
   onAddSlideBelow: (slideId: string) => void;
@@ -65,6 +66,7 @@ interface EditorWorkspaceProps {
   onToggleSlideHidden: (slideId: string) => void;
   onRenameSlide: (slideId: string, nextTitle: string) => void;
   onReorderSlide: (slideId: string, targetIndex: number) => void;
+  onSidebarFocusChange?: (focused: boolean) => void;
   onSelectionOverlayMouseDown: (event: ReactMouseEvent<HTMLDivElement>) => void;
   onSelectionOverlayMouseUp: (event: ReactMouseEvent<HTMLDivElement>) => void;
   onSelectionOverlayMouseMove: (event: ReactMouseEvent<HTMLDivElement>) => void;
@@ -82,6 +84,7 @@ interface EditorWorkspaceProps {
   onSelectionOverlayDoubleClick: (event: ReactMouseEvent<HTMLDivElement>) => void;
   onBackgroundClick: () => void;
   onStyleChange: (propertyName: string, nextValue: string) => void;
+  onStyleChanges: (changes: Array<{ propertyName: string; nextValue: string }>) => void;
   onStylePreview: (propertyName: string, nextValue: string | null) => void;
   onAttributeChange: (attributeName: string, nextValue: string) => void;
   onAlignToSlide: (action: string) => void;
@@ -133,6 +136,7 @@ function EditorWorkspace({
   onPresent,
   onExitPresenting,
   onSelectSlide,
+  onSidebarSlideFocusChange,
   onAddSlide,
   onAddSlideAbove,
   onAddSlideBelow,
@@ -141,6 +145,7 @@ function EditorWorkspace({
   onToggleSlideHidden,
   onRenameSlide,
   onReorderSlide,
+  onSidebarFocusChange,
   onSelectionOverlayMouseDown,
   onSelectionOverlayMouseUp,
   onSelectionOverlayMouseMove,
@@ -152,6 +157,7 @@ function EditorWorkspace({
   onSelectionOverlayDoubleClick,
   onBackgroundClick,
   onStyleChange,
+  onStyleChanges,
   onStylePreview,
   onAttributeChange,
   onAlignToSlide,
@@ -194,6 +200,7 @@ function EditorWorkspace({
               slideCount={slides.length}
               thumbnails={thumbnails}
               onSelectSlide={onSelectSlide}
+              onSlideFocusChange={onSidebarSlideFocusChange}
               onAdd={onAddSlide}
               onAddSlideAbove={onAddSlideAbove}
               onAddSlideBelow={onAddSlideBelow}
@@ -202,6 +209,7 @@ function EditorWorkspace({
               onToggleHidden={onToggleSlideHidden}
               onRename={onRenameSlide}
               onReorder={onReorderSlide}
+              onSidebarFocusChange={onSidebarFocusChange}
             />
 
             <main className="flex min-h-0 min-w-0 flex-auto overflow-visible max-[1200px]:block">
@@ -241,6 +249,7 @@ function EditorWorkspace({
                 onSelectionOverlayDoubleClick={onSelectionOverlayDoubleClick}
                 onBackgroundClick={onBackgroundClick}
                 onStyleChange={onStyleChange}
+                onStyleChanges={onStyleChanges}
                 onStylePreview={onStylePreview}
                 onAttributeChange={onAttributeChange}
                 onAlignToSlide={onAlignToSlide}
