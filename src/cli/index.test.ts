@@ -417,9 +417,9 @@ describe("source starry-slides cli", () => {
       expect(result.status).toBe(0);
       expect(result.stderr).toBe("");
       expect(result.stdout).toContain(
-        "Usage: starry-slides [options] [command] [deck]",
+        "Usage: starry-slides [options] [command] <deck>",
       );
-      expect(result.stdout).toContain("open [options] [deck]");
+      expect(result.stdout).toContain("open [options] <deck>");
       expect(result.stdout).toContain("verify [deck]");
       expect(result.stdout).toContain("view [options] [deck]");
     }

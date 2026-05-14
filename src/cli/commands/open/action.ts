@@ -8,7 +8,7 @@ function writeJson(value: unknown) {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
-export async function runOpen(deckPathArg: string | undefined, preferredPort?: number) {
+export async function runOpen(deckPathArg: string, preferredPort?: number) {
   const deckPath = resolveDeckPath(deckPathArg);
   const result = await runFullVerify(deckPath);
   if (!result.ok) {
