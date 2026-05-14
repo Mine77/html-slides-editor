@@ -132,7 +132,7 @@ const slides = [
     html: buildCropImageSlide(),
   },
   {
-    file: "slides/17-deck-local-image.html",
+    file: "17-deck-local-image.html",
     title: "Deck-local image fixture",
     html: buildDeckLocalImageSlide(),
   },
