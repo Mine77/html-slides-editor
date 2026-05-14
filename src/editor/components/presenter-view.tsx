@@ -251,9 +251,21 @@ function PresenterView({ slides, startSlideId, onExit }: PresenterViewProps) {
       "[data-testid='presenter-slide-iframe']"
     );
     if (iframe) {
-      iframe.srcdoc = injectBaseTag(activeSlide.htmlSource, activeSlide.sourceFile);
+      const keydownForwarder = `<script>window.addEventListener("keydown",function(e){window.parent.postMessage({t:"pk",k:e.key},"*")})</script>`;
+      iframe.srcdoc = injectBaseTag(activeSlide.htmlSource, activeSlide.sourceFile) + keydownForwarder;
     }
   }, [activeSlide]);
+
+  // Forward keyboard events from the iframe to the parent handler
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.t === "pk") {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: event.data.k, bubbles: true }));
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   if (!activeSlide) {
     return null;
