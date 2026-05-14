@@ -1,12 +1,11 @@
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
+import type { ResizeHandleCorner, ResizeHandlePosition } from "../lib/block-snap-types";
 import { SNAP_GUIDE_COLOR } from "../lib/block-snap-constants";
 
 interface Point {
   x: number;
   y: number;
 }
-
-type ResizeHandleCorner = "top-left" | "top-right" | "bottom-right" | "bottom-left";
 
 interface Rect {
   x: number;
@@ -26,25 +25,29 @@ interface BlockManipulationOverlayProps {
   selectionBounds: Rect;
   snapGuides: SnapGuide[];
   resizeHandles: Array<{
+    position: ResizeHandlePosition;
+    x: number;
+    y: number;
+  }>;
+  rotationZones: Array<{
     corner: ResizeHandleCorner;
     x: number;
     y: number;
   }>;
-  rotationHandle: Point;
   onResizeHandleMouseDown: (
-    corner: ResizeHandleCorner,
+    position: ResizeHandlePosition,
     event: ReactMouseEvent<HTMLButtonElement>
   ) => void;
-  onRotateHandleMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  onCornerRotationZoneMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 }
 
 function BlockManipulationOverlay({
   selectionBounds: _selectionBounds,
   snapGuides,
   resizeHandles,
-  rotationHandle,
+  rotationZones,
   onResizeHandleMouseDown,
-  onRotateHandleMouseDown,
+  onCornerRotationZoneMouseDown,
 }: BlockManipulationOverlayProps) {
   const handleClassName =
     "absolute z-[5] size-[13px] -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white bg-foreground shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-colors before:absolute before:inset-[3px] before:rounded-full before:bg-white/90 hover:bg-foreground/80";
@@ -135,37 +138,52 @@ function BlockManipulationOverlay({
           </div>
         );
       })}
-      {resizeHandles.length ? (
+      {rotationZones.map((zone) => (
         <button
+          key={zone.corner}
           type="button"
-          className={`${handleClassName} cursor-alias`}
-          data-testid="block-rotate-handle"
-          aria-label="Rotate selected element"
+          className="absolute z-[4] size-[50px] -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full bg-transparent"
+          data-testid={`block-rotation-zone-${zone.corner}`}
+          aria-label={`Rotate selected element from ${zone.corner}`}
           style={{
-            left: `${rotationHandle.x}px`,
-            top: `${rotationHandle.y}px`,
+            left: `${zone.x}px`,
+            top: `${zone.y}px`,
           }}
-          onMouseDown={onRotateHandleMouseDown}
+          onMouseDown={onCornerRotationZoneMouseDown}
         />
-      ) : null}
+      ))}
       {resizeHandles.map((handle) => (
         <button
-          key={handle.corner}
+          key={handle.position}
           type="button"
-          className={`${handleClassName} cursor-nwse-resize`}
-          data-testid={`block-resize-handle-${handle.corner}`}
-          aria-label={`Resize selected element from ${handle.corner}`}
+          className={`${handleClassName} ${getResizeHandleCursorClassName(handle.position)}`}
+          data-testid={`block-resize-handle-${handle.position}`}
+          aria-label={`Resize selected element from ${handle.position}`}
           style={{
             left: `${handle.x}px`,
             top: `${handle.y}px`,
           }}
           onMouseDown={(event) => {
-            onResizeHandleMouseDown(handle.corner, event);
+            onResizeHandleMouseDown(handle.position, event);
           }}
         />
       ))}
     </>
   );
+}
+
+function getResizeHandleCursorClassName(position: ResizeHandlePosition) {
+  if (position === "top-center" || position === "bottom-center") {
+    return "cursor-ns-resize";
+  }
+
+  if (position === "left-center" || position === "right-center") {
+    return "cursor-ew-resize";
+  }
+
+  return position === "top-left" || position === "bottom-right"
+    ? "cursor-nwse-resize"
+    : "cursor-nesw-resize";
 }
 
 export { BlockManipulationOverlay };
