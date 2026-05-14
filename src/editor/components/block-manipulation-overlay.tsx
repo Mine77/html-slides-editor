@@ -42,7 +42,7 @@ interface BlockManipulationOverlayProps {
 }
 
 const ROTATION_CURSOR_SVG = encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M17 7 A7 7 0 1 1 7.5 16.5" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"/><path d="M7.5 16.5 L6 15.5 L9 18.5 Z" fill="black"/><path d="M17 7 A7 7 0 1 1 7.5 16.5" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round"/><path d="M7.5 16.5 L6 15.5 L9 18.5 Z" fill="white"/></svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M17 7 A7 7 0 1 1 7.5 16.5" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round"/><path d="M4.5 18.5 L7.5 16.5 L8.5 18.5 Z" fill="black"/><path d="M17 7 A7 7 0 1 1 7.5 16.5" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round"/><path d="M4.5 18.5 L7.5 16.5 L8.5 18.5 Z" fill="white"/></svg>`
 );
 
 function BlockManipulationOverlay({
