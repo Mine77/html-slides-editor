@@ -41,6 +41,10 @@ interface BlockManipulationOverlayProps {
   onCornerRotationZoneMouseDown: (event: ReactMouseEvent<HTMLButtonElement>) => void;
 }
 
+const ROTATION_CURSOR_SVG = encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="black" stroke-width="3" stroke-dasharray="30 50" stroke-dashoffset="10" stroke-linecap="round"/><path d="M20 12a8 8 0 0 0-4-6.93" fill="none" stroke="black" stroke-width="3" stroke-linecap="round"/><circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="30 50" stroke-dashoffset="10" stroke-linecap="round"/><path d="M20 12a8 8 0 0 0-4-6.93" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>`
+);
+
 function BlockManipulationOverlay({
   selectionBounds: _selectionBounds,
   snapGuides,
@@ -50,7 +54,7 @@ function BlockManipulationOverlay({
   onCornerRotationZoneMouseDown,
 }: BlockManipulationOverlayProps) {
   const handleClassName =
-    "absolute z-[5] size-[13px] -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full border border-white bg-foreground shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-colors before:absolute before:inset-[3px] before:rounded-full before:bg-white/90 hover:bg-foreground/80";
+    "absolute z-[5] size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-foreground shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-colors before:absolute before:inset-[3px] before:rounded-full before:bg-white/90 hover:bg-foreground/80";
 
   return (
     <>
@@ -142,12 +146,13 @@ function BlockManipulationOverlay({
         <button
           key={zone.corner}
           type="button"
-          className="absolute z-[4] size-[50px] -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full bg-transparent"
+          className="absolute z-[4] size-[50px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-transparent"
           data-testid={`block-rotation-zone-${zone.corner}`}
           aria-label={`Rotate selected element from ${zone.corner}`}
           style={{
             left: `${zone.x}px`,
             top: `${zone.y}px`,
+            cursor: `url("data:image/svg+xml,${ROTATION_CURSOR_SVG}") 12 12, grab`,
           }}
           onMouseDown={onCornerRotationZoneMouseDown}
         />
