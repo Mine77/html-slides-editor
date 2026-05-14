@@ -239,9 +239,9 @@ function PresenterView({ slides, startSlideId, onExit }: PresenterViewProps) {
       }
     };
 
-    window.addEventListener("keydown", onKeyDown, { capture: true });
+    window.addEventListener("keydown", onKeyDown);
     onKeyDownRef.current = onKeyDown;
-    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [clearInk, onExit, presentationSlides.length, showToolbar, tool]);
 
   useEffect(() => {
