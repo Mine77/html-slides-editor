@@ -1,7 +1,7 @@
 import { type Locator, expect, test } from "@playwright/test";
 import {
   MODIFIER,
-  clickFloatingToolbarButton,
+  clickToolbarButton,
   coverFrame,
   createGroupFromSnapCards,
   expectInlineStyle,
@@ -14,12 +14,12 @@ import {
   selectFontFamilyOption,
 } from "./helpers";
 
-test("full floating editor applies typography and paragraph controls", async ({ page }) => {
+test("full toolbar applies typography and paragraph controls", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await editableHeading.click();
   await expect(toolbar.getByLabel("Font", { exact: true })).toBeVisible();
@@ -82,7 +82,7 @@ test("line height slider reflects computed and committed line-height state", asy
 
   const frame = coverFrame(page);
   const title = frame.locator('[data-editable-id="text-2"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await title.click();
   await toolbar.getByRole("button", { name: "Line height", exact: true }).click();
@@ -117,12 +117,12 @@ async function expectToolbarButtonOrder(toolbar: Locator, labels: string[]) {
   }
 }
 
-test("full floating editor applies color and border controls", async ({ page }) => {
+test("full toolbar applies color and border controls", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await editableHeading.evaluate((node) => {
     (node as HTMLElement).style.color = "rgba(59, 130, 246, 0.5)";
@@ -218,7 +218,7 @@ test("full floating editor applies color and border controls", async ({ page }) 
     "linear-gradient(220deg, rgb(16, 185, 129), rgb(236, 72, 153))"
   );
 
-  await toolbar.getByTestId("floating-border-trigger").click();
+  await toolbar.getByTestId("toolbar-border-trigger").click();
   await expect(page.getByRole("tab", { name: "Style", exact: true })).toHaveAttribute(
     "data-state",
     "active"
@@ -237,7 +237,7 @@ test("full floating editor applies color and border controls", async ({ page }) 
   await expect(strokeWeight).toBeVisible();
   await strokeWeight.fill("4");
   await expectInlineStyle(editableHeading, "border-width", "4px");
-  const borderTriggerLine = toolbar.getByTestId("floating-border-trigger-line");
+  const borderTriggerLine = toolbar.getByTestId("toolbar-border-trigger-line");
   await expect(borderTriggerLine).toHaveCSS("border-top-width", "4px");
 
   const cornerRadius = page.getByLabel("Corner radius", { exact: true });
@@ -259,12 +259,12 @@ test("full floating editor applies color and border controls", async ({ page }) 
   await expect(borderTriggerLine).toHaveCSS("border-top-color", "rgb(59, 130, 246)");
 });
 
-test("floating border menu reflects selected element styles on first open", async ({ page }) => {
+test("toolbar border menu reflects selected element styles on first open", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await editableHeading.click();
   await editableHeading.evaluate((node) => {
@@ -276,18 +276,18 @@ test("floating border menu reflects selected element styles on first open", asyn
     node.style.borderRadius = "22px";
     node.style.boxShadow = "0 12px 28px rgba(15, 23, 42, 0.17)";
   });
-  await toolbar.getByTestId("floating-border-trigger").click();
+  await toolbar.getByTestId("toolbar-border-trigger").click();
 
   const noneBorder = page.getByRole("button", { name: "None", exact: true });
   const dashedBorder = page.getByRole("button", { name: "Dashed", exact: true });
-  await expect(noneBorder.locator('[data-testid="floating-toolbar-option-preview"]')).toHaveCount(
+  await expect(noneBorder.locator('[data-testid="toolbar-option-preview"]')).toHaveCount(
     0
   );
   await expect(dashedBorder).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Stroke weight", { exact: true })).toHaveValue("14");
   await expect(page.getByLabel("Corner radius", { exact: true })).toHaveValue("22");
   await expect(page.getByLabel("Shadow", { exact: true })).toHaveValue("12");
-  const borderTriggerLine = toolbar.getByTestId("floating-border-trigger-line");
+  const borderTriggerLine = toolbar.getByTestId("toolbar-border-trigger-line");
   await expect(borderTriggerLine).toHaveCSS("border-top-style", "dashed");
   await expect(borderTriggerLine).toHaveCSS("border-top-width", "5px");
   await expect(borderTriggerLine).toHaveCSS("border-top-color", "rgb(197, 157, 157)");
@@ -300,12 +300,12 @@ async function getColorAlpha(locator: Locator) {
 }
 
 async function getBackgroundIconStyle(toolbar: Locator) {
-  return toolbar.getByTestId("floating-toolbar-background-color-icon").evaluate((node) => {
+  return toolbar.getByTestId("toolbar-background-color-icon").evaluate((node) => {
     return (node as HTMLElement).style.background;
   });
 }
 
-test("image floating toolbar hides text and color tools and supports crop handles", async ({
+test("image toolbar hides text and color tools and supports crop handles", async ({
   page,
 }) => {
   await gotoEditor(page);
@@ -313,7 +313,7 @@ test("image floating toolbar hides text and color tools and supports crop handle
 
   const frame = coverFrame(page);
   const editableImage = frame.locator('[data-editable-id="crop-image"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await editableImage.click();
   await expect(toolbar).toBeVisible();
@@ -438,14 +438,14 @@ function parseInsetPercentages(value: string) {
   };
 }
 
-test("floating toolbar font family select changes the selected text font", async ({ page }) => {
+test("toolbar font family select changes the selected text font", async ({ page }) => {
   await gotoEditor(page);
 
   const editableHeading = coverFrame(page).locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
   const fontInput = toolbar.getByLabel("Font", { exact: true });
-  const fontMenu = page.getByTestId("floating-font-menu");
-  const fontMenuScroll = page.getByTestId("floating-font-menu-scroll");
+  const fontMenu = page.getByTestId("toolbar-font-menu");
+  const fontMenuScroll = page.getByTestId("toolbar-font-menu-scroll");
 
   await editableHeading.click();
   await expect(toolbar).toBeVisible();
@@ -492,12 +492,12 @@ test("floating toolbar font family select changes the selected text font", async
   await expectInlineStyle(editableHeading, "font-family", 'Georgia, "Times New Roman", serif');
 });
 
-test("full floating editor applies other attributes through dialogs", async ({ page }) => {
+test("full toolbar applies other attributes through dialogs", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await editableHeading.click();
   await toolbar.getByRole("button", { name: "Other", exact: true }).click();
@@ -527,7 +527,7 @@ test("locked element only exposes unlock and blocks direct manipulation", async 
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
   const { selectionOverlay } = getHistoryControls(page);
 
   await editableHeading.click();
@@ -565,26 +565,26 @@ test("locked element only exposes unlock and blocks direct manipulation", async 
   await expect(toolbar.getByLabel("Font", { exact: true })).toBeVisible();
 });
 
-test("full floating editor is the only primary element tooling surface", async ({ page }) => {
+test("full toolbar is the only primary element tooling surface", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const stagePanel = page.getByTestId("stage-panel");
-  const { floatingToolbarAnchor } = getHeaderControls(page);
+  const { toolbarAnchor } = getHeaderControls(page);
 
-  await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByText("Select element to edit")).toBeVisible();
+  await expect(toolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor.getByText("Select element to edit")).toBeVisible();
   await expect(page.getByTestId("sidebar-tool-panel")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Use tool panel mode", exact: true })).toHaveCount(
     0
   );
 
   await editableHeading.click();
-  await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByLabel("Font", { exact: true })).toBeVisible();
+  await expect(toolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor.getByLabel("Font", { exact: true })).toBeVisible();
   await expect(
-    floatingToolbarAnchor.getByRole("button", { name: "Align", exact: true })
+    toolbarAnchor.getByRole("button", { name: "Align", exact: true })
   ).toBeHidden();
   await expect(page.getByRole("button", { name: "Use tool panel mode", exact: true })).toHaveCount(
     0
@@ -592,8 +592,8 @@ test("full floating editor is the only primary element tooling surface", async (
   await expect(page.getByTestId("sidebar-tool-panel")).toHaveCount(0);
 
   await stagePanel.click({ position: { x: 12, y: 12 } });
-  await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByText("Select element to edit")).toBeVisible();
+  await expect(toolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor.getByText("Select element to edit")).toBeVisible();
 });
 
 test("multi selection exposes align, layer, distribute, and group controls", async ({ page }) => {
@@ -603,7 +603,7 @@ test("multi selection exposes align, layer, distribute, and group controls", asy
   const frame = coverFrame(page);
   const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
   const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
   const { selectionOverlay } = getHistoryControls(page);
 
   await firstCard.locator(".snap-drag-surface").click();
@@ -626,7 +626,7 @@ test("multi selection exposes align, layer, distribute, and group controls", asy
   await expectToolbarButtonOrder(toolbar, ["Lock", "Ungroup", "Other"]);
 });
 
-test("floating toolbar ungroup promotes snap cards without changing their dimensions", async ({
+test("toolbar ungroup promotes snap cards without changing their dimensions", async ({
   page,
 }) => {
   await gotoEditor(page);
@@ -635,7 +635,7 @@ test("floating toolbar ungroup promotes snap cards without changing their dimens
   const frame = coverFrame(page);
   const firstCard = frame.locator('[data-editable-id="snap-card-a"]');
   const secondCard = frame.locator('[data-editable-id="snap-card-b"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
   await expect(firstCard).toBeVisible();
   await expect(secondCard).toBeVisible();
   await firstCard.evaluate((node) => node.ownerDocument.fonts?.ready ?? Promise.resolve());
@@ -657,7 +657,7 @@ test("floating toolbar ungroup promotes snap cards without changing their dimens
   expect(secondAfter.height).toBeCloseTo(secondBefore.height, 0);
 });
 
-test("floating toolbar flattens selected groups into a new group without resizing cards", async ({
+test("toolbar flattens selected groups into a new group without resizing cards", async ({
   page,
 }) => {
   await gotoEditor(page);
@@ -668,7 +668,7 @@ test("floating toolbar flattens selected groups into a new group without resizin
   const cardB = frame.locator('[data-editable-id="snap-card-b"]');
   const cardC = frame.locator('[data-editable-id="snap-card-c"]');
   const cardD = frame.locator('[data-editable-id="snap-card-d"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
   const before = await Promise.all([cardA, cardB, cardC, cardD].map((card) => card.boundingBox()));
   for (const box of before) {
     expect(box).not.toBeNull();
@@ -692,12 +692,12 @@ test("floating toolbar flattens selected groups into a new group without resizin
   }
 });
 
-test("floating toolbar font size buttons do not remount the toolbar", async ({ page }) => {
+test("toolbar font size buttons do not remount the toolbar", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
 
   await editableHeading.click();
   await expect(toolbar).toBeVisible();
@@ -710,13 +710,13 @@ test("floating toolbar font size buttons do not remount the toolbar", async ({ p
   await expect(toolbar.getByLabel("Font", { exact: true })).toBeVisible();
 });
 
-test("floating toolbar font size input clamps manual values and keeps step buttons working", async ({
+test("toolbar font size input clamps manual values and keeps step buttons working", async ({
   page,
 }) => {
   await gotoEditor(page);
 
   const editableHeading = coverFrame(page).locator('[data-editable-id="text-1"]');
-  const toolbar = page.getByTestId("floating-toolbar-anchor");
+  const toolbar = page.getByTestId("toolbar-anchor");
   const fontSizeInput = toolbar.getByLabel("Font size", { exact: true });
 
   await editableHeading.click();

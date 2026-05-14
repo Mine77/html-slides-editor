@@ -13,7 +13,7 @@ test("plain click selects text only, and double click enters editing", async ({ 
   const frame = coverFrame(page);
   const editableHeading = frame.locator('[data-editable-id="text-1"]');
   const { selectionOverlay } = getHistoryControls(page);
-  const { floatingToolbarAnchor } = getHeaderControls(page);
+  const { toolbarAnchor } = getHeaderControls(page);
 
   await editableHeading.click();
 
@@ -25,8 +25,8 @@ test("plain click selects text only, and double click enters editing", async ({ 
   // During text editing the toolbar anchor stays visible (layout stability)
   // but shows an empty spacer — "Select element to edit" only appears when
   // nothing is selected (toolbarKey === null), not during suppressed states.
-  await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByText("Select element to edit")).toBeHidden();
+  await expect(toolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor.getByText("Select element to edit")).toBeHidden();
   await expect(selectionOverlay).toBeHidden();
   await expect(editableHeading).toHaveAttribute("contenteditable", "plaintext-only");
 });
@@ -361,14 +361,14 @@ test("drag marquee does not leave native browser text selected", async ({ page }
     .toBe("");
 });
 
-test("floating toolbar is the only element tooling surface", async ({ page }) => {
+test("toolbar is the only element tooling surface", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   await frame.locator('[data-editable-id="text-1"]').click();
 
-  const { floatingToolbarAnchor } = getHeaderControls(page);
+  const { toolbarAnchor } = getHeaderControls(page);
 
-  await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByLabel("Font", { exact: true })).toBeVisible();
+  await expect(toolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor.getByLabel("Font", { exact: true })).toBeVisible();
 });

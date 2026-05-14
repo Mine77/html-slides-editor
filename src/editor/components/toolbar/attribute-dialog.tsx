@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import type { ElementToolFeature } from "../lib/element-tool-model";
-import type { AttributeValues, EditableAttributeId } from "./floating-toolbar-types";
-import { OTHER_FEATURES } from "./floating-toolbar-types";
-import { Button } from "./ui/button";
+import type { ElementToolFeature } from "../../lib/element-tool-model";
+import type { AttributeValues, EditableAttributeId } from "./types";
+import { OTHER_FEATURES } from "./types";
+import { Button } from "../ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
+} from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 
 function AttributeDialog({
   attributeValues,

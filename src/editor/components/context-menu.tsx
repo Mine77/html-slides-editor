@@ -17,7 +17,7 @@ import {
   Ungroup,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import type { SelectionCommandAvailability } from "./floating-toolbar";
+import type { SelectionCommandAvailability } from "./toolbar";
 import {
   ContextMenu,
   ContextMenuContent,

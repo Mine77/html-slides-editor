@@ -1,7 +1,7 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 import type { StageRect } from "../../core";
 import type { ImageCropOverlay as ImageCropOverlayModel } from "../hooks/use-image-crop";
-import type { SelectionCommandAvailability } from "./floating-toolbar";
+import type { SelectionCommandAvailability } from "./toolbar";
 import { cn } from "../lib/utils";
 import { BlockManipulationOverlay } from "./block-manipulation-overlay";
 import { SelectionContextMenuContent } from "./context-menu";

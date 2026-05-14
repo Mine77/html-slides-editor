@@ -5,7 +5,7 @@ import type { BlockManipulationOverlay as BlockManipulationOverlayModel } from "
 import type { ImageCropOverlay as ImageCropOverlayModel } from "../hooks/use-image-crop";
 import type { CssPropertyRow } from "../lib/collect-css-properties";
 import { EditorHeader } from "./editor-header";
-import { FloatingToolbar, type SelectionCommandAvailability } from "./floating-toolbar";
+import { Toolbar, type SelectionCommandAvailability } from "./toolbar";
 import { PresenterView } from "./presenter-view";
 import { SlideSidebar } from "./slide-sidebar";
 import { StageCanvas } from "./stage-canvas";
@@ -218,7 +218,7 @@ function EditorWorkspace({
             <div className="flex min-h-0 min-w-0 flex-auto flex-col overflow-hidden max-[1200px]:block">
               <div
                 className="flex min-h-14 min-w-0 shrink-0 items-center gap-2 bg-white px-3 py-2"
-                data-testid="floating-toolbar-anchor"
+                data-testid="toolbar-anchor"
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -239,7 +239,7 @@ function EditorWorkspace({
 
                 <div className="min-w-0 flex-auto overflow-x-auto overflow-y-hidden">
                   {shouldShowToolbarControls ? (
-                    <FloatingToolbar
+                    <Toolbar
                       key={toolbarKey}
                       inspectedStyles={inspectedStyles}
                       selectedElementType={selectedElementType}

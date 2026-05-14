@@ -1,300 +1,37 @@
 import {
-  Accessibility,
   AlignCenter,
   Baseline,
-  Bold,
-  Crop,
-  Ellipsis,
-  Group,
-  Italic,
   Layers,
-  Link2,
-  ListPlus,
-  Lock,
-  LockOpen,
   Rows3,
-  Strikethrough,
-  TextAlignJustify,
-  Underline,
-  Ungroup,
 } from "lucide-react";
-import {
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ALIGN_TO_SLIDE_OPTIONS,
   BORDER_STYLE_OPTIONS,
   DISTRIBUTE_OPTIONS,
   type ElementToolFeature,
   LAYER_ORDER_OPTIONS,
-  TEXT_ALIGN_OPTIONS,
-} from "../lib/element-tool-model";
-import { isFeatureActive } from "../lib/element-tool-values";
-import { cn } from "../lib/utils";
-import { ColorPicker } from "./color-picker";
-import { FontFamilyCombobox, FontSizeControl } from "./floating-toolbar-fields";
-import { Divider, IconButton } from "./floating-toolbar-parts";
+} from "../../../lib/element-tool-model";
+import { cn } from "../../../lib/utils";
+import { ColorPicker } from "../../color-picker";
 import {
-  AttributeMenuButton,
   ColorPopover,
-  LineHeightPopover,
   OptionsPopover,
   type OptionsSectionProps,
   type PopoverSectionProps,
   ToolbarSection,
-} from "./floating-toolbar-popovers";
-import type { EditableAttributeId, SelectionCommandAvailability } from "./floating-toolbar-types";
+} from "../controls/option-popovers";
 import {
   ICON_STROKE_WIDTH,
   toolbarIconButtonActiveClassName,
   toolbarIconButtonClassName,
   toolbarIconClassName,
-} from "./floating-toolbar-types";
-import { Button } from "./ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+} from "../types";
+import { Button } from "../../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/tabs";
 
 const BORDER_RANGE_DEBOUNCE_MS = 160;
-
-interface FloatingToolbarSectionsProps {
-  activePopoverId: string | null;
-  isSelectedElementLocked: boolean;
-  selectionCommandAvailability: SelectionCommandAvailability;
-  selectedElementType: "text" | "image" | "block" | "group" | "multi";
-  showGroupTool: boolean;
-  showMultiTools: boolean;
-  commitFeature: (feature: ElementToolFeature, nextValue: string) => void;
-  getCurrentValue: (feature: ElementToolFeature) => string;
-  getFeature: (featureId: ElementToolFeature["id"]) => ElementToolFeature;
-  onStylePreview: (propertyName: string, nextValue: string | null) => void;
-  setActiveAttributeDialog: Dispatch<SetStateAction<EditableAttributeId | null>>;
-  setActivePopoverId: Dispatch<SetStateAction<string | null>>;
-}
-
-function FloatingToolbarSections({
-  activePopoverId,
-  isSelectedElementLocked,
-  selectionCommandAvailability,
-  selectedElementType,
-  showGroupTool,
-  showMultiTools,
-  commitFeature,
-  getCurrentValue,
-  getFeature,
-  onStylePreview,
-  setActiveAttributeDialog,
-  setActivePopoverId,
-}: FloatingToolbarSectionsProps) {
-  const isImageSelection = selectedElementType === "image";
-
-  return (
-    <>
-      <LockSection
-        commitFeature={commitFeature}
-        getFeature={getFeature}
-        isSelectedElementLocked={isSelectedElementLocked}
-        selectionCommandAvailability={selectionCommandAvailability}
-        showGroupTool={showGroupTool}
-      />
-      {isSelectedElementLocked ? null : (
-        <>
-          <Divider />
-          {isImageSelection ? (
-            <ImageSection commitFeature={commitFeature} getFeature={getFeature} />
-          ) : (
-            <>
-              <FontSection
-                commitFeature={commitFeature}
-                getCurrentValue={getCurrentValue}
-                getFeature={getFeature}
-                onStylePreview={onStylePreview}
-                setActivePopoverId={setActivePopoverId}
-              />
-              <Divider />
-              <TextStyleSection
-                commitFeature={commitFeature}
-                getCurrentValue={getCurrentValue}
-                getFeature={getFeature}
-              />
-              <Divider />
-              <ColorSection
-                activePopoverId={activePopoverId}
-                commitFeature={commitFeature}
-                getCurrentValue={getCurrentValue}
-                getFeature={getFeature}
-                onStylePreview={onStylePreview}
-                selectionCommandAvailability={selectionCommandAvailability}
-                setActivePopoverId={setActivePopoverId}
-              />
-              <Divider />
-              <ParagraphSection
-                activePopoverId={activePopoverId}
-                commitFeature={commitFeature}
-                getCurrentValue={getCurrentValue}
-                getFeature={getFeature}
-                onStylePreview={onStylePreview}
-                selectionCommandAvailability={selectionCommandAvailability}
-                setActivePopoverId={setActivePopoverId}
-              />
-            </>
-          )}
-          {isImageSelection ? (
-            <>
-              <Divider />
-              <BorderSection
-                activePopoverId={activePopoverId}
-                commitFeature={commitFeature}
-                getCurrentValue={getCurrentValue}
-                getFeature={getFeature}
-                onStylePreview={onStylePreview}
-                selectionCommandAvailability={selectionCommandAvailability}
-                setActivePopoverId={setActivePopoverId}
-              />
-            </>
-          ) : null}
-          {showMultiTools ? (
-            <>
-              <Divider />
-              <MultiArrangeSection
-                activePopoverId={activePopoverId}
-                commitFeature={commitFeature}
-                getCurrentValue={getCurrentValue}
-                getFeature={getFeature}
-                onStylePreview={onStylePreview}
-                selectionCommandAvailability={selectionCommandAvailability}
-                setActivePopoverId={setActivePopoverId}
-              />
-            </>
-          ) : null}
-          <Divider />
-          <OtherSection
-            activePopoverId={activePopoverId}
-            setActiveAttributeDialog={setActiveAttributeDialog}
-            setActivePopoverId={setActivePopoverId}
-          />
-        </>
-      )}
-    </>
-  );
-}
-
-function ImageSection({
-  commitFeature,
-  getFeature,
-}: Pick<FloatingToolbarSectionsProps, "commitFeature" | "getFeature">) {
-  return (
-    <ToolbarSection>
-      <IconButton
-        label="Crop image"
-        onClick={() => commitFeature(getFeature("image-crop"), "cover")}
-      >
-        <Crop className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-      </IconButton>
-    </ToolbarSection>
-  );
-}
-
-function LockSection({
-  commitFeature,
-  getFeature,
-  isSelectedElementLocked,
-  selectionCommandAvailability,
-  showGroupTool,
-}: Pick<
-  FloatingToolbarSectionsProps,
-  | "commitFeature"
-  | "getFeature"
-  | "isSelectedElementLocked"
-  | "selectionCommandAvailability"
-  | "showGroupTool"
->) {
-  return (
-    <ToolbarSection>
-      <IconButton
-        label={isSelectedElementLocked ? "Unlock" : "Lock"}
-        active={isSelectedElementLocked}
-        onClick={() => commitFeature(getFeature("locked"), isSelectedElementLocked ? "" : "true")}
-      >
-        {isSelectedElementLocked ? (
-          <LockOpen className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-        ) : (
-          <Lock className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-        )}
-      </IconButton>
-      {isSelectedElementLocked || !showGroupTool ? null : (
-        <GroupButton
-          commitFeature={commitFeature}
-          getFeature={getFeature}
-          selectionCommandAvailability={selectionCommandAvailability}
-        />
-      )}
-    </ToolbarSection>
-  );
-}
-
-function FontSection({
-  commitFeature,
-  getCurrentValue,
-  getFeature,
-  onStylePreview,
-  setActivePopoverId,
-}: Pick<
-  FloatingToolbarSectionsProps,
-  "commitFeature" | "getCurrentValue" | "getFeature" | "onStylePreview" | "setActivePopoverId"
->) {
-  const fontFamilyFeature = getFeature("font-family");
-  const fontSizeFeature = getFeature("font-size");
-
-  return (
-    <ToolbarSection>
-      <FontFamilyCombobox
-        currentValue={getCurrentValue(fontFamilyFeature)}
-        onCommit={(nextValue) => commitFeature(fontFamilyFeature, nextValue)}
-        onOpen={() => setActivePopoverId(null)}
-        onPreview={(nextValue) => onStylePreview("font-family", nextValue)}
-      />
-      <FontSizeControl
-        currentValue={getCurrentValue(fontSizeFeature)}
-        feature={fontSizeFeature}
-        onCommitFeature={commitFeature}
-      />
-    </ToolbarSection>
-  );
-}
-
-function TextStyleSection({
-  commitFeature,
-  getCurrentValue,
-  getFeature,
-}: Pick<FloatingToolbarSectionsProps, "commitFeature" | "getCurrentValue" | "getFeature">) {
-  return (
-    <ToolbarSection>
-      {[
-        { feature: getFeature("font-bold"), icon: Bold },
-        { feature: getFeature("font-italic"), icon: Italic },
-        { feature: getFeature("font-underline"), icon: Underline },
-        { feature: getFeature("font-strikethrough"), icon: Strikethrough },
-      ].map(({ feature, icon: Icon }) => {
-        const active = isFeatureActive(feature, getCurrentValue(feature));
-        return (
-          <IconButton
-            key={feature.id}
-            label={feature.label}
-            active={active}
-            onClick={() => commitFeature(feature, active ? "" : "true")}
-          >
-            <Icon className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-          </IconButton>
-        );
-      })}
-    </ToolbarSection>
-  );
-}
 
 function ColorSection(
   props: PopoverSectionProps & Pick<OptionsSectionProps, "selectionCommandAvailability">
@@ -345,7 +82,7 @@ function TextColorIcon({ colorValue, label }: { colorValue: string; label: strin
     <span
       className="relative inline-grid size-4 place-items-center"
       aria-hidden="true"
-      data-testid="floating-toolbar-text-color-icon"
+      data-testid="toolbar-text-color-icon"
       title={label}
     >
       <Baseline className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
@@ -362,7 +99,7 @@ function BackgroundColorIcon({ colorValue, label }: { colorValue: string; label:
     <span
       className="inline-block size-4 rounded-[4px] border border-white/85 shadow-[0_0_0_1px_rgba(15,23,42,0.16),inset_0_0_0_1px_rgba(255,255,255,0.45)]"
       aria-hidden="true"
-      data-testid="floating-toolbar-background-color-icon"
+      data-testid="toolbar-background-color-icon"
       title={label}
       style={{ background: getColorIndicatorBackground(colorValue) }}
     />
@@ -373,30 +110,8 @@ function getColorIndicatorBackground(value: string) {
   return value.trim() || "transparent";
 }
 
-function ParagraphSection(props: OptionsSectionProps) {
-  return (
-    <ToolbarSection>
-      <LineHeightPopover
-        {...props}
-        feature={props.getFeature("line-height")}
-        icon={<ListPlus className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
-        label="Line height"
-        popoverId="line-height"
-      />
-      <OptionsPopover
-        {...props}
-        feature={props.getFeature("text-align")}
-        icon={<TextAlignJustify className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
-        label="Text align"
-        options={TEXT_ALIGN_OPTIONS}
-        popoverId="text-align"
-      />
-    </ToolbarSection>
-  );
-}
-
 function BorderSection(
-  props: OptionsSectionProps & Pick<FloatingToolbarSectionsProps, "onStylePreview">
+  props: OptionsSectionProps & { onStylePreview: (propertyName: string, nextValue: string | null) => void }
 ) {
   const borderFeature = props.getFeature("border");
   const borderColorFeature = props.getFeature("border-color");
@@ -495,7 +210,7 @@ function BorderAppearancePopover({
           size="icon-sm"
           aria-label="Border"
           title="Border"
-          data-testid="floating-border-trigger"
+          data-testid="toolbar-border-trigger"
           className={cn(toolbarIconButtonClassName, active && toolbarIconButtonActiveClassName)}
         >
           <BorderAppearanceTriggerIcon
@@ -708,7 +423,7 @@ function BorderStyleSample({ optionValue }: { optionValue: string }) {
   return (
     <span
       className="block w-8 shrink-0 border-t-[3px] border-foreground"
-      data-testid="floating-toolbar-option-preview"
+      data-testid="toolbar-option-preview"
       style={{ borderTopStyle: optionValue as "solid" | "dashed" | "dotted" }}
       aria-hidden="true"
     />
@@ -729,14 +444,14 @@ function BorderAppearanceTriggerIcon({
   return (
     <span
       className="flex h-3.5 w-5 items-center justify-center"
-      data-testid="floating-border-trigger-icon"
+      data-testid="toolbar-border-trigger-icon"
       aria-hidden="true"
     >
       <span className="relative block h-3 w-full" aria-hidden="true">
         <span className="absolute inset-x-0 top-1/2 h-0 -translate-y-1/2 border-t-[2px] border-t-foreground/85" />
         <span
           className="absolute inset-x-0 top-1/2 h-0 -translate-y-1/2"
-          data-testid="floating-border-trigger-line"
+          data-testid="toolbar-border-trigger-line"
           style={{
             borderTopColor: borderColor || "rgba(15,23,42,.7)",
             borderTopStyle: getCssBorderStyle(borderStyle),
@@ -826,84 +541,4 @@ function MultiArrangeSection(props: OptionsSectionProps) {
   );
 }
 
-function GroupButton({
-  commitFeature,
-  getFeature,
-  selectionCommandAvailability,
-}: Pick<
-  FloatingToolbarSectionsProps,
-  "commitFeature" | "getFeature" | "selectionCommandAvailability"
->) {
-  const canUngroup = selectionCommandAvailability.ungroup;
-  const feature = getFeature(canUngroup ? "ungroup" : "group");
-
-  return (
-    <ToolbarSection>
-      <IconButton
-        label={canUngroup ? "Ungroup" : "Group"}
-        onClick={() => commitFeature(feature, canUngroup ? "ungroup" : "group")}
-      >
-        {canUngroup ? (
-          <Ungroup className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-        ) : (
-          <Group className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-        )}
-      </IconButton>
-    </ToolbarSection>
-  );
-}
-
-function OtherSection({
-  activePopoverId,
-  setActiveAttributeDialog,
-  setActivePopoverId,
-}: Pick<
-  FloatingToolbarSectionsProps,
-  "activePopoverId" | "setActiveAttributeDialog" | "setActivePopoverId"
->) {
-  const openAttributeDialog = (dialogId: EditableAttributeId) => {
-    setActivePopoverId(null);
-    setActiveAttributeDialog(dialogId);
-  };
-
-  return (
-    <ToolbarSection>
-      <Popover
-        open={activePopoverId === "other"}
-        onOpenChange={(open) => setActivePopoverId(open ? "other" : null)}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Other"
-            title="Other"
-            className={cn(
-              toolbarIconButtonClassName,
-              activePopoverId === "other" && toolbarIconButtonActiveClassName
-            )}
-          >
-            <Ellipsis className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-56 p-1.5">
-          <AttributeMenuButton
-            icon={<Link2 className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />}
-            label="Link"
-            onClick={() => openAttributeDialog("other-link")}
-          />
-          <AttributeMenuButton
-            icon={
-              <Accessibility className={toolbarIconClassName} strokeWidth={ICON_STROKE_WIDTH} />
-            }
-            label="ARIA label"
-            onClick={() => openAttributeDialog("other-aria-label")}
-          />
-        </PopoverContent>
-      </Popover>
-    </ToolbarSection>
-  );
-}
-
-export { FloatingToolbarSections };
+export { ColorSection, BorderSection, MultiArrangeSection };

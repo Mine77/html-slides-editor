@@ -383,19 +383,19 @@ test("spacing guides render capped end markers in the guide color", async ({ pag
   await expect(spacingGuide.getByTestId("snap-guide-cap")).toHaveCount(2);
 });
 
-test("floating toolbar hides while dragging a selected element", async ({ page }) => {
+test("toolbar hides while dragging a selected element", async ({ page }) => {
   await gotoEditor(page);
 
   const frame = coverFrame(page);
   const blockCard = frame.locator('[data-editable-id="block-4"]');
   const { selectionOverlay } = getHistoryControls(page);
-  const { floatingToolbarAnchor } = getHeaderControls(page);
+  const { toolbarAnchor } = getHeaderControls(page);
   const resizeHandle = page.getByTestId("block-resize-handle-bottom-right");
   const rotateHandle = page.getByTestId("block-rotate-handle");
 
   await blockCard.click({ position: { x: 12, y: 12 } });
   await expect(selectionOverlay).toBeVisible();
-  await expect(floatingToolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor).toBeVisible();
   await expect(resizeHandle).toBeVisible();
   await expect(rotateHandle).toBeVisible();
 
@@ -414,14 +414,14 @@ test("floating toolbar hides while dragging a selected element", async ({ page }
   // During manipulation the toolbar anchor stays visible (layout stability)
   // but shows an empty spacer — "Select element to edit" only appears when
   // nothing is selected (toolbarKey === null), not during suppressed states.
-  await expect(floatingToolbarAnchor).toBeVisible();
-  await expect(floatingToolbarAnchor.getByText("Select element to edit")).toBeHidden();
+  await expect(toolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor.getByText("Select element to edit")).toBeHidden();
   await page.mouse.move(start.x + 8, start.y + 6, { steps: 2 });
   await expect(resizeHandle).toHaveCount(0);
   await expect(rotateHandle).toHaveCount(0);
   await page.mouse.move(start.x + 40, start.y + 30, { steps: 4 });
   await page.mouse.up();
-  await expect(floatingToolbarAnchor).toBeVisible();
+  await expect(toolbarAnchor).toBeVisible();
   await expect(resizeHandle).toBeVisible();
   await expect(rotateHandle).toBeVisible();
 });

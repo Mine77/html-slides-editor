@@ -1,11 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
-import type { ElementToolSubgroup } from "../lib/element-tool-model";
-import { editorMotionClassName, editorPanelEnterClassName } from "../lib/motion";
-import { cn } from "../lib/utils";
-import { Button } from "./ui/button";
-import { Separator } from "./ui/separator";
+import type { ElementToolSubgroup } from "../../lib/element-tool-model";
+import { editorMotionClassName, editorPanelEnterClassName } from "../../lib/motion";
+import { cn } from "../../lib/utils";
+import { Button } from "../ui/button";
+import { Separator } from "../ui/separator";
 
 export function ToolbarTrigger({
   children,
@@ -92,7 +92,7 @@ export function ToolbarPanel({
     }
 
     const rect = panel.getBoundingClientRect();
-    const toolbar = panel.closest('[data-testid="floating-toolbar-anchor"]');
+    const toolbar = panel.closest('[data-testid="toolbar-anchor"]');
     const toolbarRect = toolbar instanceof HTMLElement ? toolbar.getBoundingClientRect() : null;
     const baseLeft = toolbarRect ? toolbarRect.left + left : rect.left - offset.x;
     const baseTop = toolbarRect ? toolbarRect.bottom + 8 : rect.top - offset.y;

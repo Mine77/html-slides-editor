@@ -8,20 +8,20 @@ import {
   useRef,
   useState,
 } from "react";
-import type { ElementToolFeature, ElementToolOption } from "../lib/element-tool-model";
-import { cn } from "../lib/utils";
-import { ColorPicker } from "./color-picker";
-import { ToolbarIcon } from "./floating-toolbar-parts";
-import type { SelectionCommandAvailability } from "./floating-toolbar-types";
+import type { ElementToolFeature, ElementToolOption } from "../../../lib/element-tool-model";
+import { cn } from "../../../lib/utils";
+import { ColorPicker } from "../../color-picker";
+import { ToolbarIcon } from "../primitives";
+import type { SelectionCommandAvailability } from "../types";
 import {
   ICON_STROKE_WIDTH,
   menuItemClassName,
   toolbarIconButtonActiveClassName,
   toolbarIconButtonClassName,
   toolbarIconClassName,
-} from "./floating-toolbar-types";
-import { Button } from "./ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+} from "../types";
+import { Button } from "../../ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 
 export interface PopoverSectionProps {
   activePopoverId: string | null;
@@ -61,7 +61,7 @@ function ColorPopover({
       <PopoverTrigger asChild>
         <ToolbarPopoverButton
           active={activePopoverId === popoverId}
-          data-testid={`floating-${popoverId}-trigger`}
+          data-testid={`toolbar-${popoverId}-trigger`}
           icon={icon}
           label={label}
         />
@@ -132,7 +132,7 @@ function OptionsPopover({
       <PopoverTrigger asChild>
         <ToolbarPopoverButton
           active={activePopoverId === popoverId}
-          data-testid={`floating-${popoverId}-trigger`}
+          data-testid={`toolbar-${popoverId}-trigger`}
           icon={triggerIcon}
           label={label}
         />
@@ -357,7 +357,7 @@ function OptionSwatch({
     return (
       <span
         className="h-4 w-9 shrink-0 rounded bg-white"
-        data-testid="floating-toolbar-option-preview"
+        data-testid="toolbar-option-preview"
         style={{
           borderColor: "rgba(15,23,42,.5)",
           borderStyle: option.value === "none" ? "solid" : option.value,
@@ -372,7 +372,7 @@ function OptionSwatch({
     return (
       <span
         className="h-4 w-9 shrink-0 border border-foreground/15 bg-foreground/[0.04]"
-        data-testid="floating-toolbar-option-preview"
+        data-testid="toolbar-option-preview"
         style={{ borderRadius: option.value }}
         aria-hidden="true"
       />
@@ -383,7 +383,7 @@ function OptionSwatch({
       <span className="flex h-4 w-9 shrink-0 items-center justify-center" aria-hidden="true">
         <span
           className="w-full rounded-full bg-foreground/65"
-          data-testid="floating-toolbar-option-preview"
+          data-testid="toolbar-option-preview"
           style={{
             height: option.value === "0px" ? "1px" : option.value,
             opacity: option.value === "0px" ? 0.22 : 1,
@@ -397,7 +397,7 @@ function OptionSwatch({
       <span className="flex h-5 w-10 shrink-0 items-center justify-center" aria-hidden="true">
         <span
           className="h-3.5 w-8 rounded border border-foreground/10 bg-white"
-          data-testid="floating-toolbar-option-preview"
+          data-testid="toolbar-option-preview"
           style={{ boxShadow: option.value === "none" ? undefined : option.value }}
         />
       </span>

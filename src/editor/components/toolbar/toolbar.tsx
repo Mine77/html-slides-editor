@@ -1,15 +1,15 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { commitElementToolFeature } from "../lib/element-tool-commit";
-import { ELEMENT_TOOL_GROUPS, type ElementToolFeature } from "../lib/element-tool-model";
-import { getElementToolValue } from "../lib/element-tool-values";
-import { editorMotionClassName, editorPanelEnterClassName } from "../lib/motion";
-import { cn } from "../lib/utils";
-import { AttributeDialog } from "./floating-toolbar-attribute-dialog";
-import { FloatingToolbarSections } from "./floating-toolbar-sections";
-import type { EditableAttributeId, FloatingToolbarProps } from "./floating-toolbar-types";
-import { toolbarIconButtonClassName } from "./floating-toolbar-types";
-export type { SelectionCommandAvailability } from "./floating-toolbar-types";
+import { commitElementToolFeature } from "../../lib/element-tool-commit";
+import { ELEMENT_TOOL_GROUPS, type ElementToolFeature } from "../../lib/element-tool-model";
+import { getElementToolValue } from "../../lib/element-tool-values";
+import { editorMotionClassName, editorPanelEnterClassName } from "../../lib/motion";
+import { cn } from "../../lib/utils";
+import { AttributeDialog } from "./attribute-dialog";
+import { ToolbarSections } from "./features/text-sections";
+import type { EditableAttributeId, ToolbarProps } from "./types";
+import { toolbarIconButtonClassName } from "./types";
+
 
 type OptimisticStyles = Record<string, string | null>;
 
@@ -19,7 +19,7 @@ const FEATURE_BY_ID = new Map(
   )
 );
 
-function FloatingToolbar({
+function Toolbar({
   inspectedStyles,
   selectedElementType,
   selectionCommandAvailability,
@@ -36,7 +36,7 @@ function FloatingToolbar({
   onLayerOrder,
   onUngroup,
   onToggleSidebar,
-}: FloatingToolbarProps) {
+}: ToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [activeAttributeDialog, setActiveAttributeDialog] = useState<EditableAttributeId | null>(
     null
@@ -202,7 +202,7 @@ function FloatingToolbar({
             )}
           </button>
         ) : null}
-        <FloatingToolbarSections
+        <ToolbarSections
           activePopoverId={activePopoverId}
           isSelectedElementLocked={isSelectedElementLocked}
           selectionCommandAvailability={selectionCommandAvailability}
@@ -281,9 +281,9 @@ function shouldOptimisticallyTrackStyle(propertyName: string) {
 function getFeature(featureId: ElementToolFeature["id"]) {
   const feature = FEATURE_BY_ID.get(featureId);
   if (!feature) {
-    throw new Error(`Missing floating toolbar feature: ${featureId}`);
+    throw new Error(`Missing toolbar feature: ${featureId}`);
   }
   return feature;
 }
 
-export { FloatingToolbar };
+export { Toolbar };

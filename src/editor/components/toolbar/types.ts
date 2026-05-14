@@ -1,8 +1,8 @@
-import type { EditableType } from "../../core";
-import type { CssPropertyRow } from "../lib/collect-css-properties";
-import type { ElementToolFeature } from "../lib/element-tool-model";
+import type { EditableType } from "../../../core";
+import type { CssPropertyRow } from "../../lib/collect-css-properties";
+import type { ElementToolFeature } from "../../lib/element-tool-model";
 
-export interface FloatingToolbarProps {
+export interface ToolbarProps {
   inspectedStyles: CssPropertyRow[];
   selectedElementType: EditableType | "multi";
   selectionCommandAvailability: SelectionCommandAvailability;

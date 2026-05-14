@@ -1,15 +1,15 @@
 import { RotateCcw } from "lucide-react";
-import type { ElementToolFeature, ElementToolOption } from "../lib/element-tool-model";
+import type { ElementToolFeature, ElementToolOption } from "../../../lib/element-tool-model";
 import {
   getFeatureOptions,
   getSteppedFeatureValue,
   isFeatureActive,
-} from "../lib/element-tool-values";
-import { cn } from "../lib/utils";
-import { ColorPicker } from "./color-picker";
-import { FieldLabel, ToolbarIcon, ToolbarOption } from "./floating-toolbar-parts";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+} from "../../../lib/element-tool-values";
+import { cn } from "../../../lib/utils";
+import { ColorPicker } from "../../color-picker";
+import { FieldLabel, ToolbarIcon, ToolbarOption } from "../primitives";
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
 import {
   Select,
   SelectContent,
@@ -17,11 +17,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../../ui/select";
 
 const EMPTY_SELECT_VALUE = "__empty__";
 
-export function renderFloatingToolbarFeature({
+export function renderToolbarFeature({
   currentValue,
   feature,
   onClosePanel,
@@ -34,7 +34,7 @@ export function renderFloatingToolbarFeature({
   onCommitFeature: (feature: ElementToolFeature, nextValue: string) => void;
   operationAvailability?: Partial<Record<ElementToolFeature["id"], boolean>>;
 }) {
-  const fieldId = `floating-${feature.id}`;
+  const fieldId = `toolbar-${feature.id}`;
 
   if (feature.controlType === "select") {
     return (
@@ -338,7 +338,7 @@ function OptionPreview({
       <span className="flex h-5 w-10 shrink-0 items-center justify-center" aria-hidden="true">
         <span
           className="h-3.5 w-8 rounded border border-foreground/10 bg-white"
-          data-testid="floating-toolbar-option-preview"
+          data-testid="toolbar-option-preview"
           style={{ boxShadow: option.value === "none" ? undefined : option.value }}
         />
       </span>
@@ -349,7 +349,7 @@ function OptionPreview({
     return (
       <span
         className="h-4 w-9 shrink-0 rounded bg-white"
-        data-testid="floating-toolbar-option-preview"
+        data-testid="toolbar-option-preview"
         style={{
           borderColor: "rgba(15,23,42,.5)",
           borderStyle: option.value === "none" ? "solid" : option.value,
@@ -365,7 +365,7 @@ function OptionPreview({
     return (
       <span
         className="h-4 w-9 shrink-0 border border-foreground/15 bg-foreground/[0.04]"
-        data-testid="floating-toolbar-option-preview"
+        data-testid="toolbar-option-preview"
         style={{ borderRadius: option.value }}
         aria-hidden="true"
       />
@@ -377,7 +377,7 @@ function OptionPreview({
       <span className="flex h-4 w-9 shrink-0 items-center justify-center" aria-hidden="true">
         <span
           className="w-full rounded-full bg-foreground/65"
-          data-testid="floating-toolbar-option-preview"
+          data-testid="toolbar-option-preview"
           style={{
             height: option.value === "0px" ? "1px" : option.value,
             opacity: option.value === "0px" ? 0.22 : 1,

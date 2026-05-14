@@ -41,7 +41,7 @@ export function getHistoryControls(page: Page) {
 export function getHeaderControls(page: Page) {
   return {
     slideCount: page.getByTestId("slide-count"),
-    floatingToolbarAnchor: page.getByTestId("floating-toolbar-anchor"),
+    toolbarAnchor: page.getByTestId("toolbar-anchor"),
     savingBadge: page.getByText("saving..."),
   };
 }
@@ -59,15 +59,15 @@ export async function selectAllAndFill(
 }
 
 export async function ensureToolPanelSectionOpen(page: Page, sectionName: string) {
-  await clickFloatingToolbarButton(page, sectionName);
+  await clickToolbarButton(page, sectionName);
 }
 
 export async function switchToToolPanelMode(page: Page) {
-  await expect(page.getByTestId("floating-toolbar-anchor")).toBeVisible();
+  await expect(page.getByTestId("toolbar-anchor")).toBeVisible();
 }
 
-export async function switchToFloatingToolbarMode(page: Page) {
-  await expect(page.getByTestId("floating-toolbar-anchor")).toBeVisible();
+export async function switchToToolbarMode(page: Page) {
+  await expect(page.getByTestId("toolbar-anchor")).toBeVisible();
 }
 
 export async function getInlineStyle(locator: Locator, propertyName: string) {
@@ -201,7 +201,7 @@ export async function getSlideElementRect(locator: Locator) {
 
 export async function fillToolPanelField(page: Page, label: string, value: string) {
   const field = page
-    .getByTestId("floating-toolbar-anchor")
+    .getByTestId("toolbar-anchor")
     .getByLabel(label, { exact: true })
     .first();
   await expect(field).toBeEnabled();
@@ -222,7 +222,7 @@ export async function fillToolPanelFieldAndExpectInlineStyle(
 
 export async function selectToolPanelOption(page: Page, label: string, value: string) {
   const field = page
-    .getByTestId("floating-toolbar-anchor")
+    .getByTestId("toolbar-anchor")
     .getByLabel(label, { exact: true })
     .first();
   await expect(field).toBeEnabled();
@@ -236,8 +236,8 @@ export async function selectToolPanelOption(page: Page, label: string, value: st
   }, value);
 }
 
-export async function clickFloatingToolbarButton(page: Page, label: string) {
-  const button = page.getByTestId("floating-toolbar-anchor").getByRole("button", {
+export async function clickToolbarButton(page: Page, label: string) {
+  const button = page.getByTestId("toolbar-anchor").getByRole("button", {
     name: label,
     exact: true,
   });
@@ -251,13 +251,13 @@ export async function selectFontFamilyOption(
   optionLabel: string,
   expectedCssPattern: RegExp
 ) {
-  const fontSelect = page.getByTestId("floating-toolbar-anchor").getByLabel("Font", {
+  const fontSelect = page.getByTestId("toolbar-anchor").getByLabel("Font", {
     exact: true,
   });
   await expect(fontSelect).toBeVisible();
   await fontSelect.click();
   await page
-    .getByTestId("floating-font-menu")
+    .getByTestId("toolbar-font-menu")
     .getByRole("button", { name: optionLabel, exact: true })
     .click();
   await expect(target).toHaveCSS("font-family", expectedCssPattern);
@@ -278,7 +278,7 @@ export async function createGroupFromSnapCards(
       .click({ modifiers: ["Shift"] });
   }
 
-  await clickFloatingToolbarButton(page, "Group");
+  await clickToolbarButton(page, "Group");
 
   const group = frame.locator('[data-editable-id="group-1"]');
   await expect(group).toBeVisible();
@@ -301,7 +301,7 @@ export async function createGroupFromGeometryCards(
       .click({ modifiers: ["Shift"], position: { x: 8, y: 8 } });
   }
 
-  await clickFloatingToolbarButton(page, "Group");
+  await clickToolbarButton(page, "Group");
 
   const group = frame.locator('[data-editable-id="group-1"]');
   await expect(group).toBeVisible();
@@ -330,7 +330,7 @@ export async function selectChangedToolPanelOptionAndExpectInlineStyle(
   propertyName: string
 ) {
   const currentValue = await page
-    .getByTestId("floating-toolbar-anchor")
+    .getByTestId("toolbar-anchor")
     .getByLabel(label, { exact: true })
     .first()
     .getAttribute("data-value");
@@ -356,7 +356,7 @@ export async function applyCustomCssProperty(
 ) {
   const propertyNameField = page.getByLabel("Property name").first();
   if (!(await propertyNameField.isVisible().catch(() => false))) {
-    await clickFloatingToolbarButton(page, "CSS");
+    await clickToolbarButton(page, "CSS");
   }
   await expect(propertyNameField).toBeVisible();
   await propertyNameField.fill(propertyName);
