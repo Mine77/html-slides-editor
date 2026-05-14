@@ -184,7 +184,7 @@ function FloatingToolbar({
       ref={toolbarRef}
     >
       <div
-        className="flex w-max items-center gap-0.5 overflow-x-auto overflow-y-hidden rounded-2xl border border-foreground/[0.08] bg-white/92 px-1.5 py-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.04),0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-xl max-[1200px]:min-w-[940px]"
+        className="flex w-max items-center gap-0.5 overflow-x-auto overflow-y-hidden px-1.5 py-1.5 max-[1200px]:min-w-[940px]"
         aria-label="Full editing toolbar"
       >
         {onToggleSidebar ? (

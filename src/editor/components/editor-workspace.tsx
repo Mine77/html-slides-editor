@@ -217,7 +217,7 @@ function EditorWorkspace({
 
             <div className="flex min-h-0 min-w-0 flex-auto flex-col overflow-hidden max-[1200px]:block">
               <div
-                className="flex min-h-14 min-w-0 shrink-0 items-center gap-2 border-b border-foreground/[0.06] bg-background/95 px-3 py-2"
+                className="flex min-h-14 min-w-0 shrink-0 items-center gap-2 bg-white px-3 py-2"
                 data-testid="floating-toolbar-anchor"
               >
                 <Tooltip>
