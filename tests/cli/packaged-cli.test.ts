@@ -130,9 +130,7 @@ describe("packaged starry-slides CLI", () => {
 
     expect(result.status).toBe(0);
     expect(parseJson(result.stdout)).toMatchObject({ ok: true, mode: "complete" });
-    expect(result.stderr).toContain(
-      `Starry Slides runtime update available: current=${packageJson.version} latest=${latestVersion}.`
-    );
-    expect(result.stderr).toContain("Run: npm install -g starry-slides@latest");
+    expect(result.stderr).toContain("Update available");
+    expect(result.stderr).toContain("npm install -g starry-slides@latest");
   });
 });

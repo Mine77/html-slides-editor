@@ -43,6 +43,7 @@ function PresenterView({ slides, startSlideId, onExit }: PresenterViewProps) {
   const inkPathRef = useRef<{ color: string; points: string } | null>(null);
   const hideTimerRef = useRef<number | null>(null);
   const previousActiveIndexRef = useRef(activeIndex);
+  const onKeyDownRef = useRef<((event: KeyboardEvent) => void) | null>(null);
 
   const presentationSlides = useMemo(() => planPresentationSlides(slides), [slides]);
 
@@ -239,13 +240,12 @@ function PresenterView({ slides, startSlideId, onExit }: PresenterViewProps) {
     };
 
     window.addEventListener("keydown", onKeyDown);
+    onKeyDownRef.current = onKeyDown;
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [clearInk, onExit, presentationSlides.length, showToolbar, tool]);
 
   useEffect(() => {
-    if (!activeSlide) {
-      return;
-    }
+    if (!activeSlide) return;
 
     const iframe = frameRef.current?.querySelector<HTMLIFrameElement>(
       "[data-testid='presenter-slide-iframe']"
@@ -253,6 +253,24 @@ function PresenterView({ slides, startSlideId, onExit }: PresenterViewProps) {
     if (iframe) {
       iframe.srcdoc = injectBaseTag(activeSlide.htmlSource, activeSlide.sourceFile);
     }
+  }, [activeSlide]);
+
+  // Forward keydown events from the slide iframe to the presenter navigation
+  // handler.  page.keyboard.press() dispatches to the focused element, which
+  // may be inside the iframe — a separate browsing context whose events don't
+  // bubble to the parent window's capture-phase listener.
+  useEffect(() => {
+    const iframe = frameRef.current?.querySelector<HTMLIFrameElement>(
+      "[data-testid='presenter-slide-iframe']"
+    );
+    const iframeWindow = iframe?.contentWindow;
+    if (!iframeWindow) return;
+
+    const forwardKeyDown = (event: KeyboardEvent) => {
+      onKeyDownRef.current?.(event);
+    };
+    iframeWindow.addEventListener("keydown", forwardKeyDown);
+    return () => iframeWindow.removeEventListener("keydown", forwardKeyDown);
   }, [activeSlide]);
 
   if (!activeSlide) {

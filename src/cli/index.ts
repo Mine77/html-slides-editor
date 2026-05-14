@@ -5,20 +5,23 @@ import { registerDefaultOpen, registerOpenCommand } from "./commands/open";
 import { registerVerifyCommand } from "./commands/verify";
 import { registerViewCommand } from "./commands/view";
 import { notifyIfRuntimeUpdateAvailable } from "./runtime-updates";
+import { transformCommanderErrorOutput } from "./cli-output";
 
 function createProgram() {
   const program = new Command();
 
   program
     .name("starry-slides")
-    .description("Local-first CLI for verifying, previewing, and opening HTML slide decks.")
+    .description(
+      "Local-first CLI for verifying, previewing, and opening HTML slide decks.",
+    )
     .helpCommand("help [command]")
     .showHelpAfterError()
     .allowExcessArguments(false)
     .enablePositionalOptions()
     .configureOutput({
       writeOut: (str) => process.stdout.write(str),
-      writeErr: (str) => process.stderr.write(str),
+      writeErr: (str) => process.stderr.write(transformCommanderErrorOutput(str)),
     });
 
   program.hook("preAction", async () => {
@@ -45,6 +48,8 @@ main().catch((error) => {
     return;
   }
 
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.stderr.write(
+    `${error instanceof Error ? error.message : String(error)}\n`,
+  );
   process.exitCode = 1;
 });
