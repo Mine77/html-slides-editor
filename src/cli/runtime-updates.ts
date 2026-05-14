@@ -1,4 +1,5 @@
 import packageJson from "../../package.json";
+import { formatUpdateBanner } from "./cli-output";
 
 const RUNTIME_UPDATE_COMMAND = "npm install -g starry-slides@latest";
 const NPM_LATEST_URL = `https://registry.npmjs.org/${packageJson.name}/latest`;
@@ -14,7 +15,10 @@ type ParsedVersion = {
   prerelease: string[];
 };
 
-export function shouldCheckForRuntimeUpdates(argv = process.argv.slice(2), env = process.env) {
+export function shouldCheckForRuntimeUpdates(
+  argv = process.argv.slice(2),
+  env = process.env,
+) {
   if (env.STARRY_SLIDES_DISABLE_UPDATE_CHECK === "1") {
     return false;
   }
@@ -47,13 +51,7 @@ async function runRuntimeUpdateNotification() {
   }
 
   process.stderr.write(
-    [
-      `Starry Slides runtime update available: current=${currentVersion} latest=${latestVersion}.`,
-      "Agent action: upgrade the runtime package after this command completes.",
-      `Run: ${RUNTIME_UPDATE_COMMAND}`,
-      "Current command may continue under the installed runtime.",
-      "",
-    ].join("\n")
+    formatUpdateBanner(currentVersion, latestVersion, RUNTIME_UPDATE_COMMAND),
   );
 }
 
@@ -137,8 +135,10 @@ function comparePrerelease(left: string[], right: string[]) {
 
     const leftNumber = Number(leftPart);
     const rightNumber = Number(rightPart);
-    const leftIsNumber = Number.isInteger(leftNumber) && String(leftNumber) === leftPart;
-    const rightIsNumber = Number.isInteger(rightNumber) && String(rightNumber) === rightPart;
+    const leftIsNumber =
+      Number.isInteger(leftNumber) && String(leftNumber) === leftPart;
+    const rightIsNumber =
+      Number.isInteger(rightNumber) && String(rightNumber) === rightPart;
 
     if (leftIsNumber && rightIsNumber && leftNumber !== rightNumber) {
       return leftNumber - rightNumber;
