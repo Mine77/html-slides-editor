@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { REGRESSION_DECK_SLIDE_COUNT, coverFrame, gotoEditor } from "./helpers";
+import { coverFrame, gotoEditor } from "./helpers";
 
 test("editor loads deck-local image assets referenced from slide HTML", async ({ page }) => {
   await gotoEditor(page);
 
-  const slideButton = page.getByLabel(`Slide ${REGRESSION_DECK_SLIDE_COUNT}`);
+  // Slide 17 contains the deck-local-image fixture. The last slide (18) is the
+  // positioned-ungroup fixture and does not contain deck-local image assets.
+  const slideButton = page.getByLabel("Slide 17");
   await slideButton.click();
 
   const frame = coverFrame(page);

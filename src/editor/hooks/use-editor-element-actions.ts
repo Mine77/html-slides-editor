@@ -266,6 +266,7 @@ function useEditorElementActions({
         // differs from what getEditableAncestorRect would return (i.e. when it
         // is a non-editable positioned container).  If the positioned ancestor
         // is the root element itself, skip — the fallback handles that case.
+        // Also skip when the offset is {0,0} — same as the fallback.
         if (
           positionedAncestor &&
           rootEl &&
@@ -274,12 +275,18 @@ function useEditorElementActions({
         ) {
           const rootRect = rootEl.getBoundingClientRect();
           const parentBCR = positionedAncestor.getBoundingClientRect();
-          const scaleX = activeSlide.width / (rootRect.width || 1);
-          const scaleY = activeSlide.height / (rootRect.height || 1);
-          parentPosition = {
-            x: (parentBCR.left - rootRect.left) * scaleX,
-            y: (parentBCR.top - rootRect.top) * scaleY,
-          };
+          const offsetX = parentBCR.left - rootRect.left;
+          const offsetY = parentBCR.top - rootRect.top;
+          // Skip when offset is zero — this is the slide-container / root-edge
+          // case where the fallback (getEditableAncestorRect → {0,0}) is identical.
+          if (offsetX !== 0 || offsetY !== 0) {
+            const scaleX = activeSlide.width / (rootRect.width || 1);
+            const scaleY = activeSlide.height / (rootRect.height || 1);
+            parentPosition = {
+              x: offsetX * scaleX,
+              y: offsetY * scaleY,
+            };
+          }
         }
       }
 

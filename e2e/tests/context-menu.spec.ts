@@ -14,8 +14,13 @@ import {
 async function openSelectionContextMenu(page: Page) {
   const overlay = page.getByTestId("selection-overlay");
   await expect(overlay).toBeVisible();
-  // Click near the top-left to avoid resize handles (z-[5] > z-[3]).
-  await overlay.click({ button: "right", position: { x: 20, y: 20 } });
+  // Use page.mouse to right-click at the overlay's top-left corner (20,20),
+  // which avoids both resize handles (typically at edges) and the iframe
+  // interception that can occur with center or edge-positioned clicks.
+  // page.mouse.click() performs native hit-testing respecting z-index.
+  const box = await overlay.boundingBox();
+  if (!box) throw new Error("selection overlay bounding box not available");
+  await page.mouse.click(box.x + 20, box.y + 20, { button: "right" });
   const menu = page.getByRole("menu", { name: "Selection actions" });
   await expect(menu).toBeVisible();
   return menu;
