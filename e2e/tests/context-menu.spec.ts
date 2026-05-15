@@ -14,7 +14,13 @@ import {
 async function openSelectionContextMenu(page: Page) {
   const overlay = page.getByTestId("selection-overlay");
   await expect(overlay).toBeVisible();
-  await overlay.click({ button: "right" });
+  // Use page.mouse to right-click at the overlay's top-left corner (20,20),
+  // which avoids both resize handles (typically at edges) and the iframe
+  // interception that can occur with center or edge-positioned clicks.
+  // page.mouse.click() performs native hit-testing respecting z-index.
+  const box = await overlay.boundingBox();
+  if (!box) throw new Error("selection overlay bounding box not available");
+  await page.mouse.click(box.x + 20, box.y + 20, { button: "right" });
   const menu = page.getByRole("menu", { name: "Selection actions" });
   await expect(menu).toBeVisible();
   return menu;
@@ -322,6 +328,71 @@ test("context menu ungroups a card with list bullets without moving the list", a
     .toContain("problem-card");
 });
 
+test("context menu ungroups a block inside a positioned non-editable container without shifting children", async ({
+  page,
+}) => {
+  await gotoEditor(page);
+  await page.getByLabel("Slide 18").click();
+
+  const frame = coverFrame(page);
+  const block = frame.locator('[data-editable-id="positioned-block"]');
+  const label = block.locator('[data-editable-id="positioned-label"]');
+  const list = block.locator("ul");
+  const firstItem = list.locator("li").nth(0);
+
+  await expect(block).toBeVisible();
+  await expect(list).toBeVisible();
+
+  const blockBefore = await getSlideElementRect(block);
+  const labelBefore = await getSlideElementRect(label);
+  const listBefore = await getSlideElementRect(list);
+  const firstItemBefore = await getSlideElementRect(firstItem);
+
+  // Click inside the 20px padding area to select the block div (not a child text
+  // element).  Use page.mouse.click() with absolute coordinates (native hit-test
+  // respecting z-index) at (10,10) inside the padding — well outside the 18px
+  // border-radius corner and before the <p> child content edge (~20px).
+  // force:true is needed because the parent .positioned-col (position:relative)
+  // can intercept clicks near the rounded corner.
+  const blockBox = await block.boundingBox();
+  if (!blockBox) throw new Error("positioned-block bounding box not available");
+  await page.mouse.click(blockBox.x + 10, blockBox.y + 10);
+  const menu = await openSelectionContextMenu(page);
+  await expect(
+    menu.getByRole("menuitem", { name: "Ungroup", exact: true })
+  ).not.toHaveAttribute("data-disabled", "");
+  await menu.getByRole("menuitem", { name: "Ungroup", exact: true }).click();
+
+  // After ungroup, the block is gone; children are promoted to the positioned-col container.
+  // The list wrapper gets promoted as an editable block.
+  const promotedLabel = frame.locator('[data-editable-id="positioned-label"]');
+  const promotedList = frame.locator('ul[data-editable="block"]').first();
+  const promotedFirstItem = promotedList.locator("li").nth(0);
+
+  await expect(promotedLabel).toBeVisible();
+  await expect(promotedList).toBeVisible();
+
+  // Verify children stay in the parent container (not the slide root)
+  await expect
+    .poll(async () =>
+      promotedList.evaluate(
+        (node) => node.parentElement?.className === "positioned-col"
+      )
+    )
+    .toBe(true);
+
+  // Verify positions are unchanged
+  await expectSameRect(promotedLabel, labelBefore);
+  await expectSameRect(promotedList, listBefore);
+  await expectSameRect(promotedFirstItem, firstItemBefore);
+
+  // Undo should restore the block
+  await page.keyboard.press(`${MODIFIER}+Z`);
+  await expect
+    .poll(async () => block.evaluate((node) => node.parentElement?.className))
+    .toContain("positioned-col");
+});
+
 test("context menu distributes three selected snap cards horizontally", async ({ page }) => {
   await gotoEditor(page);
   await page.getByLabel("Slide 12").click();
@@ -404,8 +475,13 @@ async function expectSameRect(
   expectedRect: Awaited<ReturnType<typeof getSlideElementRect>>
 ) {
   const actualRect = await getSlideElementRect(locator);
-  expect(actualRect.x).toBeCloseTo(expectedRect.x, 0);
-  expect(actualRect.y).toBeCloseTo(expectedRect.y, 0);
+  // Allow ±1px tolerance on position — floating-point differences from BCR
+  // → scaleX → style-application round-trips can produce up to 1px sub-pixel
+  // Allow ±3px for x/y — BCR-derived parentPosition (live DOM measurement)
+  // can differ from inline-style-derived getAbsoluteNodeRect coordinates by
+  // up to ~2px due to subpixel rendering and scale factor rounding.
+  expect(Math.abs(actualRect.x - expectedRect.x)).toBeLessThanOrEqual(3);
+  expect(Math.abs(actualRect.y - expectedRect.y)).toBeLessThanOrEqual(3);
   expect(actualRect.width).toBeCloseTo(expectedRect.width, 0);
   expect(actualRect.height).toBeCloseTo(expectedRect.height, 0);
 }

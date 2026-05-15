@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: #111827;
+      background: linear-gradient(150deg, #fbfbff 0%, #f7f4ea 45%, #eef8ff 100%);
+    }
+    body {
+      position: relative;
+    }
+    .slide-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 88px 96px;
+      overflow: hidden;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p {
+      margin: 0;
+    }
+    .muted {
+      color: rgba(17, 24, 39, 0.68);
+    }
+    .surface {
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+    }
+  
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      margin-bottom: 44px;
+    }
+    .header .kicker {
+      background: rgba(168, 85, 247, 0.12);
+      color: #7e22ce;
+    }
+    .header h1 {
+      margin-top: 18px;
+      max-width: 920px;
+      font-size: 76px;
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+    }
+    .header p {
+      max-width: 430px;
+      font-size: 23px;
+      line-height: 1.48;
+      color: rgba(31, 41, 55, 0.72);
+    }
+    .timeline {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 20px;
+      padding-top: 48px;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 60px;
+      right: 60px;
+      top: 76px;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f59e0b, #7c3aed, #2563eb, #0f766e);
+      opacity: 0.28;
+    }
+    .milestone {
+      position: relative;
+      padding: 42px 24px 28px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      min-height: 420px;
+    }
+    .milestone::before {
+      content: "";
+      position: absolute;
+      top: -4px;
+      left: 24px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #7c3aed;
+      box-shadow: 0 0 0 10px rgba(124, 58, 237, 0.14);
+    }
+    .milestone strong {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 28px;
+    }
+    .milestone p {
+      font-size: 21px;
+      line-height: 1.5;
+      color: rgba(31, 41, 55, 0.74);
+    }
+    .milestone ul {
+      margin: 20px 0 0;
+      padding-left: 20px;
+      font-size: 19px;
+      line-height: 1.55;
+      color: rgba(31, 41, 55, 0.76);
+    }</style>
+  </head>
+  <body>
+    <div class="slide-container" data-slide-root="true" data-slide-width="1920" data-slide-height="1080" data-editor-id="slide-root">
+      
+      <div class="header">
+        <div>
+          <div class="kicker" data-editable="text" data-editor-id="text-1">Timeline</div>
+          <h1 data-editable="text" data-editor-id="text-2">The roadmap slide adds chronology, repeated cards, and another layout pattern for testing</h1>
+        </div>
+        <p data-editable="text" data-editor-id="text-3">This one is useful for verifying repeated block cards and how the editor behaves when nodes are arranged along a horizontal narrative.</p>
+      </div>
+      <div class="timeline">
+        <article class="milestone" data-editable="block" data-editor-id="block-4">
+          <strong data-editable="text" data-editor-id="text-5">Phase 1 · Ground truth</strong>
+          <p data-editable="text" data-editor-id="text-6">Establish the core parser and source-preserving slide contract.</p>
+          <ul>
+            <li data-editable="text" data-editor-id="text-7">Slide root markers</li>
+            <li data-editable="text" data-editor-id="text-8">Editable node extraction</li>
+            <li data-editable="text" data-editor-id="text-9">Manifest-based import</li>
+          </ul>
+        </article>
+        <article class="milestone" data-editable="block" data-editor-id="block-10">
+          <strong data-editable="text" data-editor-id="text-11">Phase 2 · Editing loop</strong>
+          <p data-editable="text" data-editor-id="text-12">Make text edits possible directly on rendered HTML and persist them as operations.</p>
+          <ul>
+            <li data-editable="text" data-editor-id="text-13">Double click to edit</li>
+            <li data-editable="text" data-editor-id="text-14">Undo and redo</li>
+            <li data-editable="text" data-editor-id="text-15">Selection overlays</li>
+          </ul>
+        </article>
+        <article class="milestone" data-editable="block" data-editor-id="block-16">
+          <strong data-editable="text" data-editor-id="text-17">Phase 3 · Rich fixture deck</strong>
+          <p data-editable="text" data-editor-id="text-18">Replace the toy regression deck with a presentation that actually represents the project.</p>
+          <ul>
+            <li data-editable="text" data-editor-id="text-19">Table slide</li>
+            <li data-editable="text" data-editor-id="text-20">Chart slide</li>
+            <li data-editable="text" data-editor-id="text-21">Image slide</li>
+          </ul>
+        </article>
+        <article class="milestone" data-editable="block" data-editor-id="block-22">
+          <strong data-editable="text" data-editor-id="text-23">Phase 4 · Richer operations</strong>
+          <p data-editable="text" data-editor-id="text-24">Move beyond text into block, image, and structured layout editing while keeping HTML canonical.</p>
+          <ul>
+            <li data-editable="text" data-editor-id="text-25">Resize and reposition blocks</li>
+            <li data-editable="text" data-editor-id="text-26">Swap images safely</li>
+            <li data-editable="text" data-editor-id="text-27">Chart-aware transforms</li>
+          </ul>
+        </article>
+      </div>
+    
+    </div>
+  
+</body></html>

@@ -196,6 +196,7 @@ function BlockManipulationOverlay({
             top: `${handle.y}px`,
           }}
           onMouseDown={(event) => {
+            if (event.button !== 0) return;
             onResizeHandleMouseDown(handle.position, event);
           }}
         />

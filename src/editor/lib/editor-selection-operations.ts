@@ -188,11 +188,13 @@ export function createUngroupOperation({
   elementId,
   elementRects,
   elementPresentationStyles,
+  parentPosition,
 }: {
   slide: SlideModel;
   elementId: string;
   elementRects: GroupElementRectMap;
   elementPresentationStyles: ElementPresentationStyleMap;
+  parentPosition?: { x: number; y: number };
 }) {
   return createGroupUngroupOperation({
     html: slide.htmlSource,
@@ -200,6 +202,7 @@ export function createUngroupOperation({
     groupElementId: elementId,
     elementRects,
     elementPresentationStyles,
+    parentPosition,
   });
 }
 

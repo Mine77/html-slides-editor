@@ -1,0 +1,62 @@
+{
+  "topic": "Starry Slides Project Overview",
+  "generatedAt": "2026-05-06T15:37:35.840Z",
+  "slides": [
+    {
+      "file": "01-hero.html",
+      "title": "Starry Slides Project Overview"
+    },
+    {
+      "file": "02-agenda.html",
+      "title": "Starry Slides Project Overview Agenda"
+    },
+    {
+      "file": "03-problem.html",
+      "title": "Why HTML-native slide editing matters"
+    },
+    {
+      "file": "04-architecture.html",
+      "title": "Generation to editor pipeline"
+    },
+    {
+      "file": "05-table.html",
+      "title": "Feature matrix table"
+    },
+    {
+      "file": "06-chart.html",
+      "title": "Coverage growth chart"
+    },
+    {
+      "file": "07-images.html",
+      "title": "Image-rich slide"
+    },
+    {
+      "file": "08-timeline.html",
+      "title": "Project roadmap timeline"
+    },
+    {
+      "file": "09-comparison.html",
+      "title": "HTML-native versus schema-first"
+    },
+    {
+      "file": "10-coverage.html",
+      "title": "Fixture coverage summary"
+    },
+    {
+      "file": "11-snap-center.html",
+      "title": "Snap center fixture"
+    },
+    {
+      "file": "12-snap-siblings.html",
+      "title": "Snap sibling fixture"
+    },
+    {
+      "file": "13-group-geometry.html",
+      "title": "Group geometry fixture"
+    },
+    {
+      "file": "14-closing.html",
+      "title": "Closing and next steps"
+    }
+  ]
+}

@@ -235,18 +235,83 @@ function useEditorElementActions({
         return;
       }
 
+      const doc = iframeRef.current?.contentDocument ?? null;
+
+      // Compute the absolute slide-coordinate position of the nearest positioned
+      // ancestor from live DOM getBoundingClientRect.  Absolutely-positioned
+      // children use the nearest positioned (non-static) ancestor as their
+      // reference frame — not necessarily the immediate parent.  We need this
+      // BCR-derived position when the positioned ancestor is a non-editable
+      // container that is not tracked in elementRects (e.g. a "positioned-col"
+      // div positioned via CSS class rather than inline style).
+      let parentPosition: { x: number; y: number } | undefined;
+      if (doc && activeSlide) {
+        const groupEl = doc.querySelector<HTMLElement>(
+          `[data-editable-id="${selectedElementId}"]`
+        );
+        const rootEl = doc.querySelector<HTMLElement>(activeSlide.rootSelector);
+        // Walk up from the immediate parent to find the nearest positioned
+        // ancestor — this is the reference frame for absolutely-positioned
+        // children after ungroup.
+        let positionedAncestor: HTMLElement | null =
+          groupEl?.parentElement ?? null;
+        while (
+          positionedAncestor &&
+          positionedAncestor !== rootEl &&
+          getComputedStyle(positionedAncestor).position === "static"
+        ) {
+          positionedAncestor = positionedAncestor.parentElement;
+        }
+        // Only inject a BCR-based parentPosition when the positioned ancestor
+        // differs from what getEditableAncestorRect would return (i.e. when it
+        // is a non-editable positioned container).  If the positioned ancestor
+        // is the root element itself, skip — the fallback handles that case.
+        // Also skip when the offset is {0,0} — same as the fallback.
+        if (
+          positionedAncestor &&
+          rootEl &&
+          positionedAncestor !== rootEl &&
+          !positionedAncestor.hasAttribute("data-editable")
+        ) {
+          const rootRect = rootEl.getBoundingClientRect();
+          const parentBCR = positionedAncestor.getBoundingClientRect();
+          // getBoundingClientRect returns the border-box.  Absolutely-positioned
+          // children use the padding-box as the coordinate origin, so we add
+          // border widths.  Otherwise a 1px border shifts all promoted children.
+          const parentStyle = getComputedStyle(positionedAncestor);
+          const borderLeft = parseFloat(parentStyle.borderLeftWidth) || 0;
+          const borderTop = parseFloat(parentStyle.borderTopWidth) || 0;
+          const offsetX = parentBCR.left - rootRect.left + borderLeft;
+          const offsetY = parentBCR.top - rootRect.top + borderTop;
+          // Skip when offset is zero — this is the slide-container / root-edge
+          // case where the fallback (getEditableAncestorRect → {0,0}) is identical.
+          if (offsetX !== 0 || offsetY !== 0) {
+            const scaleX = activeSlide.width / (rootRect.width || 1);
+            const scaleY = activeSlide.height / (rootRect.height || 1);
+            // Round to nearest integer to avoid sub-pixel rounding differences
+            // between elementRects (BCR-derived) and parentPosition (also BCR-derived)
+            // that can cause a 1px shift in the ungrouped children.
+            parentPosition = {
+              x: Math.round(offsetX * scaleX),
+              y: Math.round(offsetY * scaleY),
+            };
+          }
+        }
+      }
+
       const operation = createUngroupOperation({
         slide: activeSlide,
         elementId: selectedElementId,
         elementRects: createGroupElementRectMap({
-          doc: iframeRef.current?.contentDocument,
+          doc,
           slide: activeSlide,
           flattenRootElementId: selectedElementId,
         }),
         elementPresentationStyles: createElementPresentationStyleMap({
-          doc: iframeRef.current?.contentDocument,
+          doc,
           elementId: selectedElementId,
         }),
+        parentPosition,
       });
 
       if (operation) {
