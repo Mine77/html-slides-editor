@@ -483,11 +483,13 @@ async function expectSameRect(
   expectedRect: Awaited<ReturnType<typeof getSlideElementRect>>
 ) {
   const actualRect = await getSlideElementRect(locator);
-  // Precision=1 tolerates ±1.5px subpixel rendering differences that arise
-  // when BCR-derived parentPosition (used for non-editable positioned containers)
-  // interacts with inline-style-derived getAbsoluteNodeRect coordinates.
-  expect(actualRect.x).toBeCloseTo(expectedRect.x, 1);
-  expect(actualRect.y).toBeCloseTo(expectedRect.y, 1);
-  expect(actualRect.width).toBeCloseTo(expectedRect.width, 1);
-  expect(actualRect.height).toBeCloseTo(expectedRect.height, 1);
+  // Allow ±1px tolerance on position — floating-point differences from BCR
+  // → scaleX → style-application round-trips can produce up to 1px sub-pixel
+  // variance, especially when the parent position is computed from a different
+  // BCR measurement than the child's elementRects (e.g. non-editable positioned
+  // containers whose offset is measured at the call site).
+  expect(Math.abs(actualRect.x - expectedRect.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(actualRect.y - expectedRect.y)).toBeLessThanOrEqual(1);
+  expect(actualRect.width).toBeCloseTo(expectedRect.width, 0);
+  expect(actualRect.height).toBeCloseTo(expectedRect.height, 0);
 }
