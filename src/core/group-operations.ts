@@ -398,6 +398,7 @@ export function createGroupUngroupOperation({
   elementRects = {},
   elementPresentationStyles = {},
   timestamp = Date.now(),
+  parentPosition,
 }: {
   html: string;
   slideId: string;
@@ -405,6 +406,7 @@ export function createGroupUngroupOperation({
   elementRects?: GroupElementRectMap;
   elementPresentationStyles?: ElementPresentationStyleMap;
   timestamp?: number;
+  parentPosition?: { x: number; y: number };
 }): GroupUngroupOperation | null {
   const doc = parseHtmlDocument(html);
   if (!doc) {
@@ -417,12 +419,10 @@ export function createGroupUngroupOperation({
   }
 
   const parent = groupNode.parentElement;
-  const groupAbsoluteRect = getAbsoluteNodeRect(groupNode, elementRects);
-  const groupNodeRect = getNodeRect(groupNode);
-  const parentRect = {
-    x: groupAbsoluteRect.x - groupNodeRect.x,
-    y: groupAbsoluteRect.y - groupNodeRect.y,
-  };
+  // Use the caller-provided parentPosition (computed from live DOM getBoundingClientRect)
+  // when available — it is accurate for any parent, including non-editable positioned
+  // containers. Fall back to getEditableAncestorRect for backward-compatible behavior.
+  const parentRect = parentPosition ?? getEditableAncestorRect(groupNode, elementRects);
   const isGroup = isPersistedGroupNode(groupNode) && isStructuralGroup(groupNode);
   const normalizedChildren = isGroup
     ? structuralGroupChildren(groupNode, doc)

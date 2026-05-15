@@ -235,18 +235,45 @@ function useEditorElementActions({
         return;
       }
 
+      const doc = iframeRef.current?.contentDocument ?? null;
+
+      // Compute the absolute slide-coordinate position of the selected element's
+      // parent from live DOM getBoundingClientRect.  This is needed when the
+      // parent is a non-editable positioned container that is not tracked in
+      // elementRects (e.g. the "positioned-col" div in the positioned-ungroup
+      // regression slide).
+      let parentPosition: { x: number; y: number } | undefined;
+      if (doc && activeSlide) {
+        const groupEl = doc.querySelector<HTMLElement>(
+          `[data-editable-id="${selectedElementId}"]`
+        );
+        const parentEl = groupEl?.parentElement;
+        const rootEl = doc.querySelector<HTMLElement>(activeSlide.rootSelector);
+        if (parentEl && rootEl) {
+          const rootRect = rootEl.getBoundingClientRect();
+          const parentBCR = parentEl.getBoundingClientRect();
+          const scaleX = activeSlide.width / (rootRect.width || 1);
+          const scaleY = activeSlide.height / (rootRect.height || 1);
+          parentPosition = {
+            x: (parentBCR.left - rootRect.left) * scaleX,
+            y: (parentBCR.top - rootRect.top) * scaleY,
+          };
+        }
+      }
+
       const operation = createUngroupOperation({
         slide: activeSlide,
         elementId: selectedElementId,
         elementRects: createGroupElementRectMap({
-          doc: iframeRef.current?.contentDocument,
+          doc,
           slide: activeSlide,
           flattenRootElementId: selectedElementId,
         }),
         elementPresentationStyles: createElementPresentationStyleMap({
-          doc: iframeRef.current?.contentDocument,
+          doc,
           elementId: selectedElementId,
         }),
+        parentPosition,
       });
 
       if (operation) {
