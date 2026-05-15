@@ -348,12 +348,23 @@ test("context menu ungroups a block inside a positioned non-editable container w
   const listBefore = await getSlideElementRect(list);
   const firstItemBefore = await getSlideElementRect(firstItem);
 
-  // Click inside the 20px padding so the block div (not a child element)
-  // captures the click.  Clicking at the very corner hits the border-radius
-  // curve where the parent .positioned-col intercepts.  (15, 15) is inside
-  // the padding rectangle, outside the 18px border-radius corner, and not
-  // overlapping the <p> child (which starts at the content edge, ~20px).
-  await block.click({ position: { x: 15, y: 15 } });
+  // Dispatch a synthetic click on the block div itself at a position inside the
+  // 20px padding.  This ensures event.target is the block, not any child, so
+  // the editor selects the groupable block rather than a text element inside.
+  // Playwright's native .click() fails here: positions in the padding zone
+  // either hit the rounded border-radius corner (positioned-col intercepts) or
+  // hit deeper and attach to a child text element (Ungroup is disabled).
+  await block.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + 10;
+    const cy = rect.top + 10;
+    const opts = { bubbles: true, clientX: cx, clientY: cy, button: 0 } as const;
+    el.dispatchEvent(new PointerEvent("pointerdown", opts));
+    el.dispatchEvent(new MouseEvent("mousedown", opts));
+    el.dispatchEvent(new PointerEvent("pointerup", opts));
+    el.dispatchEvent(new MouseEvent("mouseup", opts));
+    el.dispatchEvent(new MouseEvent("click", opts));
+  });
   const menu = await openSelectionContextMenu(page);
   await expect(
     menu.getByRole("menuitem", { name: "Ungroup", exact: true })
