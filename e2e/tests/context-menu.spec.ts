@@ -348,7 +348,10 @@ test("context menu ungroups a block inside a positioned non-editable container w
   const listBefore = await getSlideElementRect(list);
   const firstItemBefore = await getSlideElementRect(firstItem);
 
-  await block.click({ position: { x: 12, y: 12 } });
+  // Click at (2, 2) inside the 20px padding so the block div (not a child element)
+  // captures the click.  Clicking deeper — e.g. (12, 12) — can hit the <p> child
+  // and select the text element instead, which disables Ungroup.
+  await block.click({ position: { x: 2, y: 2 } });
   const menu = await openSelectionContextMenu(page);
   await expect(
     menu.getByRole("menuitem", { name: "Ungroup", exact: true })
