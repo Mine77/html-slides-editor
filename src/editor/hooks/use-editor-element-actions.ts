@@ -276,7 +276,7 @@ function useEditorElementActions({
           const rootRect = rootEl.getBoundingClientRect();
           const parentBCR = positionedAncestor.getBoundingClientRect();
           // getBoundingClientRect returns the border-box.  Absolutely-positioned
-          // children use the padding-box as the coordinate origin, so we subtract
+          // children use the padding-box as the coordinate origin, so we add
           // border widths.  Otherwise a 1px border shifts all promoted children.
           const parentStyle = getComputedStyle(positionedAncestor);
           const borderLeft = parseFloat(parentStyle.borderLeftWidth) || 0;
@@ -288,9 +288,12 @@ function useEditorElementActions({
           if (offsetX !== 0 || offsetY !== 0) {
             const scaleX = activeSlide.width / (rootRect.width || 1);
             const scaleY = activeSlide.height / (rootRect.height || 1);
+            // Round to nearest integer to avoid sub-pixel rounding differences
+            // between elementRects (BCR-derived) and parentPosition (also BCR-derived)
+            // that can cause a 1px shift in the ungrouped children.
             parentPosition = {
-              x: offsetX * scaleX,
-              y: offsetY * scaleY,
+              x: Math.round(offsetX * scaleX),
+              y: Math.round(offsetY * scaleY),
             };
           }
         }
