@@ -1,7 +1,8 @@
 # ADR-0008: Adopt @starrykit/slides as the single product package
 
-- Status: accepted
+- Status: superseded
 - Date: 2026-05-05
+- Superseded by: [ADR-0029](./0029-adopt-a-compatibility-preserving-package-extraction-path.md)
 - Supersedes: [ADR-0005](./0005-adopt-two-subject-skill-and-editor-architecture.md)
 
 ## Context
