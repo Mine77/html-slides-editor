@@ -37,7 +37,7 @@ Update this directory whenever a change affects:
 | [0005](./0005-adopt-two-subject-skill-and-editor-architecture.md)               | Adopt two-subject architecture for Starry Slides Skill and Editor               | superseded            |
 | [0006](./0006-unify-element-tooling-into-shared-toolbar-model.md)               | Unify element tooling into a shared toolbar model                               | superseded            |
 | [0007](./0007-limit-generated-deck-copies.md)                                   | Limit generated deck copies                                                     | superseded            |
-| [0008](./0008-adopt-starrykit-slides-single-package.md)                         | Adopt @starrykit/slides as the single product package                           | accepted              |
+| [0008](./0008-adopt-starrykit-slides-single-package.md)                         | Adopt @starrykit/slides as the single product package                           | superseded            |
 | [0009](./0009-use-floating-toolbar-as-the-only-element-tooling-surface.md)      | Use Floating Toolbar as the only element tooling surface                        | accepted              |
 | [0010](./0010-represent-groups-as-nested-dom-containers.md)                     | Represent groups as nested DOM containers                                       | accepted              |
 | [0011](./0011-adopt-starry-slides-agent-facing-cli.md)                          | Adopt starry-slides as the agent-facing CLI                                     | accepted              |
@@ -57,3 +57,4 @@ Update this directory whenever a change affects:
 | [0026](./0026-adopt-single-generated-regression-deck-path.md)                   | Adopt single generated regression deck path                                     | accepted              |
 | [0027](./0027-adopt-v1-deck-contract-and-track-cli-editor-refactors.md)         | Adopt V1 deck contract and track CLI and editor refactors                       | accepted              |
 | [0028](./0028-adopt-notify-only-runtime-updates-and-remote-skill-references.md) | Adopt notify-only runtime updates and remote Skill references                   | proposed              |
+| [0029](./0029-adopt-a-compatibility-preserving-package-extraction-path.md)      | Adopt a compatibility-preserving package extraction path                        | proposed              |
